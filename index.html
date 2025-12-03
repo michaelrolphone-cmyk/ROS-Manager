@@ -1,0 +1,1973 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Carlson Survey Manager</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Arial, sans-serif;
+        max-width: 1100px;
+        margin: 20px auto;
+        padding: 20px;
+        background: #f5f7fa;
+        color: #2d3748;
+      }
+      h1 {
+        color: #1e40af;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+      .subtitle {
+        text-align: center;
+        color: #666;
+        margin-bottom: 10px;
+      }
+      .container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+      .header {
+        background: #1e40af;
+        color: white;
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .content {
+        padding: 25px;
+      }
+      .project-controls {
+        margin-bottom: 10px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .project-controls input,
+      .project-controls button {
+        padding: 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+      }
+      button {
+        background: #1e40af;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #1e3a8a;
+      }
+      button.danger {
+        background: #dc2626;
+      }
+      button.success {
+        background: #16a34a;
+      }
+
+      .record-list {
+        margin: 20px 0;
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+      }
+      .record-item {
+        padding: 8px 10px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        background: #f8fafc;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        flex-shrink: 0; /* prevent squishing horizontally */
+      }
+      .record-item:hover,
+      .record-item.active {
+        background: #dbeafe;
+        font-weight: bold;
+      }
+      .record-title {
+        flex: 1;
+        min-width: 0;
+      }
+      .record-canvas {
+        flex: 0 0 auto;
+        flex-shrink: 0;
+      }
+      .record-canvas canvas {
+        border-radius: 4px;
+        border: 1px solid #cbd5f5;
+        display: block;
+        width: 80px;
+        height: 80px;
+        object-fit: contain;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-top: 20px;
+      }
+      label {
+        display: block;
+        margin: 15px 0 5px;
+        font-weight: bold;
+        color: #1e40af;
+      }
+      input[type="text"] {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 16px;
+      }
+
+      table {
+        width: 100%;
+        margin-top: 20px;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 10px;
+        text-align: left;
+        border: 1px solid #ddd;
+      }
+      th {
+        background: #1e40af;
+        color: white;
+      }
+
+      /* Calls table layout (desktop) */
+      .calls-table {
+        table-layout: fixed;
+      }
+      .calls-table th:nth-child(1),
+      .calls-table td:nth-child(1) {
+        width: 45px;
+        text-align: center;
+        white-space: nowrap;
+      }
+      .calls-table th:nth-child(2),
+      .calls-table td:nth-child(2) {
+        width: 40%;
+      }
+      .calls-table th:nth-child(3),
+      .calls-table td:nth-child(3) {
+        width: 60%;
+      }
+      .calls-table input.bearing,
+      .calls-table input.distance {
+        width: 100%;
+        box-sizing: border-box;
+        font-size: 0.9rem;
+        padding: 6px 8px;
+      }
+
+      .footer {
+        text-align: center;
+        margin-top: 30px;
+        color: #666;
+        font-size: 0.9em;
+      }
+
+      /* Command cards layout */
+      .command-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-top: 16px;
+        justify-content: flex-start;
+      }
+      .command-card {
+        background: #f0f9ff;
+        border: 2px dashed #1e40af;
+        border-radius: 12px;
+        padding: 10px;
+        cursor: pointer;
+        position: relative;
+        flex: 0 0 220px;
+        aspect-ratio: 1 / 1;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .command-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+        font-weight: bold;
+        color: #1e40af;
+        font-size: 0.9rem;
+      }
+      .command-card-header button {
+        padding: 4px 6px;
+        font-size: 0.75rem;
+        border-radius: 6px;
+      }
+      .command-preview {
+        flex: 1;
+        font-family: "Courier New", monospace;
+        font-size: 11px;
+        white-space: pre-line;
+        overflow: hidden;
+      }
+      .command-full {
+        display: none;
+        width: 100%;
+        height: 200px;
+        margin-top: 8px;
+        font-family: "Courier New", monospace;
+        font-size: 11px;
+        resize: vertical;
+      }
+      .command-card.expanded {
+        flex: 1 1 100%;
+        aspect-ratio: auto;
+        max-height: none;
+        overflow: visible;
+      }
+      .command-card.expanded .command-preview {
+        display: none;
+      }
+      .command-card.expanded .command-full {
+        display: block;
+      }
+
+      /* Row controls in calls table */
+      .distance-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .distance-row .distance {
+        flex: 1;
+      }
+      .row-controls {
+        display: flex;
+        flex: 0 0 auto;
+        gap: 4px;
+      }
+      .row-controls button {
+        padding: 4px 6px;
+        font-size: 11px;
+      }
+
+      /* Bearing arrow icon */
+      .bearing-cell {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .bearing-arrow {
+        flex: 0 0 auto;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 1px solid #bfdbfe;
+        background: #e5edff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0.6;
+      }
+      .bearing-arrow svg {
+        width: 16px;
+        height: 16px;
+        transform-origin: 50% 50%;
+        transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+      }
+
+      /* Traverse canvases: responsive, keep aspect ratio */
+      #traverseCanvas,
+      #projectOverviewCanvas {
+        margin-top: 10px;
+        width: 100%;
+        max-width: 600px;
+        height: auto;
+        aspect-ratio: 3 / 2;
+        border: 1px solid #cbd5f5;
+        border-radius: 8px;
+        background: #ffffff;
+        display: block;
+      }
+
+      /* Project dropdown (custom HTML) */
+      .project-dropdown-container {
+        position: relative;
+        display: inline-block;
+      }
+      .project-dropdown-toggle {
+        padding: 8px 12px;
+        border-radius: 6px;
+        background: #ffffff;
+        color: #1e40af;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+      }
+      .project-dropdown-toggle span.label {
+        max-width: 160px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .project-dropdown-toggle span.arrow {
+        font-size: 0.8rem;
+      }
+      .project-dropdown-menu {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        margin-top: 6px;
+        background: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        padding: 6px 0;
+        min-width: 260px;
+        max-height: 320px;
+        overflow-y: auto;
+        z-index: 20;
+        display: none;
+      }
+      .project-dropdown-container.open .project-dropdown-menu {
+        display: block;
+      }
+      .project-option {
+        padding: 6px 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+      }
+      .project-option:hover {
+        background: #e0ebff;
+      }
+      .project-option.active {
+        background: #bfdbfe;
+        font-weight: 600;
+      }
+      .project-option-name {
+        flex: 1;
+        color: #1e293b;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .project-option-canvas canvas {
+        border-radius: 4px;
+        border: 1px solid #cbd5f5;
+        display: block;
+        width: 80px;
+        height: 40px;
+        object-fit: contain;
+      }
+
+      /* Start-from dropdown next to starting point */
+      .start-point-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .start-point-row input[type="text"] {
+        flex: 0 0 80px;
+      }
+      .start-dropdown-container {
+        position: relative;
+        display: inline-block;
+        flex: 1;
+      }
+      .start-dropdown-toggle {
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 6px;
+        background: #e0ecff;
+        color: #1e40af;
+        border: 1px solid #bfdbfe;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+        font-size: 0.85rem;
+      }
+      .start-dropdown-toggle .label {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-align: left;
+      }
+      .start-dropdown-toggle .arrow {
+        font-size: 0.75rem;
+      }
+      .start-dropdown-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        margin-top: 4px;
+        background: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        padding: 4px 0;
+        min-width: 260px;
+        max-height: 260px;
+        overflow-y: auto;
+        z-index: 30;
+        display: none;
+      }
+      .start-dropdown-container.open .start-dropdown-menu {
+        display: block;
+      }
+      .start-option {
+        padding: 6px 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        font-size: 0.85rem;
+      }
+      .start-option:hover {
+        background: #e0ebff;
+      }
+      .start-option.active {
+        background: #bfdbfe;
+        font-weight: 600;
+      }
+      .start-option-name {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: #1e293b;
+      }
+      .start-option-canvas canvas {
+        border-radius: 4px;
+        border: 1px solid #cbd5f5;
+        display: block;
+        width: 50px;
+        height: 50px;
+        object-fit: contain;
+      }
+
+      /* ================= MOBILE LAYOUT FIXES ================= */
+      @media (max-width: 700px) {
+        body {
+          margin: 0;
+          padding: 10px;
+        }
+
+        .header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 8px;
+        }
+
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+
+        /* Calls: stacked rows but keep arrows inline with bearing, controls inline with distance */
+        #callsTable thead {
+          display: none;
+        }
+
+        #callsTable {
+          border-collapse: separate;
+          border-spacing: 0 6px;
+        }
+
+        #callsTable tr {
+          display: block;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          padding: 8px 10px;
+          margin-bottom: 10px;
+          background: #f8fafc;
+        }
+
+        #callsTable td {
+          display: block;
+          width: 100% !important;
+          padding: 4px 0;
+          border: none;
+        }
+
+        #callsTable td:first-child {
+          font-size: 0.8rem;
+          font-weight: bold;
+          color: #4b5563;
+        }
+
+        #callsTable td input {
+          width: 100%;
+          padding: 10px;
+          font-size: 18px;
+        }
+
+        .distance-row {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .row-controls button {
+          padding: 8px;
+          font-size: 14px;
+        }
+
+        /* Project dropdown: give it room, allow names to wrap */
+        .project-dropdown-menu {
+          left: 0;
+          right: auto;
+          width: 100vw;
+          max-width: none;
+        }
+        .project-option-name {
+          white-space: normal;
+        }
+
+        /* Command cards centered on small screens */
+        .command-grid {
+          justify-content: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Carlson Survey Manager</h1>
+        <div
+          style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap"
+        >
+          <!-- hidden select (internal) -->
+          <select
+            id="projectSelect"
+            onchange="loadProject(this.value)"
+            style="display: none"
+          ></select>
+
+          <!-- custom project dropdown -->
+          <div id="projectDropdownContainer" class="project-dropdown-container">
+            <button
+              type="button"
+              id="projectDropdownToggle"
+              class="project-dropdown-toggle"
+              onclick="toggleProjectDropdown()"
+            >
+              <span class="label" id="projectDropdownLabel">No project</span>
+              <span class="arrow">▼</span>
+            </button>
+            <div id="projectDropdownMenu" class="project-dropdown-menu"></div>
+          </div>
+
+          <button onclick="newProject()">New Project</button>
+        </div>
+      </div>
+
+      <div class="content">
+        <p class="subtitle" id="currentProjectName">No project selected</p>
+
+        <div class="project-controls">
+          <input
+            type="text"
+            id="projectNameInput"
+            placeholder="New Project Name"
+          />
+          <button onclick="createProject()">Create Project</button>
+          <button class="danger" onclick="deleteCurrentProject()">
+            Delete Current Project
+          </button>
+          <button onclick="exportCurrentProject()">Export Current</button>
+          <button onclick="exportAllProjects()">Export All</button>
+          <button onclick="triggerImport()">Import</button>
+        </div>
+
+        <h3>Project Overview</h3>
+        <canvas id="projectOverviewCanvas"></canvas>
+
+        <hr />
+
+        <h2>Records of Survey</h2>
+        <div
+          style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap"
+        >
+          <input
+            type="text"
+            id="recordNameInput"
+            placeholder="Record Name (e.g., Tract 1234)"
+          />
+          <button onclick="createRecord()">+ New Record</button>
+        </div>
+
+        <div class="record-list" id="recordList"></div>
+
+        <div id="editor" style="display: none">
+          <h2 id="currentRecordName">Record Name</h2>
+          <button
+            class="danger"
+            style="float: right"
+            onclick="deleteCurrentRecord()"
+          >
+            Delete Record
+          </button>
+
+          <h3>Starting Point Setup</h3>
+          <div class="form-grid">
+            <div>
+              <label>Starting Point Number &amp; Link</label>
+              <div class="start-point-row">
+                <input
+                  type="text"
+                  id="startPtNum"
+                  placeholder="1"
+                  oninput="saveCurrentRecord()"
+                />
+                <div
+                  id="startFromDropdownContainer"
+                  class="start-dropdown-container"
+                >
+                  <button
+                    type="button"
+                    id="startFromDropdownToggle"
+                    class="start-dropdown-toggle"
+                    onclick="toggleStartFromDropdown()"
+                  >
+                    <span class="label" id="startFromDropdownLabel"
+                      >Manual Start</span
+                    >
+                    <span class="arrow">▼</span>
+                  </button>
+                  <div
+                    id="startFromDropdownMenu"
+                    class="start-dropdown-menu"
+                  ></div>
+                </div>
+              </div>
+
+              <label>Northing (Y)</label>
+              <input
+                type="text"
+                id="northing"
+                placeholder="5000"
+                oninput="saveCurrentRecord()"
+              />
+            </div>
+            <div>
+              <label>Easting (X)</label>
+              <input
+                type="text"
+                id="easting"
+                placeholder="5000"
+                oninput="saveCurrentRecord()"
+              />
+              <label>Elevation (Z)</label>
+              <input
+                type="text"
+                id="elevation"
+                placeholder="0"
+                oninput="saveCurrentRecord()"
+              />
+            </div>
+          </div>
+          <label>Backsight Azimuth (dd.mmss)</label>
+          <input
+            type="text"
+            id="bsAzimuth"
+            placeholder="0.0000"
+            oninput="saveCurrentRecord()"
+          />
+
+          <h3>Basis and First Call</h3>
+          <div class="form-grid">
+            <div>
+              <label>Basis of Bearing</label>
+              <input
+                type="text"
+                id="basis"
+                placeholder="N 45°30'15&quot;E"
+                oninput="saveCurrentRecord(); generateCommands();"
+              />
+
+              <label>First Distance (feet)</label>
+              <input
+                type="text"
+                id="firstDist"
+                placeholder="265.33"
+                oninput="saveCurrentRecord(); generateCommands();"
+              />
+            </div>
+            <div>
+              <!-- Add button moved below table -->
+            </div>
+          </div>
+
+          <table id="callsTable" class="calls-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Bearing</th>
+                <th colspan="2">Distance / Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+
+          <!-- Add button below list -->
+          <div style="margin-top: 10px">
+            <button onclick="addCallRow()" class="success">
+              + Add Subsequent Call
+            </button>
+          </div>
+
+          <!-- ACTIVE RECORD CANVAS HERE -->
+          <h3 style="margin-top: 20px">Traverse Preview</h3>
+          <canvas id="traverseCanvas"></canvas>
+
+          <button onclick="generateCommands()" style="margin-top: 20px">
+            Generate Carlson Commands
+          </button>
+
+          <h3>Carlson Input Commands</h3>
+          <div class="command-grid">
+            <!-- Create Point -->
+            <div
+              class="command-card"
+              data-group="createPoint"
+              onclick="toggleExpand(event, 'createPoint')"
+            >
+              <div class="command-card-header">
+                <span>Create Point</span>
+                <button type="button" onclick="copyGroup(event, 'createPoint')">
+                  Copy
+                </button>
+              </div>
+              <pre class="command-preview" id="preview-createPoint">
+(empty)</pre
+              >
+              <textarea
+                class="command-full"
+                id="full-createPoint"
+                readonly
+              ></textarea>
+            </div>
+
+            <!-- Occupy Point -->
+            <div
+              class="command-card"
+              data-group="occupyPoint"
+              onclick="toggleExpand(event, 'occupyPoint')"
+            >
+              <div class="command-card-header">
+                <span>Occupy Point</span>
+                <button type="button" onclick="copyGroup(event, 'occupyPoint')">
+                  Copy
+                </button>
+              </div>
+              <pre class="command-preview" id="preview-occupyPoint">
+(empty)</pre
+              >
+              <textarea
+                class="command-full"
+                id="full-occupyPoint"
+                readonly
+              ></textarea>
+            </div>
+
+            <!-- Draw Points (Traverse) -->
+            <div
+              class="command-card"
+              data-group="drawPoints"
+              onclick="toggleExpand(event, 'drawPoints')"
+            >
+              <div class="command-card-header">
+                <span>Draw Points</span>
+                <button type="button" onclick="copyGroup(event, 'drawPoints')">
+                  Copy
+                </button>
+              </div>
+              <pre class="command-preview" id="preview-drawPoints">(empty)</pre>
+              <textarea
+                class="command-full"
+                id="full-drawPoints"
+                readonly
+              ></textarea>
+            </div>
+
+            <!-- Draw Lines -->
+            <div
+              class="command-card"
+              data-group="drawLines"
+              onclick="toggleExpand(event, 'drawLines')"
+            >
+              <div class="command-card-header">
+                <span>Draw Lines</span>
+                <button type="button" onclick="copyGroup(event, 'drawLines')">
+                  Copy
+                </button>
+              </div>
+              <pre class="command-preview" id="preview-drawLines">(empty)</pre>
+              <textarea
+                class="command-full"
+                id="full-drawLines"
+                readonly
+              ></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden file input for import -->
+    <input
+      type="file"
+      id="importFileInput"
+      style="display: none"
+      accept=".json,application/json"
+      onchange="handleImportFile(this)"
+    />
+
+    <div class="footer">
+      All data saved locally in your browser • No server • Works offline
+    </div>
+
+    <script>
+      const STORAGE_KEY = "carlsonSurveyProjects";
+      let currentProjectId = null;
+      let currentRecordId = null;
+      let projects = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+
+      const commandTexts = {
+        createPoint: "",
+        occupyPoint: "",
+        drawPoints: "",
+        drawLines: "",
+      };
+
+      function saveProjects() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+      }
+
+      /* ===================== Export / Import ===================== */
+
+      function exportCurrentProject() {
+        if (!currentProjectId || !projects[currentProjectId]) {
+          alert("No current project to export.");
+          return;
+        }
+        const proj = projects[currentProjectId];
+        const payload = {
+          type: "CarlsonSurveyManagerProjects",
+          version: 1,
+          projects: {
+            [currentProjectId]: proj,
+          },
+        };
+        const json = JSON.stringify(payload, null, 2);
+        const blob = new Blob([json], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        const safeName = (proj.name || "project").replace(/[^\w\-]+/g, "_");
+        a.href = url;
+        a.download = `carlson-${safeName}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      function exportAllProjects() {
+        if (!projects || Object.keys(projects).length === 0) {
+          alert("No projects to export.");
+          return;
+        }
+        const payload = {
+          type: "CarlsonSurveyManagerProjects",
+          version: 1,
+          projects: projects,
+        };
+        const json = JSON.stringify(payload, null, 2);
+        const blob = new Blob([json], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "carlson-all-projects.json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      function triggerImport() {
+        const input = document.getElementById("importFileInput");
+        if (input) input.value = "";
+        input && input.click();
+      }
+
+      function handleImportFile(input) {
+        const file = input.files && input.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const text = e.target.result;
+            const data = JSON.parse(text);
+
+            let importedProjects = null;
+
+            if (
+              data &&
+              data.type === "CarlsonSurveyManagerProjects" &&
+              data.projects
+            ) {
+              importedProjects = data.projects;
+            } else if (data && data.projects) {
+              importedProjects = data.projects;
+            } else if (
+              data &&
+              typeof data === "object" &&
+              !Array.isArray(data)
+            ) {
+              importedProjects = data;
+            }
+
+            if (!importedProjects || typeof importedProjects !== "object") {
+              alert("Import file format not recognized.");
+              return;
+            }
+
+            const importedIds = Object.keys(importedProjects);
+            if (importedIds.length === 0) {
+              alert("No projects found in import file.");
+              return;
+            }
+
+            let firstNewId = null;
+
+            importedIds.forEach((origId) => {
+              const proj = importedProjects[origId];
+              if (!proj || !proj.name) return;
+
+              let newId = origId;
+              while (projects[newId]) {
+                newId = origId + "_" + Date.now().toString();
+              }
+
+              const cloned = JSON.parse(JSON.stringify(proj));
+
+              if (newId !== origId) {
+                cloned.name = (cloned.name || "Unnamed") + " (imported)";
+              }
+
+              projects[newId] = cloned;
+              if (!firstNewId) firstNewId = newId;
+            });
+
+            saveProjects();
+            updateProjectList();
+            renderRecordList();
+            drawProjectOverview();
+
+            if (!currentProjectId && firstNewId) {
+              loadProject(firstNewId);
+            }
+
+            alert("Import complete.");
+          } catch (err) {
+            console.error(err);
+            alert("Failed to import file: " + err.message);
+          } finally {
+            input.value = "";
+          }
+        };
+        reader.onerror = () => {
+          alert("Error reading import file.");
+        };
+        reader.readAsText(file);
+      }
+
+      /* ===================== UI helpers & dropdowns ===================== */
+
+      function toggleProjectDropdown() {
+        const container = document.getElementById("projectDropdownContainer");
+        container.classList.toggle("open");
+      }
+      function closeProjectDropdown() {
+        const container = document.getElementById("projectDropdownContainer");
+        if (container) container.classList.remove("open");
+      }
+
+      function toggleStartFromDropdown() {
+        const container = document.getElementById("startFromDropdownContainer");
+        if (!container) return;
+        container.classList.toggle("open");
+      }
+      function closeStartFromDropdown() {
+        const container = document.getElementById("startFromDropdownContainer");
+        if (container) container.classList.remove("open");
+      }
+
+      // Close dropdowns when clicking outside
+      document.addEventListener("click", (e) => {
+        const projCont = document.getElementById("projectDropdownContainer");
+        if (projCont && !projCont.contains(e.target)) {
+          projCont.classList.remove("open");
+        }
+        const startCont = document.getElementById("startFromDropdownContainer");
+        if (startCont && !startCont.contains(e.target)) {
+          startCont.classList.remove("open");
+        }
+      });
+
+      function updateProjectList() {
+        const select = document.getElementById("projectSelect");
+        const dropdownMenu = document.getElementById("projectDropdownMenu");
+        const dropdownLabel = document.getElementById("projectDropdownLabel");
+
+        // Update hidden select
+        if (select) {
+          select.innerHTML = '<option value="">Select Project</option>';
+          Object.keys(projects).forEach((id) => {
+            const opt = document.createElement("option");
+            opt.value = id;
+            opt.textContent = projects[id].name;
+            if (id === currentProjectId) opt.selected = true;
+            select.appendChild(opt);
+          });
+        }
+
+        // Update label
+        if (dropdownLabel) {
+          dropdownLabel.textContent =
+            currentProjectId && projects[currentProjectId]
+              ? projects[currentProjectId].name
+              : "No project";
+        }
+
+        // Build dropdown menu with composite thumbnails
+        if (!dropdownMenu) return;
+        dropdownMenu.innerHTML = "";
+
+        const ids = Object.keys(projects);
+        if (ids.length === 0) {
+          const emptyDiv = document.createElement("div");
+          emptyDiv.textContent = "No projects yet";
+          emptyDiv.style.padding = "6px 10px";
+          emptyDiv.style.color = "#6b7280";
+          dropdownMenu.appendChild(emptyDiv);
+          return;
+        }
+
+        ids.forEach((id) => {
+          const proj = projects[id];
+          const option = document.createElement("div");
+          option.className = "project-option";
+          if (id === currentProjectId) option.classList.add("active");
+
+          const nameSpan = document.createElement("span");
+          nameSpan.className = "project-option-name";
+          nameSpan.textContent = proj.name;
+
+          const canvasWrapper = document.createElement("div");
+          canvasWrapper.className = "project-option-canvas";
+          const projCanvas = document.createElement("canvas");
+          projCanvas.width = 80;
+          projCanvas.height = 40;
+          canvasWrapper.appendChild(projCanvas);
+
+          option.appendChild(nameSpan);
+          option.appendChild(canvasWrapper);
+
+          option.onclick = () => {
+            loadProject(id);
+            closeProjectDropdown();
+          };
+
+          dropdownMenu.appendChild(option);
+
+          // Draw composite thumbnail for this project
+          try {
+            drawProjectCompositeOnCanvas(id, projCanvas, true);
+          } catch (e) {
+            // ignore per-project thumbnail errors
+          }
+        });
+      }
+
+      /* ===================== Projects & Records ===================== */
+
+      function loadProject(id) {
+        if (!id || !projects[id]) {
+          currentProjectId = null;
+          currentRecordId = null;
+          document.getElementById("currentProjectName").textContent =
+            "No project selected";
+          document.getElementById("editor").style.display = "none";
+          renderRecordList();
+          updateProjectList();
+          drawProjectOverview();
+          return;
+        }
+        currentProjectId = id;
+        currentRecordId = null;
+        document.getElementById("currentProjectName").textContent =
+          projects[id].name;
+        document.getElementById("editor").style.display = "none";
+        renderRecordList();
+        updateProjectList();
+        drawProjectOverview();
+      }
+
+      function newProject() {
+        const name = prompt("Project Name:");
+        if (!name) return;
+        const id = Date.now().toString();
+        projects[id] = { name, records: {} };
+        saveProjects();
+        loadProject(id);
+      }
+
+      function createProject() {
+        const input = document.getElementById("projectNameInput");
+        const name = input.value.trim();
+        if (!name) return alert("Enter a project name");
+        const id = Date.now().toString();
+        projects[id] = { name, records: {} };
+        saveProjects();
+        input.value = "";
+        loadProject(id);
+      }
+
+      function deleteCurrentProject() {
+        if (
+          !currentProjectId ||
+          !confirm("Delete entire project and all records?")
+        )
+          return;
+        delete projects[currentProjectId];
+        saveProjects();
+        currentProjectId = null;
+        currentRecordId = null;
+        document.getElementById("currentProjectName").textContent =
+          "No project selected";
+        document.getElementById("editor").style.display = "none";
+        renderRecordList();
+        updateProjectList();
+        drawProjectOverview();
+      }
+
+      function renderRecordList() {
+        const container = document.getElementById("recordList");
+        if (!currentProjectId || !projects[currentProjectId]) {
+          container.innerHTML = "<p>Select or create a project first.</p>";
+          return;
+        }
+        const records = projects[currentProjectId].records || {};
+        if (Object.keys(records).length === 0) {
+          container.innerHTML = "<p>No records yet. Create one above.</p>";
+          drawProjectOverview();
+          return;
+        }
+        container.innerHTML = "";
+        Object.keys(records).forEach((id) => {
+          const record = records[id];
+          const div = document.createElement("div");
+          div.className = "record-item";
+          if (id === currentRecordId) div.classList.add("active");
+
+          const titleSpan = document.createElement("span");
+          titleSpan.className = "record-title";
+          titleSpan.textContent = record.name;
+
+          const canvasWrapper = document.createElement("div");
+          canvasWrapper.className = "record-canvas";
+          const miniCanvas = document.createElement("canvas");
+          miniCanvas.width = 80;
+          miniCanvas.height = 80;
+          canvasWrapper.appendChild(miniCanvas);
+
+          div.appendChild(titleSpan);
+          div.appendChild(canvasWrapper);
+
+          div.onclick = () => loadRecord(id);
+          container.appendChild(div);
+
+          // Draw mini traverse icon using start-from chain
+          try {
+            const pts = computeTraversePointsForRecord(currentProjectId, id);
+            drawTraversePreview(miniCanvas, pts);
+          } catch (e) {
+            // ignore icon draw errors
+          }
+        });
+
+        drawProjectOverview();
+      }
+
+      function createRecord() {
+        if (!currentProjectId || !projects[currentProjectId])
+          return alert("Select a project first");
+        const name = document.getElementById("recordNameInput").value.trim();
+        if (!name) return alert("Enter a record name");
+        const id = Date.now().toString();
+        projects[currentProjectId].records[id] = {
+          name,
+          startPtNum: "1",
+          northing: "5000",
+          easting: "5000",
+          elevation: "0",
+          bsAzimuth: "0.0000",
+          basis: "",
+          firstDist: "",
+          calls: [],
+          startFromRecordId: null,
+        };
+        document.getElementById("recordNameInput").value = "";
+        saveProjects();
+        loadRecord(id);
+        renderRecordList();
+        updateProjectList();
+      }
+
+      function loadRecord(id) {
+        currentRecordId = id;
+        const record = projects[currentProjectId].records[id];
+        document.getElementById("currentRecordName").textContent = record.name;
+        document.getElementById("startPtNum").value = record.startPtNum || "1";
+        document.getElementById("northing").value = record.northing || "5000";
+        document.getElementById("easting").value = record.easting || "5000";
+        document.getElementById("elevation").value = record.elevation || "0";
+        document.getElementById("bsAzimuth").value =
+          record.bsAzimuth || "0.0000";
+        document.getElementById("basis").value = record.basis || "";
+        document.getElementById("firstDist").value = record.firstDist || "";
+        document.getElementById("editor").style.display = "block";
+
+        const tbody = document.querySelector("#callsTable tbody");
+        tbody.innerHTML = "";
+        (record.calls || []).forEach((call, i) =>
+          addCallRow(call.bearing, call.distance, i + 2)
+        );
+
+        updateStartFromDropdownUI();
+        updateAllBearingArrows();
+        renderRecordList();
+        generateCommands();
+      }
+
+      function saveCurrentRecord() {
+        if (!currentRecordId) return;
+        const record = projects[currentProjectId].records[currentRecordId];
+        record.startPtNum = document.getElementById("startPtNum").value.trim();
+        record.northing = document.getElementById("northing").value.trim();
+        record.easting = document.getElementById("easting").value.trim();
+        record.elevation = document.getElementById("elevation").value.trim();
+        record.bsAzimuth = document.getElementById("bsAzimuth").value.trim();
+        record.basis = document.getElementById("basis").value.trim();
+        record.firstDist = document.getElementById("firstDist").value.trim();
+
+        record.calls = [];
+        document.querySelectorAll("#callsTable tbody tr").forEach((tr) => {
+          const bearing = tr.querySelector(".bearing").value.trim();
+          const dist = tr.querySelector(".distance").value.trim();
+          if (bearing || dist) {
+            record.calls.push({ bearing, distance: dist });
+          }
+        });
+
+        saveProjects();
+      }
+
+      function deleteCurrentRecord() {
+        if (!currentRecordId || !confirm("Delete this record?")) return;
+        delete projects[currentProjectId].records[currentRecordId];
+        saveProjects();
+        currentRecordId = null;
+        document.getElementById("editor").style.display = "none";
+        renderRecordList();
+        updateProjectList();
+      }
+
+      /* ===================== Calls table & bearings ===================== */
+
+      function addCallRow(bearing = "", dist = "", num = null) {
+        const tbody = document.querySelector("#callsTable tbody");
+        const tr = document.createElement("tr");
+        const n = num || tbody.children.length + 2;
+        tr.innerHTML = `
+        <td>${n}</td>
+        <td>
+          <div class="bearing-cell">
+            <input type="text" class="bearing" value="${bearing}" placeholder="S 12°34'56&quot;E" oninput="updateBearingArrow(this); saveCurrentRecord(); generateCommands();" />
+            <span class="bearing-arrow">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 4 L6 14 H18 Z" fill="#1e40af"></path>
+              </svg>
+            </span>
+          </div>
+        </td>
+        <td colspan="2">
+          <div class="distance-row">
+            <input type="text" class="distance" value="${dist}" placeholder="150.25" oninput="saveCurrentRecord(); generateCommands();" />
+            <div class="row-controls">
+              <button type="button" onclick="moveRow(this, -1)">↑</button>
+              <button type="button" onclick="moveRow(this, 1)">↓</button>
+              <button type="button" onclick="removeRow(this)">✕</button>
+            </div>
+          </div>
+        </td>
+      `;
+        tbody.appendChild(tr);
+        const bearingInput = tr.querySelector(".bearing");
+        updateBearingArrow(bearingInput);
+      }
+
+      function removeRow(btn) {
+        const tr = btn.closest("tr");
+        tr.remove();
+        renumberRows();
+        saveCurrentRecord();
+        generateCommands();
+      }
+
+      function moveRow(btn, direction) {
+        const tr = btn.closest("tr");
+        const tbody = tr.parentNode;
+        const rows = Array.from(tbody.children);
+        const index = rows.indexOf(tr);
+        const newIndex = index + direction;
+
+        if (newIndex < 0 || newIndex >= rows.length) return;
+
+        if (direction === -1) {
+          tbody.insertBefore(tr, rows[newIndex]);
+        } else {
+          tbody.insertBefore(tr, rows[newIndex].nextSibling);
+        }
+
+        renumberRows();
+        saveCurrentRecord();
+        generateCommands();
+      }
+
+      function renumberRows() {
+        document.querySelectorAll("#callsTable tbody tr").forEach((tr, i) => {
+          tr.cells[0].textContent = i + 2;
+        });
+      }
+
+      function parseBearing(bearing) {
+        if (!bearing.trim()) return null;
+        let s = bearing
+          .toUpperCase()
+          .replace(/[^NSEW0-9°'"-]/g, "")
+          .replace(/DEG|°/g, "-")
+          .replace(/'|′/g, "-")
+          .replace(/"/g, "");
+
+        let quadrant, angleStr;
+        if (s.startsWith("N") && s.includes("E")) {
+          quadrant = 1;
+          angleStr = s.slice(1, s.indexOf("E"));
+        } else if (s.startsWith("S") && s.includes("E")) {
+          quadrant = 2;
+          angleStr = s.slice(1, s.indexOf("E"));
+        } else if (s.startsWith("S") && s.includes("W")) {
+          quadrant = 3;
+          angleStr = s.slice(1, s.indexOf("W"));
+        } else if (s.startsWith("N") && s.includes("W")) {
+          quadrant = 4;
+          angleStr = s.slice(1, s.indexOf("W"));
+        } else throw new Error("Invalid bearing: " + bearing);
+
+        let parts = angleStr
+          .split("-")
+          .map((p) => p.trim())
+          .filter(Boolean);
+        let d = parseInt(parts[0] || 0, 10);
+        let m = parseInt(parts[1] || 0, 10);
+        let sec = parseInt(parts[2] || 0, 10);
+
+        if (m >= 60 || sec >= 60 || d > 90) throw new Error("Invalid DMS");
+
+        let mmss = ("00" + m).slice(-2) + ("00" + sec).slice(-2);
+        let formatted = d + "." + mmss;
+
+        let angleDegrees = d + m / 60 + sec / 3600;
+        return { quadrant, formatted, angleDegrees };
+      }
+
+      function getAllCalls(record) {
+        const allCalls = [];
+        if (record.basis && record.firstDist) {
+          allCalls.push({ bearing: record.basis, distance: record.firstDist });
+        }
+        (record.calls || []).forEach((c) => {
+          if (c.bearing && c.distance) allCalls.push(c);
+        });
+        return allCalls;
+      }
+
+      function setCommandText(group, text) {
+        commandTexts[group] = text || "";
+        const previewEl = document.getElementById(`preview-${group}`);
+        const fullEl = document.getElementById(`full-${group}`);
+        if (previewEl) previewEl.textContent = text || "(empty)";
+        if (fullEl) fullEl.value = text || "";
+      }
+
+      function copyGroup(evt, group) {
+        evt.stopPropagation();
+        const text = commandTexts[group] || "";
+        navigator.clipboard
+          .writeText(text)
+          .then(() => alert(`Copied ${group} commands!`))
+          .catch(() => alert("Copy failed"));
+      }
+
+      function toggleExpand(evt, group) {
+        const card = document.querySelector(
+          `.command-card[data-group="${group}"]`
+        );
+        if (!card) return;
+        card.classList.toggle("expanded");
+      }
+
+      /* ===================== Canvas sizing helpers ===================== */
+
+      function fitCanvasToDisplaySize(canvas) {
+        if (!canvas) return;
+        const rect = canvas.getBoundingClientRect();
+        const width = Math.max(1, Math.floor(rect.width || 0));
+        const height = Math.max(1, Math.floor(rect.height || 0));
+        if (
+          width &&
+          height &&
+          (canvas.width !== width || canvas.height !== height)
+        ) {
+          canvas.width = width;
+          canvas.height = height;
+        }
+      }
+
+      /* ===================== Traverse geometry & drawing ===================== */
+
+      function computeTraversePointsForRecord(
+        projectId,
+        recordId,
+        memo = {},
+        visiting = {}
+      ) {
+        const project = projects[projectId];
+        if (!project) return [];
+        const records = project.records || {};
+        const record = records[recordId];
+        if (!record) return [];
+
+        if (memo[recordId]) return memo[recordId];
+        if (visiting[recordId]) {
+          const startE = parseFloat(record.easting) || 0;
+          const startN = parseFloat(record.northing) || 0;
+          const pts = [{ x: startE, y: startN }];
+          memo[recordId] = pts;
+          return pts;
+        }
+        visiting[recordId] = true;
+
+        let startX, startY;
+        const linkId = record.startFromRecordId;
+        if (linkId && records[linkId]) {
+          const prevPts = computeTraversePointsForRecord(
+            projectId,
+            linkId,
+            memo,
+            visiting
+          );
+          if (prevPts && prevPts.length > 0) {
+            const last = prevPts[prevPts.length - 1];
+            startX = last.x;
+            startY = last.y;
+          }
+        }
+        if (startX === undefined || startY === undefined) {
+          startX = parseFloat(record.easting) || 0;
+          startY = parseFloat(record.northing) || 0;
+        }
+
+        const pts = [{ x: startX, y: startY }];
+        let currentE = startX;
+        let currentN = startY;
+
+        const allCalls = getAllCalls(record);
+        allCalls.forEach((call) => {
+          const parsed = parseBearing(call.bearing);
+          if (!parsed) return;
+          const dist = parseFloat(call.distance) || 0;
+          const theta = ((parsed.angleDegrees || 0) * Math.PI) / 180;
+          const sinT = Math.sin(theta);
+          const cosT = Math.cos(theta);
+
+          let dE = 0;
+          let dN = 0;
+          switch (parsed.quadrant) {
+            case 1:
+              dE = dist * sinT;
+              dN = dist * cosT;
+              break; // NE
+            case 2:
+              dE = dist * sinT;
+              dN = -dist * cosT;
+              break; // SE
+            case 3:
+              dE = -dist * sinT;
+              dN = -dist * cosT;
+              break; // SW
+            case 4:
+              dE = -dist * sinT;
+              dN = dist * cosT;
+              break; // NW
+          }
+
+          currentE += dE;
+          currentN += dN;
+          pts.push({ x: currentE, y: currentN });
+        });
+
+        memo[recordId] = pts;
+        delete visiting[recordId];
+        return pts;
+      }
+
+      function drawTraversePreview(canvas, points) {
+        if (!canvas) return;
+        fitCanvasToDisplaySize(canvas);
+        const ctx = canvas.getContext("2d");
+        const width = canvas.width;
+        const height = canvas.height;
+
+        ctx.clearRect(0, 0, width, height);
+        if (!points || points.length === 0) return;
+
+        if (points.length === 1) {
+          ctx.fillStyle = "#1e40af";
+          ctx.beginPath();
+          ctx.arc(width / 2, height / 2, 3, 0, Math.PI * 2);
+          ctx.fill();
+          return;
+        }
+
+        let minX = points[0].x,
+          maxX = points[0].x;
+        let minY = points[0].y,
+          maxY = points[0].y;
+        points.forEach((p) => {
+          if (p.x < minX) minX = p.x;
+          if (p.x > maxX) maxX = p.x;
+          if (p.y < minY) minY = p.y;
+          if (p.y > maxY) maxY = p.y;
+        });
+
+        const padding = 10;
+        let dx = maxX - minX;
+        let dy = maxY - minY;
+        if (dx === 0) dx = 1;
+        if (dy === 0) dy = 1;
+
+        const scaleX = (width - 2 * padding) / dx;
+        const scaleY = (height - 2 * padding) / dy;
+        const scale = Math.min(scaleX, scaleY);
+
+        function toCanvas(p) {
+          const x = padding + (p.x - minX) * scale;
+          const y = height - padding - (p.y - minY) * scale;
+          return { x, y };
+        }
+
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#1e40af";
+        ctx.beginPath();
+        const first = toCanvas(points[0]);
+        ctx.moveTo(first.x, first.y);
+        for (let i = 1; i < points.length; i++) {
+          const c = toCanvas(points[i]);
+          ctx.lineTo(c.x, c.y);
+        }
+        ctx.stroke();
+
+        ctx.fillStyle = "#16a34a";
+        const start = toCanvas(points[0]);
+        ctx.beginPath();
+        ctx.arc(start.x, start.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#dc2626";
+        const end = toCanvas(points[points.length - 1]);
+        ctx.beginPath();
+        ctx.arc(end.x, end.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function drawProjectCompositeOnCanvas(projectId, canvas, small = false) {
+        if (!canvas) return;
+        fitCanvasToDisplaySize(canvas);
+        const ctx = canvas.getContext("2d");
+        const width = canvas.width;
+        const height = canvas.height;
+        ctx.clearRect(0, 0, width, height);
+
+        if (!projectId || !projects[projectId]) return;
+        const records = projects[projectId].records || {};
+        const recordIds = Object.keys(records);
+        if (recordIds.length === 0) return;
+
+        const polylines = [];
+        let allPts = [];
+        const memo = {};
+        const visiting = {};
+
+        recordIds.forEach((id) => {
+          const pts = computeTraversePointsForRecord(
+            projectId,
+            id,
+            memo,
+            visiting
+          );
+          if (pts && pts.length > 0) {
+            polylines.push({ id, points: pts });
+            allPts = allPts.concat(pts);
+          }
+        });
+
+        if (allPts.length === 0) return;
+
+        let minX = allPts[0].x,
+          maxX = allPts[0].x;
+        let minY = allPts[0].y,
+          maxY = allPts[0].y;
+        allPts.forEach((p) => {
+          if (p.x < minX) minX = p.x;
+          if (p.x > maxX) maxX = p.x;
+          if (p.y < minY) minY = p.y;
+          if (p.y > maxY) maxY = p.y;
+        });
+
+        const padding = small ? 4 : 20;
+        let dx = maxX - minX;
+        let dy = maxY - minY;
+        if (dx === 0) dx = 1;
+        if (dy === 0) dy = 1;
+
+        const scaleX = (width - 2 * padding) / dx;
+        const scaleY = (height - 2 * padding) / dy;
+        const scale = Math.min(scaleX, scaleY);
+
+        function toCanvas(p) {
+          const x = padding + (p.x - minX) * scale;
+          const y = height - padding - (p.y - minY) * scale;
+          return { x, y };
+        }
+
+        const colors = [
+          "#1e40af",
+          "#16a34a",
+          "#dc2626",
+          "#f97316",
+          "#0f766e",
+          "#7c3aed",
+        ];
+
+        polylines.forEach((poly, idx) => {
+          const pts = poly.points;
+          if (pts.length === 0) return;
+
+          const color = colors[idx % colors.length];
+          ctx.lineWidth = small ? 1 : 2;
+          ctx.strokeStyle = color;
+
+          ctx.beginPath();
+          const first = toCanvas(pts[0]);
+          ctx.moveTo(first.x, first.y);
+          for (let i = 1; i < pts.length; i++) {
+            const c = toCanvas(pts[i]);
+            ctx.lineTo(c.x, c.y);
+          }
+          ctx.stroke();
+
+          const start = toCanvas(pts[0]);
+          const end = toCanvas(pts[pts.length - 1]);
+          ctx.fillStyle = color;
+
+          ctx.beginPath();
+          ctx.arc(start.x, start.y, small ? 2 : 3, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(end.x, end.y, small ? 2 : 3, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+
+      function drawProjectOverview() {
+        const canvas = document.getElementById("projectOverviewCanvas");
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width || 0, canvas.height || 0);
+        if (!currentProjectId || !projects[currentProjectId]) return;
+        drawProjectCompositeOnCanvas(currentProjectId, canvas, false);
+      }
+
+      function updateStartFromDropdownUI() {
+        const container = document.getElementById("startFromDropdownContainer");
+        const label = document.getElementById("startFromDropdownLabel");
+        const menu = document.getElementById("startFromDropdownMenu");
+        if (!container || !label || !menu) return;
+
+        if (
+          !currentProjectId ||
+          !currentRecordId ||
+          !projects[currentProjectId]
+        ) {
+          label.textContent = "Manual Start";
+          menu.innerHTML = "";
+          return;
+        }
+
+        const records = projects[currentProjectId].records || {};
+        const record = records[currentRecordId];
+        const selectedId = record.startFromRecordId || null;
+
+        if (selectedId && records[selectedId]) {
+          label.textContent = "From: " + records[selectedId].name;
+        } else {
+          label.textContent = "Manual Start";
+        }
+
+        menu.innerHTML = "";
+
+        const noneOpt = document.createElement("div");
+        noneOpt.className = "start-option" + (selectedId ? "" : " active");
+        noneOpt.textContent = "(None — use manual start)";
+        noneOpt.onclick = () => {
+          setStartFromRecord(null);
+          closeStartFromDropdown();
+        };
+        menu.appendChild(noneOpt);
+
+        Object.keys(records).forEach((id) => {
+          if (id === currentRecordId) return;
+          const rec = records[id];
+          const opt = document.createElement("div");
+          opt.className = "start-option";
+          if (id === selectedId) opt.classList.add("active");
+
+          const nameSpan = document.createElement("span");
+          nameSpan.className = "start-option-name";
+          nameSpan.textContent = rec.name;
+
+          const canvasWrapper = document.createElement("div");
+          canvasWrapper.className = "start-option-canvas";
+          const c = document.createElement("canvas");
+          c.width = 50;
+          c.height = 50;
+          canvasWrapper.appendChild(c);
+
+          opt.appendChild(nameSpan);
+          opt.appendChild(canvasWrapper);
+
+          opt.onclick = () => {
+            setStartFromRecord(id);
+            closeStartFromDropdown();
+          };
+
+          menu.appendChild(opt);
+
+          try {
+            const pts = computeTraversePointsForRecord(currentProjectId, id);
+            drawTraversePreview(c, pts);
+          } catch (e) {
+            // ignore
+          }
+        });
+      }
+
+      function setStartFromRecord(targetId) {
+        if (!currentProjectId || !currentRecordId) return;
+        const records = projects[currentProjectId].records || {};
+        const record = records[currentRecordId];
+        if (!record) return;
+
+        record.startFromRecordId = targetId || null;
+        saveProjects();
+        updateStartFromDropdownUI();
+        generateCommands();
+      }
+
+      // Bearing arrow helpers
+      function updateBearingArrow(inputEl) {
+        if (!inputEl) return;
+        const cell = inputEl.closest("td");
+        if (!cell) return;
+        const svg = cell.querySelector(".bearing-arrow svg");
+        if (!svg) return;
+
+        const bearing = inputEl.value.trim();
+        if (!bearing) {
+          svg.style.opacity = 0.3;
+          svg.style.transform = "rotate(0deg)";
+          return;
+        }
+
+        try {
+          const parsed = parseBearing(bearing);
+          if (!parsed) throw new Error("parse error");
+          const angle = parsed.angleDegrees || 0;
+          let az = 0;
+
+          switch (parsed.quadrant) {
+            case 1:
+              az = angle;
+              break; // NE
+            case 2:
+              az = 180 - angle;
+              break; // SE
+            case 3:
+              az = 180 + angle;
+              break; // SW
+            case 4:
+              az = 360 - angle;
+              break; // NW
+          }
+          svg.style.opacity = 1;
+          svg.style.transform = `rotate(${az}deg)`;
+        } catch (e) {
+          svg.style.opacity = 0.3;
+          svg.style.transform = "rotate(0deg)";
+        }
+      }
+
+      function updateAllBearingArrows() {
+        document.querySelectorAll("#callsTable .bearing").forEach((input) => {
+          updateBearingArrow(input);
+        });
+      }
+
+      /* ===================== Commands generation ===================== */
+
+      function generateCommands() {
+        if (!currentRecordId) return;
+        saveCurrentRecord();
+        const record = projects[currentProjectId].records[currentRecordId];
+
+        try {
+          let createPointText = "";
+          createPointText += "EA\n";
+          createPointText += `${record.northing}\n`;
+          createPointText += `${record.easting}\n`;
+          createPointText += `${record.elevation}\n\n`;
+          setCommandText("createPoint", createPointText);
+
+          let occupyPointText = "";
+          occupyPointText += "OCCPOINT\n";
+          occupyPointText += `${record.startPtNum}\n`;
+          occupyPointText += "N\n\n\n\n";
+          setCommandText("occupyPoint", occupyPointText);
+
+          const allCalls = getAllCalls(record);
+
+          let drawPointsText = "";
+          if (allCalls.length === 0) {
+            drawPointsText = "(No traverse calls entered)\n";
+          } else {
+            drawPointsText += "T\n";
+            allCalls.forEach((call) => {
+              const parsed = parseBearing(call.bearing);
+              drawPointsText += `${parsed.quadrant}\n`;
+              drawPointsText += `${parsed.formatted}\n`;
+              drawPointsText += `${call.distance}\n`;
+              drawPointsText += "0\n";
+            });
+            drawPointsText += "E\n";
+          }
+          setCommandText("drawPoints", drawPointsText);
+
+          let drawLinesText = "";
+          if (allCalls.length === 0) {
+            drawLinesText = "(No traverse calls entered)\n";
+          } else {
+            drawLinesText += "L\n";
+            drawLinesText += "P\n";
+            drawLinesText += "1\n";
+            allCalls.forEach((call) => {
+              const parsed = parseBearing(call.bearing);
+              drawLinesText += "D\n";
+              drawLinesText += "F\n";
+              drawLinesText += `${call.distance}\n`;
+              drawLinesText += "A\n";
+              drawLinesText += `${parsed.quadrant}\n`;
+              drawLinesText += `${parsed.formatted}\n`;
+            });
+            drawLinesText += "Q\n";
+          }
+          setCommandText("drawLines", drawLinesText);
+
+          const pts = computeTraversePointsForRecord(
+            currentProjectId,
+            currentRecordId
+          );
+          const mainCanvas = document.getElementById("traverseCanvas");
+          drawTraversePreview(mainCanvas, pts);
+
+          updateAllBearingArrows();
+          renderRecordList();
+          updateProjectList();
+          drawProjectOverview();
+        } catch (e) {
+          setCommandText("createPoint", "Error: " + e.message);
+          setCommandText("occupyPoint", "");
+          setCommandText("drawPoints", "");
+          setCommandText("drawLines", "");
+          const mainCanvas = document.getElementById("traverseCanvas");
+          if (mainCanvas) {
+            const ctx = mainCanvas.getContext("2d");
+            ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+          }
+        }
+      }
+
+      /* ===================== Resize redraw ===================== */
+      window.addEventListener("resize", () => {
+        drawProjectOverview();
+        if (currentProjectId && currentRecordId) {
+          const pts = computeTraversePointsForRecord(
+            currentProjectId,
+            currentRecordId
+          );
+          const canvas = document.getElementById("traverseCanvas");
+          drawTraversePreview(canvas, pts);
+        }
+      });
+
+      /* ===================== Init ===================== */
+
+      updateProjectList();
+      if (Object.keys(projects).length > 0) {
+        loadProject(Object.keys(projects)[0]);
+      } else {
+        drawProjectOverview();
+      }
+    </script>
+  </body>
+</html>
