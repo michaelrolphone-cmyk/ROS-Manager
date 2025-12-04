@@ -9,6 +9,7 @@ import EquipmentLog from "../models/EquipmentLog.js";
 import Point from "../models/Point.js";
 import PointController from "./PointController.js";
 import NavigationController from "./NavigationController.js";
+import LevelingController from "./LevelingController.js";
 import GlobalSettingsService from "../services/GlobalSettingsService.js";
 
 export default class AppController {
@@ -86,6 +87,29 @@ export default class AppController {
         this.currentProjectId
           ? this.projects[this.currentProjectId]?.equipmentLogs || []
           : [],
+    });
+    this.levelingController = new LevelingController({
+      elements: {
+        levelRunSelect: this.elements.levelRunSelect,
+        newLevelRunButton: this.elements.newLevelRunButton,
+        levelRunName: this.elements.levelRunName,
+        levelStartPoint: this.elements.levelStartPoint,
+        levelStartElevation: this.elements.levelStartElevation,
+        levelClosingPoint: this.elements.levelClosingPoint,
+        levelClosingElevation: this.elements.levelClosingElevation,
+        addLevelEntryButton: this.elements.addLevelEntryButton,
+        levelEntriesTableBody: this.elements.levelEntriesTableBody,
+        levelTotalBs: this.elements.levelTotalBs,
+        levelTotalFs: this.elements.levelTotalFs,
+        levelMisclosure: this.elements.levelMisclosure,
+        levelClosureNote: this.elements.levelClosureNote,
+        exportLevelRunButton: this.elements.exportLevelRunButton,
+      },
+      getCurrentProject: () =>
+        this.currentProjectId ? this.projects[this.currentProjectId] : null,
+      saveProjects: () => this.saveProjects(),
+      getProjectName: () =>
+        this.currentProjectId ? this.projects[this.currentProjectId]?.name || "" : "",
     });
     this.bindStaticEvents();
     this.initialize();
@@ -197,6 +221,7 @@ export default class AppController {
       pointsTabButton: document.getElementById("pointsTabButton"),
       evidenceTabButton: document.getElementById("evidenceTabButton"),
       equipmentTabButton: document.getElementById("equipmentTabButton"),
+      levelingSection: document.getElementById("levelingSection"),
       springboardSection: document.getElementById("springboardSection"),
       springboardGrid: document.querySelector(".springboard-grid"),
       navigationSection: document.getElementById("navigationSection"),
@@ -325,6 +350,20 @@ export default class AppController {
       exportAllDataButton: document.getElementById("exportAllDataButton"),
       importAllDataButton: document.getElementById("importAllDataButton"),
       importAllDataInput: document.getElementById("importAllDataInput"),
+      levelRunSelect: document.getElementById("levelRunSelect"),
+      newLevelRunButton: document.getElementById("newLevelRunButton"),
+      levelRunName: document.getElementById("levelRunName"),
+      levelStartPoint: document.getElementById("levelStartPoint"),
+      levelStartElevation: document.getElementById("levelStartElevation"),
+      levelClosingPoint: document.getElementById("levelClosingPoint"),
+      levelClosingElevation: document.getElementById("levelClosingElevation"),
+      addLevelEntryButton: document.getElementById("addLevelEntryButton"),
+      levelEntriesTableBody: document.getElementById("levelEntriesTableBody"),
+      levelTotalBs: document.getElementById("levelTotalBs"),
+      levelTotalFs: document.getElementById("levelTotalFs"),
+      levelMisclosure: document.getElementById("levelMisclosure"),
+      levelClosureNote: document.getElementById("levelClosureNote"),
+      exportLevelRunButton: document.getElementById("exportLevelRunButton"),
     };
   }
 
@@ -818,6 +857,7 @@ export default class AppController {
       this.populatePointGenerationOptions();
       this.populateProjectDetailsForm(null);
       this.updateSpringboardHero();
+      this.levelingController?.onProjectChanged();
       return;
     }
 
@@ -838,6 +878,7 @@ export default class AppController {
     this.populateProjectDetailsForm(this.projects[id]);
     this.updateSpringboardHero();
     this.handleSpringboardScroll();
+    this.levelingController?.onProjectChanged();
   }
 
   newProject() {
@@ -1374,6 +1415,7 @@ export default class AppController {
       this.elements.pointsSection,
       this.elements.settingsSection,
       this.elements.evidenceSection,
+      this.elements.levelingSection,
       this.elements.equipmentSection,
       this.elements.navigationSection,
     ];
