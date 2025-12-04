@@ -1,0 +1,37 @@
+import Point from "./Point.js";
+
+export default class PointFile {
+  constructor({ id = null, name = "", points = [], originalPoints = [] } = {}) {
+    this.id = id || `pf-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    this.name = name || "Points";
+    this.points = Array.isArray(points)
+      ? points.map((pt) => (pt instanceof Point ? pt : Point.fromObject(pt)))
+      : [];
+    this.originalPoints = Array.isArray(originalPoints)
+      ? originalPoints.map((pt) =>
+          pt instanceof Point ? pt : Point.fromObject(pt)
+        )
+      : this.points.map((pt) => Point.fromObject(pt));
+  }
+
+  static fromObject(obj = {}) {
+    return new PointFile(obj);
+  }
+
+  toObject() {
+    return {
+      id: this.id,
+      name: this.name,
+      points: this.points.map((pt) =>
+        pt instanceof Point ? pt.toObject() : Point.fromObject(pt).toObject()
+      ),
+      originalPoints: this.originalPoints.map((pt) =>
+        pt instanceof Point ? pt.toObject() : Point.fromObject(pt).toObject()
+      ),
+    };
+  }
+
+  resetOriginals() {
+    this.originalPoints = this.points.map((pt) => Point.fromObject(pt));
+  }
+}

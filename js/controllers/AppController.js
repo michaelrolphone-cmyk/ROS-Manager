@@ -5,6 +5,7 @@ import TraverseInstruction from "../models/TraverseInstruction.js";
 import CornerEvidence from "../models/CornerEvidence.js";
 import EvidenceTie from "../models/EvidenceTie.js";
 import CornerEvidenceService from "../services/CornerEvidenceService.js";
+import PointController from "./PointController.js";
 
 export default class AppController {
   constructor() {
@@ -26,6 +27,20 @@ export default class AppController {
     this.currentTraversePointOptions = [];
 
     this.cacheDom();
+    this.pointController = new PointController({
+      elements: {
+        pointImportButton: this.elements.pointImportButton,
+        pointsFileInput: this.elements.pointsFileInput,
+        pointsTableBody: this.elements.pointsTableBody,
+        addPointRowButton: this.elements.addPointRowButton,
+        pointFileSelect: this.elements.pointFileSelect,
+        newPointFileButton: this.elements.newPointFileButton,
+        downloadPointsButton: this.elements.downloadPointsButton,
+      },
+      getCurrentProject: () =>
+        this.currentProjectId ? this.projects[this.currentProjectId] : null,
+      saveProjects: () => this.saveProjects(),
+    });
     this.bindStaticEvents();
     this.initialize();
   }
@@ -62,6 +77,13 @@ export default class AppController {
       traverseCanvas: document.getElementById("traverseCanvas"),
       projectOverviewCanvas: document.getElementById("projectOverviewCanvas"),
       importFileInput: document.getElementById("importFileInput"),
+      pointImportButton: document.getElementById("pointImportButton"),
+      pointsFileInput: document.getElementById("pointsFileInput"),
+      pointsTableBody: document.querySelector("#pointsTable tbody"),
+      addPointRowButton: document.getElementById("addPointRowButton"),
+      pointFileSelect: document.getElementById("pointFileSelect"),
+      newPointFileButton: document.getElementById("newPointFileButton"),
+      downloadPointsButton: document.getElementById("downloadPointsButton"),
       startFromDropdownContainer: document.getElementById(
         "startFromDropdownContainer"
       ),
@@ -258,6 +280,7 @@ export default class AppController {
       this.loadProject(projectIds[0]);
     } else {
       this.drawProjectOverview();
+      this.pointController.renderPointsTable();
     }
     this.refreshEvidenceUI();
     this.renderEvidenceTies();
@@ -353,14 +376,16 @@ export default class AppController {
       this.currentProjectId = null;
       this.currentRecordId = null;
       this.elements.currentProjectName.textContent = "No project selected";
-    this.elements.editor.style.display = "none";
-    this.renderRecordList();
-    this.updateProjectList();
-    this.drawProjectOverview();
-    this.hideProjectForm();
-    this.refreshEvidenceUI();
-    return;
-  }
+      this.elements.editor.style.display = "none";
+      this.renderRecordList();
+      this.updateProjectList();
+      this.drawProjectOverview();
+      this.hideProjectForm();
+      this.pointController.renderPointsTable();
+      this.refreshEvidenceUI();
+      return;
+    }
+
     this.currentProjectId = id;
     this.currentRecordId = null;
     this.elements.currentProjectName.textContent = this.projects[id].name;
@@ -369,6 +394,7 @@ export default class AppController {
     this.updateProjectList();
     this.drawProjectOverview();
     this.hideProjectForm();
+    this.pointController.renderPointsTable();
     this.refreshEvidenceUI();
   }
 
@@ -381,7 +407,7 @@ export default class AppController {
     const name = (input?.value || "").trim();
     if (!name) return alert("Enter a project name");
     const id = Date.now().toString();
-    this.projects[id] = new Project({ name, records: {} });
+    this.projects[id] = new Project({ name, records: {}, points: [] });
     this.saveProjects();
     if (input) input.value = "";
     this.hideProjectForm();
@@ -400,6 +426,7 @@ export default class AppController {
     this.renderRecordList();
     this.updateProjectList();
     this.drawProjectOverview();
+    this.pointController.renderPointsTable();
   }
 
   renderRecordList() {
