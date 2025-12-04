@@ -168,7 +168,7 @@ export default class LevelingController {
     if (!field) return;
     entry[field] = evt.target.value;
     this.saveProjects?.();
-    this.renderLevelEntries();
+    this.updateLevelEntryDisplays();
   }
 
   handleLevelEntryClick(evt) {
@@ -193,7 +193,7 @@ export default class LevelingController {
     let currentElevation = hasStart ? startElevation : null;
     let totalBs = 0;
     let totalFs = 0;
-    const rows = (run?.entries || []).map((entry) => {
+    const rows = (run?.entries || []).map((entry, idx, all) => {
       const bsVal = parseFloat(entry.backsight);
       const fsVal = parseFloat(entry.foresight);
       const bs = Number.isFinite(bsVal) ? bsVal : 0;
@@ -207,8 +207,15 @@ export default class LevelingController {
       }
       const elevation = currentElevation;
       const closure = hasClosing && elevation !== null ? elevation - closingElevation : null;
+      const displayPoint = this.getDisplayPointLabel({
+        run,
+        entry,
+        index: idx,
+        total: all.length,
+      });
       return {
         ...entry,
+        displayPoint,
         riseFall,
         elevation,
         sumBs: totalBs,
@@ -247,17 +254,27 @@ export default class LevelingController {
 
     const stats = this.computeLevelingRows(run);
     const rowsHtml = (stats.rows || []).map((entry) => {
-      return `<tr data-entry-id="${entry.id}">
-        <td><input name="point" type="text" value="${this.escapeHtml(entry.point || "")}" placeholder="TP" /></td>
+      const noteInput = `<input name="notes" class="note-input" type="text" value="${this.escapeHtml(
+        entry.notes || ""
+      )}" placeholder="Description / note" />`;
+
+      return `<tr class="level-row" data-entry-id="${entry.id}">
+        <td class="computed point-label">${this.escapeHtml(entry.displayPoint || "")}</td>
         <td><input name="backsight" type="number" step="0.0001" value="${entry.backsight || ""}" /></td>
         <td><input name="foresight" type="number" step="0.0001" value="${entry.foresight || ""}" /></td>
-        <td><input name="notes" type="text" value="${this.escapeHtml(entry.notes || "")}" placeholder="Notes" /></td>
+        <td class="notes-cell notes-desktop">${noteInput}</td>
         <td class="computed">${this.formatLevelNumber(entry.riseFall)}</td>
         <td class="computed">${this.formatLevelNumber(entry.elevation)}</td>
         <td class="computed">${this.formatLevelNumber(entry.sumBs)}</td>
         <td class="computed">${this.formatLevelNumber(entry.sumFs)}</td>
         <td class="computed">${this.formatLevelNumber(entry.closure)}</td>
-        <td><button type="button" data-action="delete-level-entry" class="danger">×</button></td>
+        <td class="row-actions"><button type="button" data-action="delete-level-entry" class="danger">×</button></td>
+      </tr>
+      <tr class="level-row note-mobile-row" data-entry-id="${entry.id}">
+        <td colspan="10">
+          <label class="note-mobile-label">Description / note</label>
+          ${noteInput}
+        </td>
       </tr>`;
     });
 
@@ -277,6 +294,72 @@ export default class LevelingController {
     }
   }
 
+  updateLevelEntryDisplays() {
+    if (!this.elements.levelEntriesTableBody) return;
+    const run = this.getCurrentLevelRun();
+    if (!run) return;
+    const stats = this.computeLevelingRows(run);
+    stats.rows?.forEach((entryStats) => {
+      const rowEls = this.elements.levelEntriesTableBody.querySelectorAll(
+        `tr[data-entry-id='${entryStats.id}']`
+      );
+
+      rowEls.forEach((rowEl) => {
+        const pointLabel = rowEl.querySelector(".point-label");
+        if (pointLabel) pointLabel.textContent = entryStats.displayPoint || "";
+
+        const noteInputs = rowEl.querySelectorAll("input[name='notes']");
+        noteInputs.forEach((input) => {
+          if (document.activeElement !== input) input.value = entryStats.notes || "";
+        });
+
+        const bsInputs = rowEl.querySelectorAll("input[name='backsight']");
+        bsInputs.forEach((input) => {
+          if (document.activeElement !== input)
+            input.value = entryStats.backsight || "";
+        });
+
+        const fsInputs = rowEl.querySelectorAll("input[name='foresight']");
+        fsInputs.forEach((input) => {
+          if (document.activeElement !== input)
+            input.value = entryStats.foresight || "";
+        });
+
+        const computedCells = rowEl.querySelectorAll("td.computed");
+        const [riseFallEl, elevationEl, sumBsEl, sumFsEl, closureEl] = computedCells;
+        if (riseFallEl)
+          riseFallEl.textContent = this.formatLevelNumber(entryStats.riseFall);
+        if (elevationEl)
+          elevationEl.textContent = this.formatLevelNumber(entryStats.elevation);
+        if (sumBsEl) sumBsEl.textContent = this.formatLevelNumber(entryStats.sumBs);
+        if (sumFsEl) sumFsEl.textContent = this.formatLevelNumber(entryStats.sumFs);
+        if (closureEl)
+          closureEl.textContent = this.formatLevelNumber(entryStats.closure);
+      });
+    });
+
+    if (this.elements.levelTotalBs)
+      this.elements.levelTotalBs.textContent = this.formatLevelNumber(stats.totalBs);
+    if (this.elements.levelTotalFs)
+      this.elements.levelTotalFs.textContent = this.formatLevelNumber(stats.totalFs);
+    if (this.elements.levelMisclosure)
+      this.elements.levelMisclosure.textContent = this.formatLevelNumber(stats.misclosure);
+    if (this.elements.levelClosureNote) {
+      if (!stats.hasClosing) {
+        this.elements.levelClosureNote.textContent = "Add a closing elevation to see error.";
+      } else {
+        this.elements.levelClosureNote.textContent = "Closing error (computed).";
+      }
+    }
+  }
+
+  getDisplayPointLabel({ run, entry, index, total }) {
+    const defaultLabel = `Point ${index + 1}`;
+    if (index === 0 && run.startPoint) return run.startPoint;
+    if (index === total - 1 && run.closingPoint) return run.closingPoint;
+    return entry?.point || defaultLabel;
+  }
+
   exportLevelRun() {
     const run = this.getCurrentLevelRun();
     if (!run) {
@@ -290,7 +373,7 @@ export default class LevelingController {
         (row, idx) =>
           `<tr>
         <td>${idx + 1}</td>
-        <td>${this.escapeHtml(row.point || "")}</td>
+        <td>${this.escapeHtml(row.displayPoint || "")}</td>
         <td>${this.formatLevelNumber(row.backsight)}</td>
         <td>${this.formatLevelNumber(row.foresight)}</td>
         <td>${this.escapeHtml(row.notes || "")}</td>

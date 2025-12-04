@@ -1237,6 +1237,11 @@ body {
         box-sizing: border-box;
       }
 
+      .leveling-table {
+        width: 100%;
+        table-layout: auto;
+      }
+
       .leveling-table td {
         vertical-align: top;
       }
@@ -1244,6 +1249,62 @@ body {
       .leveling-table .computed {
         color: #0f172a;
         font-weight: 600;
+      }
+
+      .leveling-table .notes-desktop {
+        min-width: 180px;
+      }
+
+      .leveling-table .row-actions {
+        width: 72px;
+        text-align: center;
+        white-space: nowrap;
+      }
+
+      .leveling-table .row-actions button {
+        width: 100%;
+      }
+
+      .note-mobile-row {
+        display: none;
+      }
+
+      .note-mobile-row td {
+        background: #f8fafc;
+      }
+
+      .note-mobile-label {
+        display: block;
+        font-size: 12px;
+        color: #475569;
+        margin-bottom: 4px;
+      }
+
+      .note-input {
+        width: 100%;
+      }
+
+      @media (max-width: 720px) {
+        .leveling-table th:nth-child(4),
+        .leveling-table td.notes-desktop {
+          display: none;
+        }
+
+        .note-mobile-row {
+          display: table-row;
+        }
+
+        .note-mobile-row td {
+          padding: 10px;
+          border-top: 0;
+          border-left: 1px solid #cbd5e1;
+          border-right: 1px solid #cbd5e1;
+          border-bottom: 1px solid #cbd5e1;
+        }
+
+        .level-row td {
+          padding: 10px;
+        }
       }
 
       .leveling-actions {
