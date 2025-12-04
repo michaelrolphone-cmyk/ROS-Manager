@@ -1,0 +1,1182 @@
+import ProjectRepository from "../services/ProjectRepository.js";
+import Project from "../models/Project.js";
+import Record from "../models/Record.js";
+import Call from "../models/Call.js";
+
+export default class AppController {
+  constructor() {
+    this.STORAGE_KEY = "carlsonSurveyProjects";
+    this.repository = new ProjectRepository(this.STORAGE_KEY);
+    this.projects = this.repository.loadProjects();
+    this.currentProjectId = null;
+    this.currentRecordId = null;
+    this.commandTexts = {
+      createPoint: "",
+      occupyPoint: "",
+      drawPoints: "",
+      drawLines: "",
+    };
+
+    this.cacheDom();
+    this.bindStaticEvents();
+    this.initialize();
+  }
+
+  cacheDom() {
+    this.elements = {
+      projectSelect: document.getElementById("projectSelect"),
+      projectDropdownContainer: document.getElementById(
+        "projectDropdownContainer"
+      ),
+      projectDropdownToggle: document.getElementById("projectDropdownToggle"),
+      projectDropdownMenu: document.getElementById("projectDropdownMenu"),
+      projectDropdownLabel: document.getElementById("projectDropdownLabel"),
+      projectNameInput: document.getElementById("projectNameInput"),
+      currentProjectName: document.getElementById("currentProjectName"),
+      recordNameInput: document.getElementById("recordNameInput"),
+      recordList: document.getElementById("recordList"),
+      editor: document.getElementById("editor"),
+      currentRecordName: document.getElementById("currentRecordName"),
+      startPtNum: document.getElementById("startPtNum"),
+      northing: document.getElementById("northing"),
+      easting: document.getElementById("easting"),
+      elevation: document.getElementById("elevation"),
+      bsAzimuth: document.getElementById("bsAzimuth"),
+      basis: document.getElementById("basis"),
+      firstDist: document.getElementById("firstDist"),
+      callsTableBody: document.querySelector("#callsTable tbody"),
+      traverseCanvas: document.getElementById("traverseCanvas"),
+      projectOverviewCanvas: document.getElementById("projectOverviewCanvas"),
+      importFileInput: document.getElementById("importFileInput"),
+      startFromDropdownContainer: document.getElementById(
+        "startFromDropdownContainer"
+      ),
+      startFromDropdownToggle: document.getElementById(
+        "startFromDropdownToggle"
+      ),
+      startFromDropdownMenu: document.getElementById("startFromDropdownMenu"),
+      startFromDropdownLabel: document.getElementById("startFromDropdownLabel"),
+      addCallButton: document.getElementById("addCallButton"),
+      generateCommandsButton: document.getElementById("generateCommandsButton"),
+      deleteRecordButton: document.getElementById("deleteRecordButton"),
+    };
+  }
+
+  bindStaticEvents() {
+    document
+      .getElementById("newProjectButton")
+      ?.addEventListener("click", () => this.newProject());
+    document
+      .getElementById("createProjectButton")
+      ?.addEventListener("click", () => this.createProject());
+    document
+      .getElementById("deleteProjectButton")
+      ?.addEventListener("click", () => this.deleteCurrentProject());
+    document
+      .getElementById("exportCurrentButton")
+      ?.addEventListener("click", () => this.exportCurrentProject());
+    document
+      .getElementById("exportAllButton")
+      ?.addEventListener("click", () => this.exportAllProjects());
+    document
+      .getElementById("importButton")
+      ?.addEventListener("click", () => this.triggerImport());
+    document
+      .getElementById("createRecordButton")
+      ?.addEventListener("click", () => this.createRecord());
+
+    this.elements.projectDropdownToggle?.addEventListener("click", () =>
+      this.toggleProjectDropdown()
+    );
+
+    this.elements.projectSelect?.addEventListener("change", (e) =>
+      this.loadProject(e.target.value)
+    );
+
+    this.elements.startFromDropdownToggle?.addEventListener("click", () =>
+      this.toggleStartFromDropdown()
+    );
+
+    if (this.elements.importFileInput) {
+      this.elements.importFileInput.addEventListener("change", (e) =>
+        this.handleImportFile(e.target)
+      );
+    }
+
+    this.elements.recordNameInput?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        this.createRecord();
+      }
+    });
+
+    this.elements.projectNameInput?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        this.createProject();
+      }
+    });
+
+    [
+      this.elements.startPtNum,
+      this.elements.northing,
+      this.elements.easting,
+      this.elements.elevation,
+      this.elements.bsAzimuth,
+    ].forEach((el) => {
+      el?.addEventListener("input", () => this.saveCurrentRecord());
+    });
+
+    [this.elements.basis, this.elements.firstDist].forEach((el) => {
+      el?.addEventListener("input", () => {
+        this.saveCurrentRecord();
+        this.generateCommands();
+      });
+    });
+
+    this.elements.addCallButton?.addEventListener("click", () =>
+      this.addCallRow()
+    );
+
+    this.elements.generateCommandsButton?.addEventListener("click", () =>
+      this.generateCommands()
+    );
+
+    this.elements.deleteRecordButton?.addEventListener("click", () =>
+      this.deleteCurrentRecord()
+    );
+
+    const commandGrid = document.querySelector(".command-grid");
+    commandGrid?.addEventListener("click", (evt) => this.handleCommandGrid(evt));
+
+    window.addEventListener("resize", () => this.handleResize());
+  }
+
+  initialize() {
+    this.updateProjectList();
+    const projectIds = Object.keys(this.projects);
+    if (projectIds.length > 0) {
+      this.loadProject(projectIds[0]);
+    } else {
+      this.drawProjectOverview();
+    }
+  }
+
+  saveProjects() {
+    this.repository.saveProjects(this.projects);
+  }
+
+  /* ===================== Export / Import ===================== */
+  exportCurrentProject() {
+    if (!this.currentProjectId || !this.projects[this.currentProjectId]) {
+      alert("No current project to export.");
+      return;
+    }
+    const proj = this.projects[this.currentProjectId];
+    const payload = {
+      type: "CarlsonSurveyManagerProjects",
+      version: 1,
+      projects: {
+        [this.currentProjectId]: proj.toObject(),
+      },
+    };
+    this.downloadJson(
+      payload,
+      `carlson-${(proj.name || "project").replace(/[^\w\-]+/g, "_")}.json`
+    );
+  }
+
+  exportAllProjects() {
+    if (!this.projects || Object.keys(this.projects).length === 0) {
+      alert("No projects to export.");
+      return;
+    }
+    const payload = {
+      type: "CarlsonSurveyManagerProjects",
+      version: 1,
+      projects: this.serializeProjects(),
+    };
+    this.downloadJson(payload, "carlson-all-projects.json");
+  }
+
+  downloadJson(payload, filename) {
+    const json = JSON.stringify(payload, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  triggerImport() {
+    if (this.elements.importFileInput) {
+      this.elements.importFileInput.value = "";
+      this.elements.importFileInput.click();
+    }
+  }
+
+  handleImportFile(input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (!data.projects || typeof data.projects !== "object") {
+          throw new Error("Invalid import file");
+        }
+        Object.entries(data.projects).forEach(([id, proj]) => {
+          this.projects[id] = Project.fromObject(proj);
+        });
+        this.saveProjects();
+        this.updateProjectList();
+        if (Object.keys(data.projects).length > 0) {
+          const firstId = Object.keys(data.projects)[0];
+          this.loadProject(firstId);
+        }
+        alert("Import successful!");
+      } catch (err) {
+        alert("Import failed: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  /* ===================== Projects & Records ===================== */
+  loadProject(id) {
+    if (!id || !this.projects[id]) {
+      this.currentProjectId = null;
+      this.currentRecordId = null;
+      this.elements.currentProjectName.textContent = "No project selected";
+      this.elements.editor.style.display = "none";
+      this.renderRecordList();
+      this.updateProjectList();
+      this.drawProjectOverview();
+      return;
+    }
+    this.currentProjectId = id;
+    this.currentRecordId = null;
+    this.elements.currentProjectName.textContent = this.projects[id].name;
+    this.elements.editor.style.display = "none";
+    this.renderRecordList();
+    this.updateProjectList();
+    this.drawProjectOverview();
+  }
+
+  newProject() {
+    const name = prompt("Project Name:");
+    if (!name) return;
+    const id = Date.now().toString();
+    this.projects[id] = new Project({ name, records: {} });
+    this.saveProjects();
+    this.loadProject(id);
+  }
+
+  createProject() {
+    const input = this.elements.projectNameInput;
+    const name = (input?.value || "").trim();
+    if (!name) return alert("Enter a project name");
+    const id = Date.now().toString();
+    this.projects[id] = new Project({ name, records: {} });
+    this.saveProjects();
+    if (input) input.value = "";
+    this.loadProject(id);
+  }
+
+  deleteCurrentProject() {
+    if (!this.currentProjectId || !confirm("Delete entire project and all records?"))
+      return;
+    delete this.projects[this.currentProjectId];
+    this.saveProjects();
+    this.currentProjectId = null;
+    this.currentRecordId = null;
+    this.elements.currentProjectName.textContent = "No project selected";
+    this.elements.editor.style.display = "none";
+    this.renderRecordList();
+    this.updateProjectList();
+    this.drawProjectOverview();
+  }
+
+  renderRecordList() {
+    const container = this.elements.recordList;
+    if (!this.currentProjectId || !this.projects[this.currentProjectId]) {
+      container.innerHTML = "<p>Select or create a project first.</p>";
+      return;
+    }
+    const records = this.projects[this.currentProjectId].records || {};
+    if (Object.keys(records).length === 0) {
+      container.innerHTML = "<p>No records yet. Create one above.</p>";
+      this.drawProjectOverview();
+      return;
+    }
+    container.innerHTML = "";
+    Object.keys(records).forEach((id) => {
+      const record = records[id];
+      const div = document.createElement("div");
+      div.className = "record-item";
+      if (id === this.currentRecordId) div.classList.add("active");
+
+      const titleSpan = document.createElement("span");
+      titleSpan.className = "record-title";
+      titleSpan.textContent = record.name;
+
+      const canvasWrapper = document.createElement("div");
+      canvasWrapper.className = "record-canvas";
+      const miniCanvas = document.createElement("canvas");
+      miniCanvas.width = 80;
+      miniCanvas.height = 80;
+      canvasWrapper.appendChild(miniCanvas);
+
+      div.appendChild(titleSpan);
+      div.appendChild(canvasWrapper);
+
+      div.addEventListener("click", () => this.loadRecord(id));
+      container.appendChild(div);
+
+      try {
+        const pts = this.computeTraversePointsForRecord(
+          this.currentProjectId,
+          id
+        );
+        this.drawTraversePreview(miniCanvas, pts);
+      } catch (e) {
+        // ignore icon errors
+      }
+    });
+
+    this.drawProjectOverview();
+  }
+
+  createRecord() {
+    if (!this.currentProjectId || !this.projects[this.currentProjectId])
+      return alert("Select a project first");
+    const name = (this.elements.recordNameInput?.value || "").trim();
+    if (!name) return alert("Enter a record name");
+    const id = Date.now().toString();
+    const newRecord = new Record({ name, calls: [], startFromRecordId: null });
+    this.projects[this.currentProjectId].records[id] = newRecord;
+    if (this.elements.recordNameInput) this.elements.recordNameInput.value = "";
+    this.saveProjects();
+    this.loadRecord(id);
+    this.renderRecordList();
+    this.updateProjectList();
+  }
+
+  loadRecord(id) {
+    this.currentRecordId = id;
+    const record = this.projects[this.currentProjectId].records[id];
+    this.elements.currentRecordName.textContent = record.name;
+    this.elements.startPtNum.value = record.startPtNum || "1";
+    this.elements.northing.value = record.northing || "5000";
+    this.elements.easting.value = record.easting || "5000";
+    this.elements.elevation.value = record.elevation || "0";
+    this.elements.bsAzimuth.value = record.bsAzimuth || "0.0000";
+    this.elements.basis.value = record.basis || "";
+    this.elements.firstDist.value = record.firstDist || "";
+    this.elements.editor.style.display = "block";
+
+    const tbody = this.elements.callsTableBody;
+    tbody.innerHTML = "";
+    (record.calls || []).forEach((call, i) =>
+      this.addCallRow(call.bearing, call.distance, i + 2)
+    );
+
+    this.updateStartFromDropdownUI();
+    this.updateAllBearingArrows();
+    this.renderRecordList();
+    this.generateCommands();
+  }
+
+  saveCurrentRecord() {
+    if (!this.currentRecordId) return;
+    const record = this.projects[this.currentProjectId].records[
+      this.currentRecordId
+    ];
+    record.startPtNum = this.elements.startPtNum.value.trim();
+    record.northing = this.elements.northing.value.trim();
+    record.easting = this.elements.easting.value.trim();
+    record.elevation = this.elements.elevation.value.trim();
+    record.bsAzimuth = this.elements.bsAzimuth.value.trim();
+    record.basis = this.elements.basis.value.trim();
+    record.firstDist = this.elements.firstDist.value.trim();
+
+    record.calls = [];
+    this.elements.callsTableBody.querySelectorAll("tr").forEach((tr) => {
+      const bearing = tr.querySelector(".bearing").value.trim();
+      const dist = tr.querySelector(".distance").value.trim();
+      if (bearing || dist) {
+        record.calls.push(new Call(bearing, dist));
+      }
+    });
+
+    this.saveProjects();
+  }
+
+  deleteCurrentRecord() {
+    if (!this.currentRecordId || !confirm("Delete this record?")) return;
+    delete this.projects[this.currentProjectId].records[this.currentRecordId];
+    this.saveProjects();
+    this.currentRecordId = null;
+    this.elements.editor.style.display = "none";
+    this.renderRecordList();
+    this.updateProjectList();
+  }
+
+  /* ===================== Calls table & bearings ===================== */
+  addCallRow(bearing = "", dist = "", num = null) {
+    const tbody = this.elements.callsTableBody;
+    const tr = document.createElement("tr");
+    const n = num || tbody.children.length + 2;
+
+    const numTd = document.createElement("td");
+    numTd.textContent = n;
+
+    const bearingTd = document.createElement("td");
+    const bearingCell = document.createElement("div");
+    bearingCell.className = "bearing-cell";
+    const bearingInput = document.createElement("input");
+    bearingInput.type = "text";
+    bearingInput.className = "bearing";
+    bearingInput.value = bearing;
+    bearingInput.placeholder = "S 12°34'56\"E";
+    bearingInput.addEventListener("input", () => {
+      this.updateBearingArrow(bearingInput);
+      this.saveCurrentRecord();
+      this.generateCommands();
+    });
+    const arrowSpan = document.createElement("span");
+    arrowSpan.className = "bearing-arrow";
+    arrowSpan.innerHTML =
+      '<svg viewBox="0 0 24 24"><path d="M12 4 L6 14 H18 Z" fill="#1e40af"></path></svg>';
+    bearingCell.appendChild(bearingInput);
+    bearingCell.appendChild(arrowSpan);
+    bearingTd.appendChild(bearingCell);
+
+    const distTd = document.createElement("td");
+    distTd.colSpan = 2;
+    const distanceRow = document.createElement("div");
+    distanceRow.className = "distance-row";
+    const distanceInput = document.createElement("input");
+    distanceInput.type = "text";
+    distanceInput.className = "distance";
+    distanceInput.placeholder = "120.50";
+    distanceInput.value = dist;
+    distanceInput.addEventListener("input", () => {
+      this.saveCurrentRecord();
+      this.generateCommands();
+    });
+    const rowControls = document.createElement("div");
+    rowControls.className = "row-controls";
+
+    const moveUp = document.createElement("button");
+    moveUp.type = "button";
+    moveUp.textContent = "↑";
+    moveUp.addEventListener("click", () => this.moveRow(tr, -1));
+
+    const moveDown = document.createElement("button");
+    moveDown.type = "button";
+    moveDown.textContent = "↓";
+    moveDown.addEventListener("click", () => this.moveRow(tr, 1));
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.textContent = "✕";
+    remove.addEventListener("click", () => this.removeRow(tr));
+
+    rowControls.append(moveUp, moveDown, remove);
+    distanceRow.append(distanceInput, rowControls);
+    distTd.appendChild(distanceRow);
+
+    tr.append(numTd, bearingTd, distTd);
+    tbody.appendChild(tr);
+
+    this.updateBearingArrow(bearingInput);
+  }
+
+  moveRow(row, direction) {
+    const tbody = this.elements.callsTableBody;
+    const index = Array.from(tbody.children).indexOf(row);
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= tbody.children.length) return;
+    const reference = tbody.children[newIndex];
+    if (direction > 0) {
+      reference.after(row);
+    } else {
+      reference.before(row);
+    }
+    this.reindexRows();
+    this.saveCurrentRecord();
+    this.generateCommands();
+  }
+
+  removeRow(row) {
+    row.remove();
+    this.reindexRows();
+    this.saveCurrentRecord();
+    this.generateCommands();
+  }
+
+  reindexRows() {
+    this.elements.callsTableBody.querySelectorAll("tr").forEach((tr, idx) => {
+      const firstCell = tr.querySelector("td");
+      if (firstCell) firstCell.textContent = idx + 2;
+    });
+  }
+
+  parseBearing(bearing) {
+    if (!bearing.trim()) return null;
+    let s = bearing
+      .toUpperCase()
+      .replace(/[^NSEW0-9°'"-]/g, "")
+      .replace(/DEG|°/g, "-")
+      .replace(/'|′/g, "-")
+      .replace(/"/g, "");
+
+    let quadrant, angleStr;
+    if (s.startsWith("N") && s.includes("E")) {
+      quadrant = 1;
+      angleStr = s.slice(1, s.indexOf("E"));
+    } else if (s.startsWith("S") && s.includes("E")) {
+      quadrant = 2;
+      angleStr = s.slice(1, s.indexOf("E"));
+    } else if (s.startsWith("S") && s.includes("W")) {
+      quadrant = 3;
+      angleStr = s.slice(1, s.indexOf("W"));
+    } else if (s.startsWith("N") && s.includes("W")) {
+      quadrant = 4;
+      angleStr = s.slice(1, s.indexOf("W"));
+    } else throw new Error("Invalid bearing: " + bearing);
+
+    const parts = angleStr
+      .split("-")
+      .map((p) => p.trim())
+      .filter(Boolean);
+    const d = parseInt(parts[0] || 0, 10);
+    const m = parseInt(parts[1] || 0, 10);
+    const sec = parseInt(parts[2] || 0, 10);
+
+    if (m >= 60 || sec >= 60 || d > 90) throw new Error("Invalid DMS");
+
+    const mmss = ("00" + m).slice(-2) + ("00" + sec).slice(-2);
+    const formatted = d + "." + mmss;
+
+    const angleDegrees = d + m / 60 + sec / 3600;
+    return { quadrant, formatted, angleDegrees };
+  }
+
+  getAllCalls(record) {
+    const allCalls = [];
+    if (record.basis && record.firstDist) {
+      allCalls.push({ bearing: record.basis, distance: record.firstDist });
+    }
+    (record.calls || []).forEach((c) => {
+      if (c.bearing && c.distance) allCalls.push(c);
+    });
+    return allCalls;
+  }
+
+  setCommandText(group, text) {
+    this.commandTexts[group] = text || "";
+    const previewEl = document.getElementById(`preview-${group}`);
+    const fullEl = document.getElementById(`full-${group}`);
+    if (previewEl) previewEl.textContent = text || "(empty)";
+    if (fullEl) fullEl.value = text || "";
+  }
+
+  copyGroup(group) {
+    const text = this.commandTexts[group] || "";
+    navigator.clipboard
+      .writeText(text)
+      .then(() => alert(`Copied ${group} commands!`))
+      .catch(() => alert("Copy failed"));
+  }
+
+  toggleExpand(group) {
+    const card = document.querySelector(
+      `.command-card[data-group="${group}"]`
+    );
+    if (!card) return;
+    card.classList.toggle("expanded");
+  }
+
+  fitCanvasToDisplaySize(canvas) {
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const width = Math.max(1, Math.floor(rect.width || 0));
+    const height = Math.max(1, Math.floor(rect.height || 0));
+    if (width && height && (canvas.width !== width || canvas.height !== height)) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+  }
+
+  /* ===================== Traverse geometry & drawing ===================== */
+  computeTraversePointsForRecord(projectId, recordId, memo = {}, visiting = {}) {
+    const project = this.projects[projectId];
+    if (!project) return [];
+    const records = project.records || {};
+    const record = records[recordId];
+    if (!record) return [];
+
+    if (memo[recordId]) return memo[recordId];
+    if (visiting[recordId]) {
+      const startE = parseFloat(record.easting) || 0;
+      const startN = parseFloat(record.northing) || 0;
+      const pts = [{ x: startE, y: startN }];
+      memo[recordId] = pts;
+      return pts;
+    }
+    visiting[recordId] = true;
+
+    let startX;
+    let startY;
+    const linkId = record.startFromRecordId;
+    if (linkId && records[linkId]) {
+      const prevPts = this.computeTraversePointsForRecord(
+        projectId,
+        linkId,
+        memo,
+        visiting
+      );
+      if (prevPts && prevPts.length > 0) {
+        const last = prevPts[prevPts.length - 1];
+        startX = last.x;
+        startY = last.y;
+      }
+    }
+    if (startX === undefined || startY === undefined) {
+      startX = parseFloat(record.easting) || 0;
+      startY = parseFloat(record.northing) || 0;
+    }
+
+    const pts = [{ x: startX, y: startY }];
+    let currentE = startX;
+    let currentN = startY;
+
+    const allCalls = this.getAllCalls(record);
+    allCalls.forEach((call) => {
+      const parsed = this.parseBearing(call.bearing);
+      if (!parsed) return;
+      const dist = parseFloat(call.distance) || 0;
+      const theta = ((parsed.angleDegrees || 0) * Math.PI) / 180;
+      const sinT = Math.sin(theta);
+      const cosT = Math.cos(theta);
+
+      let dE = 0;
+      let dN = 0;
+      switch (parsed.quadrant) {
+        case 1:
+          dE = dist * sinT;
+          dN = dist * cosT;
+          break;
+        case 2:
+          dE = dist * sinT;
+          dN = -dist * cosT;
+          break;
+        case 3:
+          dE = -dist * sinT;
+          dN = -dist * cosT;
+          break;
+        case 4:
+          dE = -dist * sinT;
+          dN = dist * cosT;
+          break;
+      }
+
+      currentE += dE;
+      currentN += dN;
+      pts.push({ x: currentE, y: currentN });
+    });
+
+    memo[recordId] = pts;
+    delete visiting[recordId];
+    return pts;
+  }
+
+  drawTraversePreview(canvas, points) {
+    if (!canvas) return;
+    this.fitCanvasToDisplaySize(canvas);
+    const ctx = canvas.getContext("2d");
+    const { width, height } = canvas;
+    ctx.clearRect(0, 0, width, height);
+    if (!points || points.length === 0) return;
+
+    if (points.length === 1) {
+      ctx.fillStyle = "#1e40af";
+      ctx.beginPath();
+      ctx.arc(width / 2, height / 2, 3, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
+
+    let minX = points[0].x,
+      maxX = points[0].x;
+    let minY = points[0].y,
+      maxY = points[0].y;
+    points.forEach((p) => {
+      if (p.x < minX) minX = p.x;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.y > maxY) maxY = p.y;
+    });
+
+    const padding = 10;
+    let dx = maxX - minX;
+    let dy = maxY - minY;
+    if (dx === 0) dx = 1;
+    if (dy === 0) dy = 1;
+
+    const scaleX = (width - 2 * padding) / dx;
+    const scaleY = (height - 2 * padding) / dy;
+    const scale = Math.min(scaleX, scaleY);
+
+    const toCanvas = (p) => {
+      const x = padding + (p.x - minX) * scale;
+      const y = height - padding - (p.y - minY) * scale;
+      return { x, y };
+    };
+
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#1e40af";
+    ctx.beginPath();
+    const first = toCanvas(points[0]);
+    ctx.moveTo(first.x, first.y);
+    for (let i = 1; i < points.length; i++) {
+      const c = toCanvas(points[i]);
+      ctx.lineTo(c.x, c.y);
+    }
+    ctx.stroke();
+
+    ctx.fillStyle = "#16a34a";
+    const start = toCanvas(points[0]);
+    ctx.beginPath();
+    ctx.arc(start.x, start.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#dc2626";
+    const end = toCanvas(points[points.length - 1]);
+    ctx.beginPath();
+    ctx.arc(end.x, end.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  drawProjectCompositeOnCanvas(projectId, canvas, small = false) {
+    if (!canvas) return;
+    this.fitCanvasToDisplaySize(canvas);
+    const ctx = canvas.getContext("2d");
+    const { width, height } = canvas;
+    ctx.clearRect(0, 0, width, height);
+
+    if (!projectId || !this.projects[projectId]) return;
+    const records = this.projects[projectId].records || {};
+    const recordIds = Object.keys(records);
+    if (recordIds.length === 0) return;
+
+    const polylines = [];
+    let allPts = [];
+    const memo = {};
+    const visiting = {};
+
+    recordIds.forEach((rid) => {
+      const pts = this.computeTraversePointsForRecord(
+        projectId,
+        rid,
+        memo,
+        visiting
+      );
+      if (pts && pts.length > 0) {
+        polylines.push({ id: rid, points: pts });
+        allPts = allPts.concat(pts);
+      }
+    });
+
+    if (allPts.length === 0) return;
+
+    let minX = allPts[0].x,
+      maxX = allPts[0].x;
+    let minY = allPts[0].y,
+      maxY = allPts[0].y;
+    allPts.forEach((p) => {
+      if (p.x < minX) minX = p.x;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.y > maxY) maxY = p.y;
+    });
+
+    const padding = small ? 4 : 20;
+    let dx = maxX - minX;
+    let dy = maxY - minY;
+    if (dx === 0) dx = 1;
+    if (dy === 0) dy = 1;
+
+    const scaleX = (width - 2 * padding) / dx;
+    const scaleY = (height - 2 * padding) / dy;
+    const scale = Math.min(scaleX, scaleY);
+
+    const toCanvas = (p) => {
+      const x = padding + (p.x - minX) * scale;
+      const y = height - padding - (p.y - minY) * scale;
+      return { x, y };
+    };
+
+    const colors = [
+      "#1e40af",
+      "#16a34a",
+      "#dc2626",
+      "#f97316",
+      "#0f766e",
+      "#7c3aed",
+    ];
+
+    polylines.forEach((poly, idx) => {
+      const pts = poly.points;
+      if (pts.length === 0) return;
+
+      const color = colors[idx % colors.length];
+      ctx.lineWidth = small ? 1 : 2;
+      ctx.strokeStyle = color;
+
+      ctx.beginPath();
+      const first = toCanvas(pts[0]);
+      ctx.moveTo(first.x, first.y);
+      for (let i = 1; i < pts.length; i++) {
+        const c = toCanvas(pts[i]);
+        ctx.lineTo(c.x, c.y);
+      }
+      ctx.stroke();
+
+      const start = toCanvas(pts[0]);
+      const end = toCanvas(pts[pts.length - 1]);
+      ctx.fillStyle = color;
+
+      ctx.beginPath();
+      ctx.arc(start.x, start.y, small ? 2 : 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(end.x, end.y, small ? 2 : 3, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  drawProjectOverview() {
+    const canvas = this.elements.projectOverviewCanvas;
+    if (!canvas) return;
+    if (!this.currentProjectId) {
+      this.fitCanvasToDisplaySize(canvas);
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      return;
+    }
+    this.drawProjectCompositeOnCanvas(this.currentProjectId, canvas);
+  }
+
+  updateBearingArrow(input) {
+    const svg = input
+      ?.closest(".bearing-cell")
+      ?.querySelector(".bearing-arrow svg");
+    if (!svg) return;
+    const bearing = input.value || "";
+    try {
+      const parsed = this.parseBearing(bearing);
+      if (!parsed) throw new Error("Invalid");
+      const { quadrant, angleDegrees } = parsed;
+      let az = 0;
+      const angle = angleDegrees || 0;
+      switch (quadrant) {
+        case 1:
+          az = angle;
+          break;
+        case 2:
+          az = 180 - angle;
+          break;
+        case 3:
+          az = 180 + angle;
+          break;
+        case 4:
+          az = 360 - angle;
+          break;
+      }
+      svg.style.opacity = 1;
+      svg.style.transform = `rotate(${az}deg)`;
+    } catch (e) {
+      svg.style.opacity = 0.3;
+      svg.style.transform = "rotate(0deg)";
+    }
+  }
+
+  updateAllBearingArrows() {
+    this.elements.callsTableBody
+      .querySelectorAll(".bearing")
+      .forEach((input) => this.updateBearingArrow(input));
+  }
+
+  /* ===================== Commands generation ===================== */
+  generateCommands() {
+    if (!this.currentRecordId) return;
+    this.saveCurrentRecord();
+    const record = this.projects[this.currentProjectId].records[
+      this.currentRecordId
+    ];
+
+    try {
+      let createPointText = "";
+      createPointText += "EA\n";
+      createPointText += `${record.northing}\n`;
+      createPointText += `${record.easting}\n`;
+      createPointText += `${record.elevation}\n\n`;
+      this.setCommandText("createPoint", createPointText);
+
+      let occupyPointText = "";
+      occupyPointText += "OCCPOINT\n";
+      occupyPointText += `${record.startPtNum}\n`;
+      occupyPointText += "N\n\n\n\n";
+      this.setCommandText("occupyPoint", occupyPointText);
+
+      const allCalls = this.getAllCalls(record);
+
+      let drawPointsText = "";
+      if (allCalls.length === 0) {
+        drawPointsText = "(No traverse calls entered)\n";
+      } else {
+        drawPointsText += "T\n";
+        allCalls.forEach((call) => {
+          const parsed = this.parseBearing(call.bearing);
+          drawPointsText += `${parsed.quadrant}\n`;
+          drawPointsText += `${parsed.formatted}\n`;
+          drawPointsText += `${call.distance}\n`;
+          drawPointsText += "0\n";
+        });
+        drawPointsText += "E\n";
+      }
+      this.setCommandText("drawPoints", drawPointsText);
+
+      let drawLinesText = "";
+      if (allCalls.length === 0) {
+        drawLinesText = "(No traverse calls entered)\n";
+      } else {
+        drawLinesText += "L\n";
+        drawLinesText += "P\n";
+        drawLinesText += "1\n";
+        allCalls.forEach((call) => {
+          const parsed = this.parseBearing(call.bearing);
+          drawLinesText += "D\n";
+          drawLinesText += "F\n";
+          drawLinesText += `${call.distance}\n`;
+          drawLinesText += "A\n";
+          drawLinesText += `${parsed.quadrant}\n`;
+          drawLinesText += `${parsed.formatted}\n`;
+        });
+        drawLinesText += "Q\n";
+      }
+      this.setCommandText("drawLines", drawLinesText);
+
+      const pts = this.computeTraversePointsForRecord(
+        this.currentProjectId,
+        this.currentRecordId
+      );
+      this.drawTraversePreview(this.elements.traverseCanvas, pts);
+
+      this.updateAllBearingArrows();
+      this.renderRecordList();
+      this.updateProjectList();
+      this.drawProjectOverview();
+    } catch (e) {
+      this.setCommandText("createPoint", "Error: " + e.message);
+      this.setCommandText("occupyPoint", "");
+      this.setCommandText("drawPoints", "");
+      this.setCommandText("drawLines", "");
+      const canvas = this.elements.traverseCanvas;
+      if (canvas) {
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+  }
+
+  handleResize() {
+    this.drawProjectOverview();
+    if (this.currentProjectId && this.currentRecordId) {
+      const pts = this.computeTraversePointsForRecord(
+        this.currentProjectId,
+        this.currentRecordId
+      );
+      this.drawTraversePreview(this.elements.traverseCanvas, pts);
+    }
+  }
+
+  /* ===================== Dropdowns ===================== */
+  toggleProjectDropdown() {
+    this.elements.projectDropdownContainer.classList.toggle("open");
+    this.updateProjectList();
+  }
+
+  closeProjectDropdown() {
+    this.elements.projectDropdownContainer.classList.remove("open");
+  }
+
+  updateProjectList() {
+    const select = this.elements.projectSelect;
+    const dropdownMenu = this.elements.projectDropdownMenu;
+    if (!select || !dropdownMenu) return;
+
+    select.innerHTML = "";
+    dropdownMenu.innerHTML = "";
+
+    Object.entries(this.projects).forEach(([id, proj]) => {
+      const opt = document.createElement("option");
+      opt.value = id;
+      opt.textContent = proj.name;
+      if (id === this.currentProjectId) opt.selected = true;
+      select.appendChild(opt);
+
+      const option = document.createElement("div");
+      option.className = "project-option";
+      if (id === this.currentProjectId) option.classList.add("active");
+
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "project-option-name";
+      nameSpan.textContent = proj.name;
+
+      const canvasWrapper = document.createElement("div");
+      canvasWrapper.className = "project-option-canvas";
+      const projCanvas = document.createElement("canvas");
+      projCanvas.width = 80;
+      projCanvas.height = 40;
+      canvasWrapper.appendChild(projCanvas);
+
+      option.appendChild(nameSpan);
+      option.appendChild(canvasWrapper);
+
+      option.addEventListener("click", () => {
+        this.loadProject(id);
+        this.closeProjectDropdown();
+      });
+
+      dropdownMenu.appendChild(option);
+
+      try {
+        this.drawProjectCompositeOnCanvas(id, projCanvas, true);
+      } catch (e) {
+        // ignore
+      }
+    });
+
+    const selected = this.currentProjectId
+      ? this.projects[this.currentProjectId]?.name
+      : "No project";
+    if (this.elements.projectDropdownLabel) {
+      this.elements.projectDropdownLabel.textContent = selected || "No project";
+    }
+  }
+
+  toggleStartFromDropdown() {
+    this.elements.startFromDropdownContainer.classList.toggle("open");
+    this.updateStartFromDropdownUI();
+  }
+
+  closeStartFromDropdown() {
+    this.elements.startFromDropdownContainer.classList.remove("open");
+  }
+
+  updateStartFromDropdownUI() {
+    const menu = this.elements.startFromDropdownMenu;
+    if (!menu) return;
+    menu.innerHTML = "";
+    if (!this.currentProjectId) return;
+
+    const records = this.projects[this.currentProjectId].records || {};
+    const recordIds = Object.keys(records);
+    if (recordIds.length === 0) return;
+
+    const noneOpt = document.createElement("div");
+    noneOpt.className = "start-option";
+    noneOpt.innerHTML = "<span class=\"start-option-name\">Manual Start</span>";
+    noneOpt.addEventListener("click", () => {
+      this.setStartFromRecord(null);
+      this.closeStartFromDropdown();
+    });
+    menu.appendChild(noneOpt);
+
+    recordIds.forEach((rid) => {
+      if (rid === this.currentRecordId) return;
+      const record = records[rid];
+      const opt = document.createElement("div");
+      opt.className = "start-option";
+      const name = document.createElement("span");
+      name.className = "start-option-name";
+      name.textContent = record.name;
+      const canvasWrapper = document.createElement("div");
+      canvasWrapper.className = "start-option-canvas";
+      const canvas = document.createElement("canvas");
+      canvas.width = 50;
+      canvas.height = 50;
+      canvasWrapper.appendChild(canvas);
+      opt.append(name, canvasWrapper);
+
+      opt.addEventListener("click", () => {
+        this.setStartFromRecord(rid);
+        this.closeStartFromDropdown();
+      });
+
+      menu.appendChild(opt);
+
+      try {
+        const pts = this.computeTraversePointsForRecord(
+          this.currentProjectId,
+          rid
+        );
+        this.drawTraversePreview(canvas, pts);
+      } catch (e) {
+        // ignore
+      }
+    });
+
+    const record = this.currentRecordId
+      ? this.projects[this.currentProjectId].records[this.currentRecordId]
+      : null;
+    const label = record?.startFromRecordId
+      ? records[record.startFromRecordId]?.name || "Linked Start"
+      : "Manual Start";
+    if (this.elements.startFromDropdownLabel) {
+      this.elements.startFromDropdownLabel.textContent = label;
+    }
+  }
+
+  setStartFromRecord(recordId) {
+    if (!this.currentRecordId) return;
+    const record = this.projects[this.currentProjectId].records[
+      this.currentRecordId
+    ];
+    record.startFromRecordId = recordId;
+    this.saveProjects();
+    this.updateStartFromDropdownUI();
+    this.generateCommands();
+  }
+
+  /* ===================== Misc helpers ===================== */
+  serializeProjects() {
+    const obj = {};
+    Object.entries(this.projects).forEach(([id, proj]) => {
+      obj[id] = proj.toObject();
+    });
+    return obj;
+  }
+
+  handleCommandGrid(evt) {
+    const target = evt.target;
+    const card = target.closest(".command-card");
+    if (!card) return;
+    const group = card.dataset.group;
+    if (target.tagName === "BUTTON") {
+      evt.stopPropagation();
+      this.copyGroup(group);
+      return;
+    }
+    this.toggleExpand(group);
+  }
+}
