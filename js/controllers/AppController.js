@@ -29,6 +29,7 @@ export default class AppController {
     this.currentEquipmentLocation = null;
 
     this.cacheDom();
+    this.appLaunchers = document.querySelectorAll(".app-tile");
     this.pointController = new PointController({
       elements: {
         pointImportButton: this.elements.pointImportButton,
@@ -61,6 +62,7 @@ export default class AppController {
       ),
       projectActionsToggle: document.getElementById("projectActionsToggle"),
       projectActionsMenu: document.getElementById("projectActionsMenu"),
+      homeButton: document.getElementById("homeButton"),
       projectControls: document.getElementById("projectControls"),
       projectNameInput: document.getElementById("projectNameInput"),
       currentProjectName: document.getElementById("currentProjectName"),
@@ -86,8 +88,6 @@ export default class AppController {
       pointFileSelect: document.getElementById("pointFileSelect"),
       newPointFileButton: document.getElementById("newPointFileButton"),
       downloadPointsButton: document.getElementById("downloadPointsButton"),
-      pointsTabButton: document.getElementById("pointsTabButton"),
-      pointsSection: document.getElementById("pointsSection"),
       startFromDropdownContainer: document.getElementById(
         "startFromDropdownContainer"
       ),
@@ -104,6 +104,8 @@ export default class AppController {
       pointsTabButton: document.getElementById("pointsTabButton"),
       evidenceTabButton: document.getElementById("evidenceTabButton"),
       equipmentTabButton: document.getElementById("equipmentTabButton"),
+      springboardSection: document.getElementById("springboardSection"),
+      navigationSection: document.getElementById("navigationSection"),
       traverseSection: document.getElementById("traverseSection"),
       pointsSection: document.getElementById("pointsSection"),
       evidenceSection: document.getElementById("evidenceSection"),
@@ -192,6 +194,16 @@ export default class AppController {
     this.elements.projectActionsToggle?.addEventListener("click", (e) => {
       e.stopPropagation();
       this.toggleProjectActionsMenu();
+    });
+
+    this.elements.homeButton?.addEventListener("click", () =>
+      this.switchTab("springboardSection")
+    );
+
+    this.appLaunchers?.forEach((launcher) => {
+      launcher.addEventListener("click", () =>
+        this.switchTab(launcher.dataset.target)
+      );
     });
 
     document.addEventListener("click", (e) => {
@@ -356,6 +368,7 @@ export default class AppController {
     this.refreshEvidenceUI();
     this.renderEvidenceTies();
     this.refreshEquipmentUI();
+    this.switchTab("springboardSection");
   }
 
   saveProjects() {
@@ -654,10 +667,12 @@ export default class AppController {
   /* ===================== Evidence Logger ===================== */
   switchTab(targetId) {
     const sections = [
+      this.elements.springboardSection,
       this.elements.traverseSection,
       this.elements.pointsSection,
       this.elements.evidenceSection,
       this.elements.equipmentSection,
+      this.elements.navigationSection,
     ];
     const buttons = [
       this.elements.traverseTabButton,
@@ -680,6 +695,17 @@ export default class AppController {
       if (btn.dataset.target === targetId) btn.classList.add("active");
       else btn.classList.remove("active");
     });
+
+    this.appLaunchers?.forEach((launcher) => {
+      if (launcher.dataset.target === targetId)
+        launcher.classList.add("active");
+      else launcher.classList.remove("active");
+    });
+
+    if (this.elements.homeButton) {
+      const showHome = targetId !== "springboardSection";
+      this.elements.homeButton.classList.toggle("visible", showHome);
+    }
 
     if (targetId === "evidenceSection") {
       this.refreshEvidenceUI();
