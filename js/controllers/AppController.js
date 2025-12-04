@@ -8,12 +8,17 @@ import CornerEvidenceService from "../services/CornerEvidenceService.js";
 import EquipmentLog from "../models/EquipmentLog.js";
 import PointController from "./PointController.js";
 import NavigationController from "./NavigationController.js";
+import GlobalSettingsService from "../services/GlobalSettingsService.js";
 
 export default class AppController {
   constructor() {
     this.STORAGE_KEY = "carlsonSurveyProjects";
     this.repository = new ProjectRepository(this.STORAGE_KEY);
+    this.globalSettingsService = new GlobalSettingsService(
+      "carlsonGlobalSettings"
+    );
     this.projects = this.repository.loadProjects();
+    this.globalSettings = this.globalSettingsService.load();
     this.currentProjectId = null;
     this.currentRecordId = null;
     this.commandTexts = {
@@ -270,6 +275,21 @@ export default class AppController {
       ),
       applyLocalization: document.getElementById("applyLocalization"),
       clearLocalization: document.getElementById("clearLocalization"),
+      equipmentNameInput: document.getElementById("equipmentNameInput"),
+      addEquipmentNameButton: document.getElementById("addEquipmentNameButton"),
+      equipmentNameList: document.getElementById("equipmentNameList"),
+      teamMemberInput: document.getElementById("teamMemberInput"),
+      addTeamMemberButton: document.getElementById("addTeamMemberButton"),
+      teamMemberList: document.getElementById("teamMemberList"),
+      pointCodeInput: document.getElementById("pointCodeInput"),
+      pointCodeDescriptionInput: document.getElementById(
+        "pointCodeDescriptionInput"
+      ),
+      addPointCodeButton: document.getElementById("addPointCodeButton"),
+      pointCodeTableBody: document.getElementById("pointCodeTableBody"),
+      exportAllDataButton: document.getElementById("exportAllDataButton"),
+      importAllDataButton: document.getElementById("importAllDataButton"),
+      importAllDataInput: document.getElementById("importAllDataInput"),
     };
   }
 
@@ -368,6 +388,26 @@ export default class AppController {
         this.handleImportFile(e.target)
       );
     }
+
+    this.elements.importAllDataInput?.addEventListener("change", (e) => {
+      this.handleAllDataImport(e.target);
+    });
+
+    this.elements.addEquipmentNameButton?.addEventListener("click", () =>
+      this.addEquipmentName()
+    );
+    this.elements.addTeamMemberButton?.addEventListener("click", () =>
+      this.addTeamMember()
+    );
+    this.elements.addPointCodeButton?.addEventListener("click", () =>
+      this.addPointCode()
+    );
+    this.elements.exportAllDataButton?.addEventListener("click", () =>
+      this.exportAllData()
+    );
+    this.elements.importAllDataButton?.addEventListener("click", () =>
+      this.triggerAllDataImport()
+    );
 
     this.elements.recordNameInput?.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
@@ -536,6 +576,7 @@ export default class AppController {
     this.refreshEvidenceUI();
     this.renderEvidenceTies();
     this.refreshEquipmentUI();
+    this.renderGlobalSettings();
     this.switchTab("springboardSection");
     this.handleSpringboardScroll();
   }
@@ -617,6 +658,64 @@ export default class AppController {
       this.elements.importFileInput.value = "";
       this.elements.importFileInput.click();
     }
+  }
+
+  exportAllData() {
+    const payload = {
+      type: "CarlsonSurveyManagerData",
+      version: 3,
+      projects: this.serializeProjects(),
+      evidence: this.cornerEvidenceService.serializeAllEvidence(),
+      globalSettings: this.globalSettings,
+    };
+    this.downloadJson(payload, "carlson-app-data.json");
+  }
+
+  triggerAllDataImport() {
+    if (this.elements.importAllDataInput) {
+      this.elements.importAllDataInput.value = "";
+      this.elements.importAllDataInput.click();
+    }
+  }
+
+  handleAllDataImport(input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (!data.projects || typeof data.projects !== "object") {
+          throw new Error("Invalid import file");
+        }
+        Object.entries(data.projects).forEach(([id, proj]) => {
+          this.projects[id] = Project.fromObject(proj);
+        });
+        const evidenceMap =
+          data.evidence && typeof data.evidence === "object"
+            ? data.evidence
+            : {};
+        this.cornerEvidenceService.replaceAllEvidence(evidenceMap);
+        if (data.globalSettings) {
+          this.globalSettings = this.globalSettingsService.defaultSettings();
+          this.globalSettings.equipment = data.globalSettings.equipment || [];
+          this.globalSettings.teamMembers = data.globalSettings.teamMembers || [];
+          this.globalSettings.pointCodes = data.globalSettings.pointCodes || [];
+          this.saveGlobalSettings();
+        }
+        this.saveProjects();
+        this.updateProjectList();
+        const importedIds = Object.keys(data.projects);
+        if (importedIds.length > 0) {
+          this.loadProject(importedIds[0]);
+        }
+        this.renderGlobalSettings();
+        alert("App data import successful!");
+      } catch (err) {
+        alert("Import failed: " + err.message);
+      }
+    };
+    reader.readAsText(file);
   }
 
   handleImportFile(input) {
@@ -3159,6 +3258,81 @@ export default class AppController {
     this.saveProjects();
     this.updateStartFromDropdownUI();
     this.generateCommands();
+  }
+
+  /* ===================== Global settings ===================== */
+  saveGlobalSettings() {
+    this.globalSettingsService.save(this.globalSettings);
+  }
+
+  addEquipmentName() {
+    const input = this.elements.equipmentNameInput;
+    const name = (input?.value || "").trim();
+    if (!name) return;
+    this.globalSettings.equipment.push(name);
+    this.saveGlobalSettings();
+    if (input) input.value = "";
+    this.renderGlobalSettings();
+  }
+
+  addTeamMember() {
+    const input = this.elements.teamMemberInput;
+    const name = (input?.value || "").trim();
+    if (!name) return;
+    this.globalSettings.teamMembers.push(name);
+    this.saveGlobalSettings();
+    if (input) input.value = "";
+    this.renderGlobalSettings();
+  }
+
+  addPointCode() {
+    const code = (this.elements.pointCodeInput?.value || "").trim();
+    const desc = (this.elements.pointCodeDescriptionInput?.value || "").trim();
+    if (!code || !desc) return;
+    this.globalSettings.pointCodes.push({ code, description: desc });
+    this.saveGlobalSettings();
+    if (this.elements.pointCodeInput) this.elements.pointCodeInput.value = "";
+    if (this.elements.pointCodeDescriptionInput)
+      this.elements.pointCodeDescriptionInput.value = "";
+    this.renderGlobalSettings();
+  }
+
+  renderGlobalSettings() {
+    this.renderPillList(
+      this.elements.equipmentNameList,
+      this.globalSettings.equipment
+    );
+    this.renderPillList(
+      this.elements.teamMemberList,
+      this.globalSettings.teamMembers
+    );
+    this.renderPointCodes();
+  }
+
+  renderPillList(container, items) {
+    if (!container) return;
+    container.innerHTML = "";
+    (items || []).forEach((item) => {
+      const li = document.createElement("li");
+      li.textContent = item;
+      container.appendChild(li);
+    });
+  }
+
+  renderPointCodes() {
+    const tbody = this.elements.pointCodeTableBody;
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    (this.globalSettings.pointCodes || []).forEach((row) => {
+      const tr = document.createElement("tr");
+      const codeCell = document.createElement("td");
+      codeCell.textContent = row.code;
+      const descCell = document.createElement("td");
+      descCell.textContent = row.description;
+      tr.appendChild(codeCell);
+      tr.appendChild(descCell);
+      tbody.appendChild(tr);
+    });
   }
 
   /* ===================== Misc helpers ===================== */
