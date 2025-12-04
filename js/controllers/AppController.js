@@ -35,7 +35,7 @@ export default class AppController {
     this.currentEquipmentLocation = null;
     this.editingEquipmentId = null;
     this.defaultHeaderMapLayer =
-      "url('data:image/svg+xml,%3Csvg width=\"400\" height=\"240\" viewBox=\"0 0 400 240\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg opacity=\"0.35\" stroke=\"%23a5b4fc\" stroke-width=\"1.5\"%3E%3Cpath d=\"M-40 24C40 52 120 52 200 24C280 -4 360 -4 440 24\"/%3E%3Cpath d=\"M-40 84C40 112 120 112 200 84C280 56 360 56 440 84\"/%3E%3Cpath d=\"M-40 144C40 172 120 172 200 144C280 116 360 116 440 144\"/%3E%3Cpath d=\"M-40 204C40 232 120 232 200 204C280 176 360 176 440 204\"/%3E%3Cpath d=\"M120 -20C92 60 92 140 120 220\"/%3E%3Cpath d=\"M200 -20C172 60 172 140 200 220\"/%3E%3Cpath d=\"M280 -20C252 60 252 140 280 220\"/%3E%3C/g%3E%3Ccircle cx=\"200\" cy=\"120\" r=\"60\" stroke=\"%23638cf5\" stroke-width=\"2.5\" opacity=\"0.35\"/%3E%3C/svg%3E')";
+      'url(\'data:image/svg+xml,%3Csvg width="400" height="240" viewBox="0 0 400 240" fill="none" xmlns="http://www.w3.org/2000/svg"%3E%3Cg opacity="0.35" stroke="%23a5b4fc" stroke-width="1.5"%3E%3Cpath d="M-40 24C40 52 120 52 200 24C280 -4 360 -4 440 24"/%3E%3Cpath d="M-40 84C40 112 120 112 200 84C280 56 360 56 440 84"/%3E%3Cpath d="M-40 144C40 172 120 172 200 144C280 116 360 116 440 144"/%3E%3Cpath d="M-40 204C40 232 120 232 200 204C280 176 360 176 440 204"/%3E%3Cpath d="M120 -20C92 60 92 140 120 220"/%3E%3Cpath d="M200 -20C172 60 172 140 200 220"/%3E%3Cpath d="M280 -20C252 60 252 140 280 220"/%3E%3C/g%3E%3Ccircle cx="200" cy="120" r="60" stroke="%23638cf5" stroke-width="2.5" opacity="0.35"/%3E%3C/svg%3E\')';
     this.geocodeCache = {};
     this.currentMapAddressKey = "";
     this.currentMapUrl = null;
@@ -111,19 +111,31 @@ export default class AppController {
       currentProjectName: document.getElementById("currentProjectName"),
       projectDetailName: document.getElementById("projectDetailName"),
       projectClientInput: document.getElementById("projectClientInput"),
-      projectClientPhoneInput: document.getElementById("projectClientPhoneInput"),
-      projectClientEmailInput: document.getElementById("projectClientEmailInput"),
+      projectClientPhoneInput: document.getElementById(
+        "projectClientPhoneInput"
+      ),
+      projectClientEmailInput: document.getElementById(
+        "projectClientEmailInput"
+      ),
       projectAddressInput: document.getElementById("projectAddressInput"),
       projectTownshipInput: document.getElementById("projectTownshipInput"),
       projectRangeInput: document.getElementById("projectRangeInput"),
       projectSectionInput: document.getElementById("projectSectionInput"),
-      projectDescriptionInput: document.getElementById("projectDescriptionInput"),
-      saveProjectDetailsButton: document.getElementById("saveProjectDetailsButton"),
+      projectDescriptionInput: document.getElementById(
+        "projectDescriptionInput"
+      ),
+      saveProjectDetailsButton: document.getElementById(
+        "saveProjectDetailsButton"
+      ),
       projectDetailsForm: document.getElementById("projectDetailsForm"),
-      editProjectDetailsButton: document.getElementById("editProjectDetailsButton"),
+      editProjectDetailsButton: document.getElementById(
+        "editProjectDetailsButton"
+      ),
       projectDetailsCard: document.getElementById("projectDetailsCard"),
       springboardHero: document.getElementById("springboardHero"),
-      springboardProjectTitle: document.getElementById("springboardProjectTitle"),
+      springboardProjectTitle: document.getElementById(
+        "springboardProjectTitle"
+      ),
       springboardProjectDescription: document.getElementById(
         "springboardProjectDescription"
       ),
@@ -132,7 +144,9 @@ export default class AppController {
       springboardClientPhoneValue: document.getElementById(
         "springboardClientPhoneValue"
       ),
-      springboardAddressValue: document.getElementById("springboardAddressValue"),
+      springboardAddressValue: document.getElementById(
+        "springboardAddressValue"
+      ),
       springboardClientEmailValue: document.getElementById(
         "springboardClientEmailValue"
       ),
@@ -183,6 +197,7 @@ export default class AppController {
       navigationSection: document.getElementById("navigationSection"),
       traverseSection: document.getElementById("traverseSection"),
       pointsSection: document.getElementById("pointsSection"),
+      settingsSection: document.getElementById("settingsSection"),
       evidenceSection: document.getElementById("evidenceSection"),
       equipmentSection: document.getElementById("equipmentSection"),
       evidenceRecordDropdownContainer: document.getElementById(
@@ -219,7 +234,9 @@ export default class AppController {
       equipmentSetupAt: document.getElementById("equipmentSetupAt"),
       equipmentTearDownAt: document.getElementById("equipmentTearDownAt"),
       equipmentBaseHeight: document.getElementById("equipmentBaseHeight"),
-      equipmentReferencePoint: document.getElementById("equipmentReferencePoint"),
+      equipmentReferencePoint: document.getElementById(
+        "equipmentReferencePoint"
+      ),
       equipmentReferencePointPicker: document.getElementById(
         "equipmentReferencePointPicker"
       ),
@@ -241,16 +258,26 @@ export default class AppController {
       equipmentSummary: document.getElementById("equipmentSummary"),
       navigationCompass: document.getElementById("navigationCompass"),
       navigationHeadingValue: document.getElementById("navigationHeadingValue"),
-      navigationTargetBearing: document.getElementById("navigationTargetBearing"),
-      navigationTargetDistance: document.getElementById("navigationTargetDistance"),
+      navigationTargetBearing: document.getElementById(
+        "navigationTargetBearing"
+      ),
+      navigationTargetDistance: document.getElementById(
+        "navigationTargetDistance"
+      ),
       navigationOffset: document.getElementById("navigationOffset"),
       navigationStatus: document.getElementById("navigationStatus"),
       navigationBookmarkName: document.getElementById("navigationBookmarkName"),
       saveNavigationBookmark: document.getElementById("saveNavigationBookmark"),
-      navigationBookmarkStatus: document.getElementById("navigationBookmarkStatus"),
+      navigationBookmarkStatus: document.getElementById(
+        "navigationBookmarkStatus"
+      ),
       navigationTargetSelect: document.getElementById("navigationTargetSelect"),
-      navigationEquipmentSelect: document.getElementById("navigationEquipmentSelect"),
-      navigationBookmarksList: document.getElementById("navigationBookmarksList"),
+      navigationEquipmentSelect: document.getElementById(
+        "navigationEquipmentSelect"
+      ),
+      navigationBookmarksList: document.getElementById(
+        "navigationBookmarksList"
+      ),
       refreshNavigation: document.getElementById("refreshNavigation"),
       clearNavigationTarget: document.getElementById("clearNavigationTarget"),
       navigationMapPanel: document.getElementById("navigationMapPanel"),
@@ -262,7 +289,9 @@ export default class AppController {
         "localizationTraversePoint"
       ),
       localizationPointFile: document.getElementById("localizationPointFile"),
-      localizationPointNumber: document.getElementById("localizationPointNumber"),
+      localizationPointNumber: document.getElementById(
+        "localizationPointNumber"
+      ),
       localizationLat: document.getElementById("localizationLat"),
       localizationLon: document.getElementById("localizationLon"),
       localizationStatus: document.getElementById("localizationStatus"),
@@ -332,9 +361,8 @@ export default class AppController {
       this.toggleProjectDropdown()
     );
 
-    this.elements.evidenceRecordDropdownToggle?.addEventListener(
-      "click",
-      () => this.toggleEvidenceRecordDropdown()
+    this.elements.evidenceRecordDropdownToggle?.addEventListener("click", () =>
+      this.toggleEvidenceRecordDropdown()
     );
 
     this.elements.projectActionsToggle?.addEventListener("click", (e) => {
@@ -459,7 +487,9 @@ export default class AppController {
     );
 
     const commandGrid = document.querySelector(".command-grid");
-    commandGrid?.addEventListener("click", (evt) => this.handleCommandGrid(evt));
+    commandGrid?.addEventListener("click", (evt) =>
+      this.handleCommandGrid(evt)
+    );
 
     window.addEventListener("resize", () => this.handleResize());
 
@@ -469,6 +499,7 @@ export default class AppController {
     this.elements.pointsTabButton?.addEventListener("click", () =>
       this.switchTab("pointsSection")
     );
+
     this.elements.evidenceTabButton?.addEventListener("click", () =>
       this.switchTab("evidenceSection")
     );
@@ -699,7 +730,8 @@ export default class AppController {
         if (data.globalSettings) {
           this.globalSettings = this.globalSettingsService.defaultSettings();
           this.globalSettings.equipment = data.globalSettings.equipment || [];
-          this.globalSettings.teamMembers = data.globalSettings.teamMembers || [];
+          this.globalSettings.teamMembers =
+            data.globalSettings.teamMembers || [];
           this.globalSettings.pointCodes = data.globalSettings.pointCodes || [];
           this.saveGlobalSettings();
         }
@@ -869,13 +901,16 @@ export default class AppController {
     }
 
     const project = this.projects[this.currentProjectId];
-    project.name = (this.elements.projectDetailName?.value || project.name || "")
-      .trim() || project.name;
+    project.name =
+      (this.elements.projectDetailName?.value || project.name || "").trim() ||
+      project.name;
     project.clientName = (this.elements.projectClientInput?.value || "").trim();
-    project.clientPhone = (this.elements.projectClientPhoneInput?.value || "")
-      .trim();
-    project.clientEmail = (this.elements.projectClientEmailInput?.value || "")
-      .trim();
+    project.clientPhone = (
+      this.elements.projectClientPhoneInput?.value || ""
+    ).trim();
+    project.clientEmail = (
+      this.elements.projectClientEmailInput?.value || ""
+    ).trim();
     project.address = (this.elements.projectAddressInput?.value || "").trim();
     project.townships = this.parseDelimitedInput(
       this.elements.projectTownshipInput?.value
@@ -886,11 +921,13 @@ export default class AppController {
     project.sections = this.parseDelimitedInput(
       this.elements.projectSectionInput?.value
     );
-    project.description = (this.elements.projectDescriptionInput?.value || "")
-      .trim();
+    project.description = (
+      this.elements.projectDescriptionInput?.value || ""
+    ).trim();
 
     this.saveProjects();
-    this.elements.currentProjectName.textContent = project.name || "No project selected";
+    this.elements.currentProjectName.textContent =
+      project.name || "No project selected";
     this.updateProjectList();
     this.updateSpringboardHero();
     this.handleSpringboardScroll();
@@ -898,7 +935,10 @@ export default class AppController {
   }
 
   deleteCurrentProject() {
-    if (!this.currentProjectId || !confirm("Delete entire project and all records?"))
+    if (
+      !this.currentProjectId ||
+      !confirm("Delete entire project and all records?")
+    )
       return;
     delete this.projects[this.currentProjectId];
     this.cornerEvidenceService.removeProjectEvidence(this.currentProjectId);
@@ -1147,10 +1187,7 @@ export default class AppController {
     }
 
     const normalizedAddress = address.toLowerCase();
-    if (
-      this.currentMapAddressKey === normalizedAddress &&
-      this.currentMapUrl
-    ) {
+    if (this.currentMapAddressKey === normalizedAddress && this.currentMapUrl) {
       header.style.setProperty(
         "--header-map-layer",
         `url('${this.currentMapUrl}')`
@@ -1227,6 +1264,7 @@ export default class AppController {
       this.elements.springboardSection,
       this.elements.traverseSection,
       this.elements.pointsSection,
+      this.elements.settingsSection,
       this.elements.evidenceSection,
       this.elements.equipmentSection,
       this.elements.navigationSection,
@@ -1276,7 +1314,6 @@ export default class AppController {
     }
 
     if (targetId === "evidenceSection") {
-
       this.refreshEvidenceUI();
     } else if (resolvedTarget === "equipmentSection") {
       this.refreshEquipmentUI();
@@ -1331,8 +1368,8 @@ export default class AppController {
       forceRecordId && records[forceRecordId]
         ? forceRecordId
         : this.currentRecordId && records[this.currentRecordId]
-          ? this.currentRecordId
-          : ids[0];
+        ? this.currentRecordId
+        : ids[0];
 
     ids.forEach((id) => {
       const recordName = records[id].name || "Untitled record";
@@ -1459,12 +1496,14 @@ export default class AppController {
     this.elements.evidenceTieDistance.value = "";
     this.elements.evidenceTieBearing.value = "";
     this.elements.evidenceTieDescription.value = "";
-    if (this.elements.evidenceTiePhotos) this.elements.evidenceTiePhotos.value = "";
+    if (this.elements.evidenceTiePhotos)
+      this.elements.evidenceTiePhotos.value = "";
     this.renderEvidenceTies();
   }
 
   renderEvidenceTies() {
-    if (!this.elements.evidenceTiesList || !this.elements.evidenceTiesHint) return;
+    if (!this.elements.evidenceTiesList || !this.elements.evidenceTiesHint)
+      return;
     const list = this.elements.evidenceTiesList;
     list.innerHTML = "";
     if (this.currentEvidenceTies.length === 0) {
@@ -1474,7 +1513,9 @@ export default class AppController {
     this.elements.evidenceTiesHint.textContent = `${this.currentEvidenceTies.length} tie(s) added.`;
     this.currentEvidenceTies.forEach((tie, idx) => {
       const li = document.createElement("li");
-      const parts = [tie.distance, tie.bearing, tie.description].filter(Boolean);
+      const parts = [tie.distance, tie.bearing, tie.description].filter(
+        Boolean
+      );
       const textSpan = document.createElement("span");
       textSpan.textContent = parts.join(" · ");
       li.appendChild(textSpan);
@@ -1537,14 +1578,18 @@ export default class AppController {
           accuracy: pos.coords.accuracy,
         };
         if (this.elements.evidenceLocationStatus) {
-          this.elements.evidenceLocationStatus.textContent =
-            `Lat ${pos.coords.latitude.toFixed(6)}, Lon ${pos.coords.longitude.toFixed(6)} (±${pos.coords.accuracy.toFixed(1)} m)`;
+          this.elements.evidenceLocationStatus.textContent = `Lat ${pos.coords.latitude.toFixed(
+            6
+          )}, Lon ${pos.coords.longitude.toFixed(
+            6
+          )} (±${pos.coords.accuracy.toFixed(1)} m)`;
         }
         this.updateEvidenceSaveState();
       },
       () => {
         if (this.elements.evidenceLocationStatus) {
-          this.elements.evidenceLocationStatus.textContent = "Unable to get location.";
+          this.elements.evidenceLocationStatus.textContent =
+            "Unable to get location.";
         }
       },
       { enableHighAccuracy: true, timeout: 15000 }
@@ -1587,9 +1632,8 @@ export default class AppController {
       type: this.elements.evidenceType?.value || "",
       condition: this.elements.evidenceCondition?.value || "",
       notes: this.elements.evidenceNotes?.value.trim() || "",
-      ties: this.currentEvidenceTies.map(
-        (tie) =>
-          tie instanceof EvidenceTie ? tie : new EvidenceTie({ ...tie })
+      ties: this.currentEvidenceTies.map((tie) =>
+        tie instanceof EvidenceTie ? tie : new EvidenceTie({ ...tie })
       ),
       photo: this.currentEvidencePhoto || null,
       location: this.currentEvidenceLocation || null,
@@ -1610,7 +1654,8 @@ export default class AppController {
     container.innerHTML = "";
 
     if (!this.currentProjectId) {
-      this.elements.evidenceSummary.textContent = "Select a project to view evidence.";
+      this.elements.evidenceSummary.textContent =
+        "Select a project to view evidence.";
       return;
     }
 
@@ -1675,9 +1720,9 @@ export default class AppController {
           const loc = document.createElement("div");
           loc.textContent = `GPS: Lat ${ev.location.lat.toFixed(
             6
-          )}, Lon ${ev.location.lon.toFixed(6)} (±${ev.location.accuracy.toFixed(
-            1
-          )} m)`;
+          )}, Lon ${ev.location.lon.toFixed(
+            6
+          )} (±${ev.location.accuracy.toFixed(1)} m)`;
           mediaRow.appendChild(loc);
         }
         if (mediaRow.childNodes.length > 0) {
@@ -1691,7 +1736,9 @@ export default class AppController {
           const ul = document.createElement("ul");
           ev.ties.forEach((t) => {
             const li = document.createElement("li");
-            const parts = [t.distance, t.bearing, t.description].filter(Boolean);
+            const parts = [t.distance, t.bearing, t.description].filter(
+              Boolean
+            );
             li.textContent = parts.join(" · ");
             if (t.photos?.length) {
               const tiePhotos = document.createElement("div");
@@ -1716,9 +1763,7 @@ export default class AppController {
         const exportBtn = document.createElement("button");
         exportBtn.type = "button";
         exportBtn.textContent = "Export CPF";
-        exportBtn.addEventListener("click", () =>
-          this.exportCornerFiling(ev)
-        );
+        exportBtn.addEventListener("click", () => this.exportCornerFiling(ev));
         actionsRow.appendChild(exportBtn);
         card.appendChild(actionsRow);
         container.appendChild(card);
@@ -1872,7 +1917,9 @@ export default class AppController {
           accuracy: pos.coords.accuracy,
         };
         if (this.elements.equipmentLocationStatus) {
-          this.elements.equipmentLocationStatus.textContent = `Lat ${pos.coords.latitude.toFixed(6)}, Lon ${pos.coords.longitude.toFixed(
+          this.elements.equipmentLocationStatus.textContent = `Lat ${pos.coords.latitude.toFixed(
+            6
+          )}, Lon ${pos.coords.longitude.toFixed(
             6
           )} (±${pos.coords.accuracy.toFixed(1)} m)`;
         }
@@ -1915,7 +1962,8 @@ export default class AppController {
       if (existingIndex !== -1) {
         const existing = project.equipmentLogs[existingIndex];
         const updated = Object.assign(existing, payload);
-        updated.location = this.currentEquipmentLocation || existing.location || null;
+        updated.location =
+          this.currentEquipmentLocation || existing.location || null;
         updated.recordedAt = existing.recordedAt || new Date().toISOString();
       }
     } else {
@@ -1959,7 +2007,11 @@ export default class AppController {
 
     logs
       .slice()
-      .sort((a, b) => new Date(b.setupAt || b.recordedAt) - new Date(a.setupAt || a.recordedAt))
+      .sort(
+        (a, b) =>
+          new Date(b.setupAt || b.recordedAt) -
+          new Date(a.setupAt || a.recordedAt)
+      )
       .forEach((log) => {
         const card = document.createElement("div");
         card.className = "card";
@@ -2065,15 +2117,16 @@ export default class AppController {
       this.elements.saveEquipmentButton.textContent = "Update Equipment Entry";
     }
     if (this.elements.equipmentReferencePointPicker) {
-      this.elements.equipmentReferencePointPicker.value = entry.referencePoint || "";
+      this.elements.equipmentReferencePointPicker.value =
+        entry.referencePoint || "";
     }
     this.currentEquipmentLocation = entry.location || null;
     if (this.elements.equipmentLocationStatus && entry.location) {
       this.elements.equipmentLocationStatus.textContent = `Lat ${entry.location.lat.toFixed(
         6
-      )}, Lon ${entry.location.lon.toFixed(6)} (±${entry.location.accuracy.toFixed(
-        1
-      )} m)`;
+      )}, Lon ${entry.location.lon.toFixed(
+        6
+      )} (±${entry.location.accuracy.toFixed(1)} m)`;
     } else if (this.elements.equipmentLocationStatus) {
       this.elements.equipmentLocationStatus.textContent = "";
     }
@@ -2084,7 +2137,9 @@ export default class AppController {
     const project = this.projects[this.currentProjectId];
     if (!project?.equipmentLogs) return;
     if (!confirm("Delete this equipment entry?")) return;
-    project.equipmentLogs = project.equipmentLogs.filter((log) => log.id !== id);
+    project.equipmentLogs = project.equipmentLogs.filter(
+      (log) => log.id !== id
+    );
     this.saveProjects();
     this.renderReferencePointOptions();
     this.renderEquipmentList();
@@ -2105,12 +2160,18 @@ export default class AppController {
     lines.push(`Created: ${new Date(entry.createdAt).toLocaleString()}`);
     if (entry.coords) {
       lines.push(
-        `Coordinates: Easting ${entry.coords.x.toFixed(2)}, Northing ${entry.coords.y.toFixed(2)}`
+        `Coordinates: Easting ${entry.coords.x.toFixed(
+          2
+        )}, Northing ${entry.coords.y.toFixed(2)}`
       );
     }
     if (entry.location) {
       lines.push(
-        `GPS: Lat ${entry.location.lat.toFixed(6)}, Lon ${entry.location.lon.toFixed(6)} (±${entry.location.accuracy.toFixed(1)} m)`
+        `GPS: Lat ${entry.location.lat.toFixed(
+          6
+        )}, Lon ${entry.location.lon.toFixed(
+          6
+        )} (±${entry.location.accuracy.toFixed(1)} m)`
       );
     }
     if (entry.type) lines.push(`Evidence Type: ${entry.type}`);
@@ -2122,7 +2183,11 @@ export default class AppController {
     if (entry.ties?.length) {
       lines.push("Ties:");
       entry.ties.forEach((tie, idx) => {
-        const pieces = [tie.distance || "", tie.bearing || "", tie.description || ""]
+        const pieces = [
+          tie.distance || "",
+          tie.bearing || "",
+          tie.description || "",
+        ]
           .filter(Boolean)
           .join(" · ");
         const photoLabel = tie.photos?.length
@@ -2142,10 +2207,12 @@ export default class AppController {
 
   resetEvidenceForm() {
     if (this.elements.evidenceType) this.elements.evidenceType.value = "";
-    if (this.elements.evidenceCondition) this.elements.evidenceCondition.value = "";
+    if (this.elements.evidenceCondition)
+      this.elements.evidenceCondition.value = "";
     if (this.elements.evidenceNotes) this.elements.evidenceNotes.value = "";
     if (this.elements.evidencePhoto) this.elements.evidencePhoto.value = "";
-    if (this.elements.evidenceTiePhotos) this.elements.evidenceTiePhotos.value = "";
+    if (this.elements.evidenceTiePhotos)
+      this.elements.evidenceTiePhotos.value = "";
     if (this.elements.evidenceLocationStatus)
       this.elements.evidenceLocationStatus.textContent = "";
     this.currentEvidencePhoto = null;
@@ -2164,9 +2231,8 @@ export default class AppController {
 
   saveCurrentRecord() {
     if (!this.currentRecordId) return;
-    const record = this.projects[this.currentProjectId].records[
-      this.currentRecordId
-    ];
+    const record =
+      this.projects[this.currentProjectId].records[this.currentRecordId];
     record.startPtNum = this.elements.startPtNum.value.trim();
     record.northing = this.elements.northing.value.trim();
     record.easting = this.elements.easting.value.trim();
@@ -2367,9 +2433,7 @@ export default class AppController {
   }
 
   toggleExpand(group) {
-    const card = document.querySelector(
-      `.command-card[data-group="${group}"]`
-    );
+    const card = document.querySelector(`.command-card[data-group="${group}"]`);
     if (!card) return;
     card.classList.toggle("expanded");
   }
@@ -2379,14 +2443,23 @@ export default class AppController {
     const rect = canvas.getBoundingClientRect();
     const width = Math.max(1, Math.floor(rect.width || 0));
     const height = Math.max(1, Math.floor(rect.height || 0));
-    if (width && height && (canvas.width !== width || canvas.height !== height)) {
+    if (
+      width &&
+      height &&
+      (canvas.width !== width || canvas.height !== height)
+    ) {
       canvas.width = width;
       canvas.height = height;
     }
   }
 
   /* ===================== Traverse geometry & drawing ===================== */
-  computeTraversePointsForRecord(projectId, recordId, memo = {}, visiting = {}) {
+  computeTraversePointsForRecord(
+    projectId,
+    recordId,
+    memo = {},
+    visiting = {}
+  ) {
     const project = this.projects[projectId];
     if (!project) return [];
     const records = project.records || {};
@@ -2676,7 +2749,11 @@ export default class AppController {
       ? this.projects[this.currentProjectId]
       : null;
 
-    if (!project || !project.records || Object.keys(project.records).length === 0) {
+    if (
+      !project ||
+      !project.records ||
+      Object.keys(project.records).length === 0
+    ) {
       const opt = document.createElement("option");
       opt.value = "";
       opt.textContent = "No traverse records";
@@ -2809,7 +2886,9 @@ export default class AppController {
         recordId
       );
       if (!record || !pts || !pts[pointIdx]) {
-        this.setLocalizationStatus("Choose a valid traverse point to localize.");
+        this.setLocalizationStatus(
+          "Choose a valid traverse point to localize."
+        );
         return;
       }
       anchorLocal = pts[pointIdx];
@@ -2850,11 +2929,15 @@ export default class AppController {
       const anchorE = parseFloat(anchorPt.x);
       const anchorN = parseFloat(anchorPt.y);
       if (!Number.isFinite(anchorE) || !Number.isFinite(anchorN)) {
-        this.setLocalizationStatus("Anchor point is missing numeric coordinates.");
+        this.setLocalizationStatus(
+          "Anchor point is missing numeric coordinates."
+        );
         return;
       }
       anchorLocal = { x: anchorE, y: anchorN };
-      anchorLabel = `${file.name || "Points"} ${anchorPt.pointNumber || "point"}`;
+      anchorLabel = `${file.name || "Points"} ${
+        anchorPt.pointNumber || "point"
+      }`;
 
       (project.pointFiles || []).forEach((pf) => {
         (pf.points || []).forEach((pt, idx) => {
@@ -2914,7 +2997,8 @@ export default class AppController {
     const dNorth = deltaNorthFeet * metersPerFoot;
     const dEast = deltaEastFeet * metersPerFoot;
     const dLat = (dNorth / R) * (180 / Math.PI);
-    const dLon = (dEast / (R * Math.cos((anchorGeo.lat * Math.PI) / 180))) *
+    const dLon =
+      (dEast / (R * Math.cos((anchorGeo.lat * Math.PI) / 180))) *
       (180 / Math.PI);
     return { lat: anchorGeo.lat + dLat, lon: anchorGeo.lon + dLon };
   }
@@ -2941,9 +3025,11 @@ export default class AppController {
         "Enter a known GPS coordinate to localize your traverse or point file.";
       return;
     }
-    summary.textContent = `Localized to ${loc.anchorLabel} at ${loc.anchorGeo.lat.toFixed(
-      6
-    )}, ${loc.anchorGeo.lon.toFixed(6)} (${loc.points?.length || 0} point targets).`;
+    summary.textContent = `Localized to ${
+      loc.anchorLabel
+    } at ${loc.anchorGeo.lat.toFixed(6)}, ${loc.anchorGeo.lon.toFixed(6)} (${
+      loc.points?.length || 0
+    } point targets).`;
   }
 
   updateBearingArrow(input) {
@@ -2990,9 +3076,8 @@ export default class AppController {
   generateCommands() {
     if (!this.currentRecordId) return;
     this.saveCurrentRecord();
-    const record = this.projects[this.currentProjectId].records[
-      this.currentRecordId
-    ];
+    const record =
+      this.projects[this.currentProjectId].records[this.currentRecordId];
 
     try {
       let createPointText = "";
@@ -3197,7 +3282,7 @@ export default class AppController {
 
     const noneOpt = document.createElement("div");
     noneOpt.className = "start-option";
-    noneOpt.innerHTML = "<span class=\"start-option-name\">Manual Start</span>";
+    noneOpt.innerHTML = '<span class="start-option-name">Manual Start</span>';
     noneOpt.addEventListener("click", () => {
       this.setStartFromRecord(null);
       this.closeStartFromDropdown();
@@ -3251,9 +3336,8 @@ export default class AppController {
 
   setStartFromRecord(recordId) {
     if (!this.currentRecordId) return;
-    const record = this.projects[this.currentProjectId].records[
-      this.currentRecordId
-    ];
+    const record =
+      this.projects[this.currentProjectId].records[this.currentRecordId];
     record.startFromRecordId = recordId;
     this.saveProjects();
     this.updateStartFromDropdownUI();
