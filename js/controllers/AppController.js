@@ -534,14 +534,23 @@ export default class AppController {
     ];
     sections.forEach((sec) => {
       if (!sec) return;
-      if (sec.id === targetId) sec.classList.add("active");
-      else sec.classList.remove("active");
+      if (sec.id === targetId) {
+        sec.classList.add("active");
+        sec.style.display = "block";
+      } else {
+        sec.classList.remove("active");
+        sec.style.display = "none";
+      }
     });
     buttons.forEach((btn) => {
       if (!btn) return;
       if (btn.dataset.target === targetId) btn.classList.add("active");
       else btn.classList.remove("active");
     });
+
+    if (targetId === "evidenceSection") {
+      this.refreshEvidenceUI();
+    }
   }
 
   refreshEvidenceUI(forceRecordId = null) {
