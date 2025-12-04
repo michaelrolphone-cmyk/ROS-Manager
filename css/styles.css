@@ -31,18 +31,6 @@ body {
         display: block;
       }
 
-      .app-toolbar {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 10px;
-        flex-wrap: wrap;
-      }
-
-      .app-toolbar.hidden {
-        display: none;
-      }
-
       .home-button {
         display: none;
         align-items: center;
@@ -58,25 +46,6 @@ body {
 
       .home-button.visible {
         display: inline-flex;
-      }
-
-      .project-pill {
-        background: #e0ecff;
-        color: #1e293b;
-        padding: 10px 14px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
-      }
-
-      .project-pill .label {
-        text-transform: uppercase;
-        font-size: 0.75rem;
-        letter-spacing: 0.05em;
-        color: #1e40af;
-        font-weight: 700;
       }
 
       .springboard {
@@ -358,6 +327,21 @@ body {
       .header > * {
         position: relative;
         z-index: 1;
+      }
+
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
       }
       .content {
         padding: 25px;

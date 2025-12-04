@@ -9,10 +9,13 @@
   <body>
     <div class="container">
       <div class="header">
-        <h1>Survey Field Tools</h1>
-        <div
-          style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap"
-        >
+        <div class="header-left">
+          <button type="button" id="homeButton" class="home-button">
+            🏠 <span>Home</span>
+          </button>
+          <h1>Survey Field Tools</h1>
+        </div>
+        <div class="header-actions">
           <!-- hidden select (internal) -->
           <select id="projectSelect" style="display: none"></select>
 
@@ -56,15 +59,6 @@
       </div>
 
       <div class="content">
-        <div class="app-toolbar">
-          <button type="button" id="homeButton" class="home-button">
-            🏠 <span>Home</span>
-          </button>
-          <div class="project-pill">
-            <span class="label">Project</span>
-            <span id="currentProjectName">No project selected</span>
-          </div>
-        </div>
 
         <div class="project-controls" id="projectControls">
           <input

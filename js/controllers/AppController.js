@@ -106,11 +106,9 @@ export default class AppController {
       projectActionsToggle: document.getElementById("projectActionsToggle"),
       projectActionsMenu: document.getElementById("projectActionsMenu"),
       homeButton: document.getElementById("homeButton"),
-      appToolbar: document.querySelector(".app-toolbar"),
       pageHeader: document.querySelector(".header"),
       projectControls: document.getElementById("projectControls"),
       projectNameInput: document.getElementById("projectNameInput"),
-      currentProjectName: document.getElementById("currentProjectName"),
       projectDetailName: document.getElementById("projectDetailName"),
       projectClientInput: document.getElementById("projectClientInput"),
       projectClientPhoneInput: document.getElementById(
@@ -800,7 +798,6 @@ export default class AppController {
     if (!id || !this.projects[id]) {
       this.currentProjectId = null;
       this.currentRecordId = null;
-      this.elements.currentProjectName.textContent = "No project selected";
       this.elements.editor.style.display = "none";
       this.renderRecordList();
       this.updateProjectList();
@@ -821,7 +818,6 @@ export default class AppController {
 
     this.currentProjectId = id;
     this.currentRecordId = null;
-    this.elements.currentProjectName.textContent = this.projects[id].name;
     this.elements.editor.style.display = "none";
     this.renderRecordList();
     this.updateProjectList();
@@ -941,8 +937,6 @@ export default class AppController {
     ).trim();
 
     this.saveProjects();
-    this.elements.currentProjectName.textContent =
-      project.name || "No project selected";
     this.updateProjectList();
     this.updateSpringboardHero();
     this.handleSpringboardScroll();
@@ -960,7 +954,6 @@ export default class AppController {
     this.saveProjects();
     this.currentProjectId = null;
     this.currentRecordId = null;
-    this.elements.currentProjectName.textContent = "No project selected";
     this.elements.editor.style.display = "none";
     this.renderRecordList();
     this.updateProjectList();
@@ -1418,9 +1411,6 @@ export default class AppController {
     const onSpringboard = resolvedTarget === "springboardSection";
     if (this.elements.homeButton) {
       this.elements.homeButton.classList.toggle("visible", !onSpringboard);
-    }
-    if (this.elements.appToolbar) {
-      this.elements.appToolbar.classList.toggle("hidden", onSpringboard);
     }
 
     if (targetId === "evidenceSection") {
