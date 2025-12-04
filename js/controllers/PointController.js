@@ -32,6 +32,10 @@ export default class PointController {
       this.createPointFile()
     );
 
+    this.elements.renamePointFileButton?.addEventListener("click", () =>
+      this.renameActivePointFile()
+    );
+
     this.elements.downloadPointsButton?.addEventListener("click", () =>
       this.downloadActivePointFile()
     );
@@ -268,7 +272,7 @@ export default class PointController {
         input.dataset.index = idx.toString();
         input.dataset.field = field;
         input.addEventListener("input", (e) =>
-          this.updatePointField(idx, field, e.target.value)
+          this.updatePointField(idx, field, e.target.value, e.target)
         );
         td.appendChild(input);
         tr.appendChild(td);
@@ -297,12 +301,26 @@ export default class PointController {
     });
   }
 
-  updatePointField(index, field, value) {
+  updatePointField(index, field, value, inputEl = null) {
     const pointFile = this.getActivePointFile();
     if (!pointFile || !pointFile.points[index]) return;
     pointFile.points[index][field] = value;
     this.saveProjects();
-    this.renderPointsTable();
+    this.updatePointRowState(index, inputEl);
+  }
+
+  updatePointRowState(index, inputEl = null) {
+    const pointFile = this.getActivePointFile();
+    if (!pointFile) return;
+    const row = inputEl?.closest("tr");
+    if (!row) return;
+
+    const modified = this.isPointModified(pointFile, index);
+    row.classList.toggle("row-modified", modified);
+    const revertBtn = row.querySelector("button.secondary");
+    if (revertBtn) {
+      revertBtn.disabled = !modified;
+    }
   }
 
   removePointRow(index) {
@@ -385,13 +403,69 @@ export default class PointController {
     const name =
       nameInput || prompt("Name this point file", "New Points") || "New Points";
     const pointFiles = this.ensureProjectPointFiles(project);
-    const pointFile = new PointFile({ name });
+    const pointFile = new PointFile({
+      name: this.getUniquePointFileName(name, pointFiles),
+    });
     pointFile.resetOriginals();
     pointFiles.push(pointFile);
     project.activePointFileId = pointFile.id;
     this.saveProjects();
     this.renderPointsTable();
     return pointFile;
+  }
+
+  renameActivePointFile() {
+    const project = this.getCurrentProject();
+    const pointFile = this.getActivePointFile();
+    if (!project || !pointFile) {
+      alert("No point file selected to rename.");
+      return;
+    }
+
+    const currentName = pointFile.name || "Points";
+    const newName = prompt("Rename this point file", currentName);
+    if (!newName) return;
+
+    const pointFiles = this.ensureProjectPointFiles(project);
+    pointFile.name = this.getUniquePointFileName(newName, pointFiles, pointFile.id);
+    this.saveProjects();
+    this.renderPointsTable();
+  }
+
+  createPointFileFromPoints(name, points = []) {
+    const project = this.getCurrentProject();
+    if (!project) {
+      alert("Create or select a project first");
+      return null;
+    }
+
+    const pointFiles = this.ensureProjectPointFiles(project);
+    const finalName = this.getUniquePointFileName(name || "Generated Points", pointFiles);
+    const pointFile = new PointFile({
+      name: finalName,
+      points,
+    });
+    pointFile.resetOriginals();
+    pointFiles.push(pointFile);
+    project.activePointFileId = pointFile.id;
+    this.saveProjects();
+    this.renderPointsTable();
+    return pointFile;
+  }
+
+  getUniquePointFileName(desiredName, pointFiles = [], currentId = null) {
+    const base = desiredName.trim() || "Points";
+    const existingNames = pointFiles
+      .filter((pf) => !currentId || pf.id !== currentId)
+      .map((pf) => pf.name.toLowerCase());
+    if (!existingNames.includes(base.toLowerCase())) return base;
+    let counter = 2;
+    let candidate = `${base} (${counter})`;
+    while (existingNames.includes(candidate.toLowerCase())) {
+      counter += 1;
+      candidate = `${base} (${counter})`;
+    }
+    return candidate;
   }
 
   downloadActivePointFile() {
