@@ -94,6 +94,7 @@
       }
 
       .springboard-hero {
+        --hero-map-layer: url('data:image/svg+xml,%3Csvg width="400" height="240" viewBox="0 0 400 240" fill="none" xmlns="http://www.w3.org/2000/svg"%3E%3Cg opacity="0.35" stroke="%23a5b4fc" stroke-width="1.5"%3E%3Cpath d="M-40 24C40 52 120 52 200 24C280 -4 360 -4 440 24"/%3E%3Cpath d="M-40 84C40 112 120 112 200 84C280 56 360 56 440 84"/%3E%3Cpath d="M-40 144C40 172 120 172 200 144C280 116 360 116 440 144"/%3E%3Cpath d="M-40 204C40 232 120 232 200 204C280 176 360 176 440 204"/%3E%3Cpath d="M120 -20C92 60 92 140 120 220"/%3E%3Cpath d="M200 -20C172 60 172 140 200 220"/%3E%3Cpath d="M280 -20C252 60 252 140 280 220"/%3E%3C/g%3E%3Ccircle cx="200" cy="120" r="60" stroke="%23638cf5" stroke-width="2.5" opacity="0.35"/%3E%3C/svg%3E');
         position: sticky;
         top: 0;
         z-index: 3;
@@ -105,11 +106,13 @@
         box-shadow: 0 16px 40px rgba(15, 23, 42, 0.28);
         overflow: hidden;
         background-image: linear-gradient(120deg, rgba(14, 165, 233, 0.18), rgba(59, 130, 246, 0.25)),
+          var(--hero-map-layer),
           url('data:image/svg+xml,%3Csvg width="400" height="240" viewBox="0 0 400 240" fill="none" xmlns="http://www.w3.org/2000/svg"%3E%3Cg opacity="0.35" stroke="%23a5b4fc" stroke-width="1.5"%3E%3Cpath d="M-40 24C40 52 120 52 200 24C280 -4 360 -4 440 24"/%3E%3Cpath d="M-40 84C40 112 120 112 200 84C280 56 360 56 440 84"/%3E%3Cpath d="M-40 144C40 172 120 172 200 144C280 116 360 116 440 144"/%3E%3Cpath d="M-40 204C40 232 120 232 200 204C280 176 360 176 440 204"/%3E%3Cpath d="M120 -20C92 60 92 140 120 220"/%3E%3Cpath d="M200 -20C172 60 172 140 200 220"/%3E%3Cpath d="M280 -20C252 60 252 140 280 220"/%3E%3C/g%3E%3Ccircle cx="200" cy="120" r="60" stroke="%23638cf5" stroke-width="2.5" opacity="0.35"/%3E%3C/svg%3E');
         background-repeat: no-repeat;
         background-size: cover;
         background-position: center calc(50% + var(--parallax-offset, 0px));
         transition: padding 0.25s ease, border-radius 0.25s ease,
+          box-shadow 0.25s ease, background-image 0.25s ease;
           box-shadow 0.25s ease;
       }
 
@@ -212,6 +215,13 @@
         margin-bottom: 16px;
       }
 
+      .project-details-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
       .project-details-card h3 {
         margin: 4px 0 10px;
       }
@@ -230,6 +240,21 @@
         display: flex;
         justify-content: flex-end;
         margin-top: 12px;
+        gap: 8px;
+      }
+
+      .project-details-form {
+        display: none;
+      }
+
+      .project-details-card.editing .project-details-form {
+        display: block;
+      }
+
+      .project-details-card .view-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
 
       .info-chip {
@@ -1145,6 +1170,10 @@
                   <span class="value" id="springboardClientValue">—</span>
                 </div>
                 <div class="meta-card">
+                  <div class="label">Client Phone</div>
+                  <span class="value" id="springboardClientPhoneValue">—</span>
+                </div>
+                <div class="meta-card">
                   <div class="label">Address</div>
                   <span class="value" id="springboardAddressValue">—</span>
                 </div>
@@ -1164,69 +1193,92 @@
             </div>
           </div>
 
-          <div class="project-details-card">
-            <p class="eyebrow" style="color: #475569">Project Details</p>
-            <h3 style="margin-top: 2px">Describe where and who you're working for</h3>
-            <div class="project-details-grid">
+          <div class="project-details-card" id="projectDetailsCard">
+            <div class="project-details-header">
               <div>
-                <label for="projectDetailName">Project Name</label>
-                <input
-                  type="text"
-                  id="projectDetailName"
-                  placeholder="Subdivision 2024"
-                />
+                <p class="eyebrow" style="color: #475569">Project Details</p>
+                <h3 style="margin-top: 2px">
+                  Describe where and who you're working for
+                </h3>
               </div>
-              <div>
-                <label for="projectClientInput">Client</label>
-                <input
-                  type="text"
-                  id="projectClientInput"
-                  placeholder="City of Exampleville"
-                />
-              </div>
-              <div class="full-row">
-                <label for="projectAddressInput">Address</label>
-                <textarea
-                  id="projectAddressInput"
-                  rows="2"
-                  placeholder="123 Main St, Exampleville, WA"
-                ></textarea>
-              </div>
-              <div>
-                <label for="projectTownshipInput">Township(s)</label>
-                <input
-                  type="text"
-                  id="projectTownshipInput"
-                  placeholder="T12N, T13N"
-                />
-                <small class="app-hint">Separate multiple entries with commas</small>
-              </div>
-              <div>
-                <label for="projectRangeInput">Range(s)</label>
-                <input type="text" id="projectRangeInput" placeholder="R3W" />
-                <small class="app-hint">Separate multiple entries with commas</small>
-              </div>
-              <div>
-                <label for="projectSectionInput">Section(s)</label>
-                <input
-                  type="text"
-                  id="projectSectionInput"
-                  placeholder="12, 13"
-                />
-                <small class="app-hint">Separate multiple entries with commas</small>
-              </div>
-              <div class="full-row">
-                <label for="projectDescriptionInput">Description</label>
-                <textarea
-                  id="projectDescriptionInput"
-                  rows="3"
-                  placeholder="Notes about scope, nearby landmarks, or routing instructions"
-                ></textarea>
+              <div class="project-details-actions view-toggle">
+                <button id="editProjectDetailsButton" class="secondary">
+                  Edit Details
+                </button>
               </div>
             </div>
-            <div class="project-details-actions">
-              <button id="saveProjectDetailsButton">Save Project Details</button>
-            </div>
+            <form class="project-details-form" id="projectDetailsForm">
+              <div class="project-details-grid">
+                <div>
+                  <label for="projectDetailName">Project Name</label>
+                  <input
+                    type="text"
+                    id="projectDetailName"
+                    placeholder="Subdivision 2024"
+                  />
+                </div>
+                <div>
+                  <label for="projectClientInput">Client</label>
+                  <input
+                    type="text"
+                    id="projectClientInput"
+                    placeholder="City of Exampleville"
+                  />
+                </div>
+                <div>
+                  <label for="projectClientPhoneInput">Client Phone</label>
+                  <input
+                    type="text"
+                    id="projectClientPhoneInput"
+                    placeholder="(555) 123-4567"
+                  />
+                </div>
+                <div class="full-row">
+                  <label for="projectAddressInput">Address</label>
+                  <textarea
+                    id="projectAddressInput"
+                    rows="2"
+                    placeholder="123 Main St, Exampleville, WA"
+                  ></textarea>
+                </div>
+                <div>
+                  <label for="projectTownshipInput">Township(s)</label>
+                  <input
+                    type="text"
+                    id="projectTownshipInput"
+                    placeholder="T12N, T13N"
+                  />
+                  <small class="app-hint">Separate multiple entries with commas</small>
+                </div>
+                <div>
+                  <label for="projectRangeInput">Range(s)</label>
+                  <input type="text" id="projectRangeInput" placeholder="R3W" />
+                  <small class="app-hint">Separate multiple entries with commas</small>
+                </div>
+                <div>
+                  <label for="projectSectionInput">Section(s)</label>
+                  <input
+                    type="text"
+                    id="projectSectionInput"
+                    placeholder="12, 13"
+                  />
+                  <small class="app-hint">Separate multiple entries with commas</small>
+                </div>
+                <div class="full-row">
+                  <label for="projectDescriptionInput">Description</label>
+                  <textarea
+                    id="projectDescriptionInput"
+                    rows="3"
+                    placeholder="Notes about scope, nearby landmarks, or routing instructions"
+                  ></textarea>
+                </div>
+              </div>
+              <div class="project-details-actions">
+                <button type="submit" id="saveProjectDetailsButton">
+                  Save Project Details
+                </button>
+              </div>
+            </form>
           </div>
 
           <h2>Project Apps</h2>
