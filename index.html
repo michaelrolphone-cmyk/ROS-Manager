@@ -165,12 +165,36 @@
         font-weight: bold;
         color: #1e40af;
       }
-      input[type="text"] {
+      input[type="text"],
+      select,
+      textarea:not(.command-full) {
         width: 100%;
         padding: 10px;
         border: 1px solid #ccc;
         border-radius: 6px;
         font-size: 16px;
+        background: #fff;
+      }
+
+      textarea:not(.command-full) {
+        resize: vertical;
+        min-height: 80px;
+      }
+
+      select {
+        appearance: none;
+        background: linear-gradient(180deg, #f8fbff 0%, #e0ecff 100%);
+        border-color: #bfdbfe;
+        color: #1e293b;
+        font-weight: 500;
+      }
+
+      select:focus,
+      textarea:not(.command-full):focus,
+      input[type="text"]:focus {
+        outline: 2px solid #bfdbfe;
+        outline-offset: 1px;
+        border-color: #1e40af;
       }
 
       table {
@@ -503,6 +527,10 @@
         display: inline-block;
         flex: 1;
       }
+
+      .start-dropdown-container.evidence-record-dropdown {
+        width: 100%;
+      }
       .start-dropdown-toggle {
         width: 100%;
         padding: 8px 10px;
@@ -574,6 +602,38 @@
         width: 50px;
         height: 50px;
         object-fit: contain;
+      }
+
+      .evidence-media-grid {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 6px;
+      }
+
+      .evidence-thumb {
+        width: 90px;
+        height: 90px;
+        border-radius: 8px;
+        border: 1px solid #cbd5f5;
+        object-fit: cover;
+        background: #fff;
+      }
+
+      .tie-photos {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 4px;
+      }
+
+      .tie-photo-thumb {
+        width: 70px;
+        height: 70px;
+        border-radius: 6px;
+        border: 1px solid #cbd5f5;
+        object-fit: cover;
+        background: #fff;
       }
 
       /* ================= MOBILE LAYOUT FIXES ================= */
@@ -763,6 +823,56 @@
 
         <h3>Project Overview</h3>
         <canvas id="projectOverviewCanvas"></canvas>
+
+        <div class="card">
+          <h3>Point File Manager</h3>
+          <p class="subtitle" style="margin-top: 0">
+            Import CSV point coordinate files to store and edit points with your
+            project. Columns should be: point number, x (or lat), y (or lon),
+            elevation, code (and description if last column), description.
+          </p>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center">
+            <button type="button" id="pointImportButton">
+              Import Points CSV
+            </button>
+            <button type="button" id="addPointRowButton">Add Point Row</button>
+            <button type="button" id="newPointFileButton">New Point File</button>
+            <button type="button" id="downloadPointsButton" class="success">
+              Download Points TXT
+            </button>
+            <label style="font-weight: 600; color: #1e40af">
+              Active Point File
+              <select id="pointFileSelect" style="margin-left: 8px; padding: 8px">
+                <option>No point files</option>
+              </select>
+            </label>
+            <input
+              type="file"
+              id="pointsFileInput"
+              accept=".csv,text/csv"
+              style="display: none"
+            />
+          </div>
+
+          <table id="pointsTable">
+            <thead>
+              <tr>
+                <th>Point #</th>
+                <th>X / Lat</th>
+                <th>Y / Lon</th>
+                <th>Elevation</th>
+                <th>Code</th>
+                <th>Description</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="pointsTableBody">
+              <tr>
+                <td colspan="7">Create or select a project to manage points.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         <hr />
 
@@ -1034,7 +1144,26 @@
             <div class="form-grid">
               <div>
                 <label for="evidenceRecordSelect">Record</label>
-                <select id="evidenceRecordSelect"></select>
+                <div
+                  id="evidenceRecordDropdownContainer"
+                  class="start-dropdown-container evidence-record-dropdown"
+                >
+                  <button
+                    type="button"
+                    id="evidenceRecordDropdownToggle"
+                    class="start-dropdown-toggle"
+                  >
+                    <span class="label" id="evidenceRecordDropdownLabel"
+                      >Select a record</span
+                    >
+                    <span class="arrow">▼</span>
+                  </button>
+                  <div
+                    id="evidenceRecordDropdownMenu"
+                    class="start-dropdown-menu"
+                  ></div>
+                </div>
+                <select id="evidenceRecordSelect" style="display: none"></select>
               </div>
               <div>
                 <label for="evidencePointSelect">Traverse Point</label>
@@ -1095,6 +1224,14 @@
               rows="2"
               placeholder="Tree blaze, fence post, rebar, etc."
             ></textarea>
+
+            <label for="evidenceTiePhotos">Tie Photos</label>
+            <input
+              id="evidenceTiePhotos"
+              type="file"
+              accept="image/*"
+              multiple
+            />
             <button type="button" id="addEvidenceTie">Add Tie</button>
             <p class="subtitle" id="evidenceTiesHint" style="margin: 6px 0 0 0">
               No ties added yet.

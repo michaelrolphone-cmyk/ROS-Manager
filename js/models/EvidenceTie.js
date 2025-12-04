@@ -1,8 +1,14 @@
 export default class EvidenceTie {
-  constructor({ distance = "", bearing = "", description = "" } = {}) {
+  constructor({
+    distance = "",
+    bearing = "",
+    description = "",
+    photos = [],
+  } = {}) {
     this.distance = distance;
     this.bearing = bearing;
     this.description = description;
+    this.photos = photos;
   }
 
   static fromObject(obj = {}) {
@@ -10,6 +16,7 @@ export default class EvidenceTie {
       distance: obj.distance || "",
       bearing: obj.bearing || "",
       description: obj.description || "",
+      photos: obj.photos || [],
     });
   }
 
@@ -18,6 +25,7 @@ export default class EvidenceTie {
       distance: this.distance,
       bearing: this.bearing,
       description: this.description,
+      photos: this.photos || [],
     };
   }
 }
