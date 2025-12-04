@@ -28,6 +28,13 @@ export default class AppController {
     this.currentEvidenceTies = [];
     this.currentTraversePointOptions = [];
     this.currentEquipmentLocation = null;
+    this.heroCollapsed = false;
+    this.defaultHeroMapLayer =
+      "url('data:image/svg+xml,%3Csvg width=\\"400\\" height=\\"240\\" viewBox=\\"0 0 400 240\\" fill=\\"none\\" xmlns=\\"http://www.w3.org/2000/svg\\"%3E%3Cg opacity=\\"0.35\\" stroke=\\"%23a5b4fc\\" stroke-width=\\"1.5\\"%3E%3Cpath d=\\"M-40 24C40 52 120 52 200 24C280 -4 360 -4 440 24\\"/%3E%3Cpath d=\\"M-40 84C40 112 120 112 200 84C280 56 360 56 440 84\\"/%3E%3Cpath d=\\"M-40 144C40 172 120 172 200 144C280 116 360 116 440 144\\"/%3E%3Cpath d=\\"M-40 204C40 232 120 232 200 204C280 176 360 176 440 204\\"/%3E%3Cpath d=\\"M120 -20C92 60 92 140 120 220\\"/%3E%3Cpath d=\\"M200 -20C172 60 172 140 200 220\\"/%3E%3Cpath d=\\"M280 -20C252 60 252 140 280 220\\"/%3E%3C/g%3E%3Ccircle cx=\\"200\\" cy=\\"120\\" r=\\"60\\" stroke=\\"%23638cf5\\" stroke-width=\\"2.5\\" opacity=\\"0.35\\"/%3E%3C/svg%3E')";
+    this.geocodeCache = {};
+    this.currentMapAddressKey = "";
+    this.currentMapUrl = null;
+    this.pendingMapRequestId = 0;
 
     this.cacheDom();
     this.appLaunchers = document.querySelectorAll(".app-tile");
@@ -92,6 +99,32 @@ export default class AppController {
       projectControls: document.getElementById("projectControls"),
       projectNameInput: document.getElementById("projectNameInput"),
       currentProjectName: document.getElementById("currentProjectName"),
+      projectDetailName: document.getElementById("projectDetailName"),
+      projectClientInput: document.getElementById("projectClientInput"),
+      projectClientPhoneInput: document.getElementById("projectClientPhoneInput"),
+      projectAddressInput: document.getElementById("projectAddressInput"),
+      projectTownshipInput: document.getElementById("projectTownshipInput"),
+      projectRangeInput: document.getElementById("projectRangeInput"),
+      projectSectionInput: document.getElementById("projectSectionInput"),
+      projectDescriptionInput: document.getElementById("projectDescriptionInput"),
+      saveProjectDetailsButton: document.getElementById("saveProjectDetailsButton"),
+      projectDetailsForm: document.getElementById("projectDetailsForm"),
+      editProjectDetailsButton: document.getElementById("editProjectDetailsButton"),
+      projectDetailsCard: document.getElementById("projectDetailsCard"),
+      springboardHero: document.getElementById("springboardHero"),
+      springboardProjectTitle: document.getElementById("springboardProjectTitle"),
+      springboardProjectDescription: document.getElementById(
+        "springboardProjectDescription"
+      ),
+      springboardStatusChip: document.getElementById("springboardStatusChip"),
+      springboardClientValue: document.getElementById("springboardClientValue"),
+      springboardClientPhoneValue: document.getElementById(
+        "springboardClientPhoneValue"
+      ),
+      springboardAddressValue: document.getElementById("springboardAddressValue"),
+      springboardTownshipValue: document.getElementById("springboardTownshipValue"),
+      springboardRangeValue: document.getElementById("springboardRangeValue"),
+      springboardSectionValue: document.getElementById("springboardSectionValue"),
       recordNameInput: document.getElementById("recordNameInput"),
       recordList: document.getElementById("recordList"),
       editor: document.getElementById("editor"),
@@ -222,6 +255,15 @@ export default class AppController {
     document
       .getElementById("createRecordButton")
       ?.addEventListener("click", () => this.createRecord());
+    this.elements.editProjectDetailsButton?.addEventListener("click", (e) => {
+      e.preventDefault();
+      this.setProjectDetailsEditing(true);
+    });
+
+    this.elements.projectDetailsForm?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      this.saveProjectDetails();
+    });
 
     this.elements.projectDropdownToggle?.addEventListener("click", () =>
       this.toggleProjectDropdown()
@@ -405,6 +447,9 @@ export default class AppController {
     this.elements.resetEquipmentButton?.addEventListener("click", () =>
       this.resetEquipmentForm()
     );
+
+    window.addEventListener("scroll", () => this.handleSpringboardScroll());
+    window.addEventListener("resize", () => this.handleSpringboardScroll());
   }
 
   initialize() {
@@ -415,11 +460,14 @@ export default class AppController {
     } else {
       this.drawProjectOverview();
       this.pointController.renderPointsTable();
+      this.populateProjectDetailsForm(null);
+      this.updateSpringboardHero();
     }
     this.refreshEvidenceUI();
     this.renderEvidenceTies();
     this.refreshEquipmentUI();
     this.switchTab("springboardSection");
+    this.handleSpringboardScroll();
   }
 
   saveProjects() {
@@ -547,6 +595,8 @@ export default class AppController {
       this.pointController.renderPointsTable();
       this.refreshEvidenceUI();
       this.navigationController?.onProjectChanged();
+      this.populateProjectDetailsForm(null);
+      this.updateSpringboardHero();
       return;
     }
 
@@ -563,6 +613,9 @@ export default class AppController {
     this.resetEquipmentForm();
     this.refreshEquipmentUI();
     this.navigationController?.onProjectChanged();
+    this.populateProjectDetailsForm(this.projects[id]);
+    this.updateSpringboardHero();
+    this.handleSpringboardScroll();
   }
 
   newProject() {
@@ -581,6 +634,92 @@ export default class AppController {
     this.loadProject(id);
   }
 
+  populateProjectDetailsForm(project) {
+    const fields = [
+      [this.elements.projectDetailName, project?.name || ""],
+      [this.elements.projectClientInput, project?.clientName || ""],
+      [this.elements.projectClientPhoneInput, project?.clientPhone || ""],
+      [this.elements.projectAddressInput, project?.address || ""],
+      [
+        this.elements.projectTownshipInput,
+        project?.townships?.length ? project.townships.join(", ") : "",
+      ],
+      [
+        this.elements.projectRangeInput,
+        project?.ranges?.length ? project.ranges.join(", ") : "",
+      ],
+      [
+        this.elements.projectSectionInput,
+        project?.sections?.length ? project.sections.join(", ") : "",
+      ],
+      [this.elements.projectDescriptionInput, project?.description || ""],
+    ];
+
+    const hasProject = Boolean(project);
+
+    fields.forEach(([el, value]) => {
+      if (el) {
+        el.value = value;
+        el.disabled = !hasProject;
+      }
+    });
+
+    if (this.elements.editProjectDetailsButton) {
+      this.elements.editProjectDetailsButton.disabled = !hasProject;
+    }
+
+    this.setProjectDetailsEditing(false);
+  }
+
+  parseDelimitedInput(value = "") {
+    return value
+      .split(/[,;\n]/)
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+  }
+
+  setProjectDetailsEditing(isEditing) {
+    const card = this.elements.projectDetailsCard;
+    const hasProject = Boolean(
+      this.currentProjectId && this.projects[this.currentProjectId]
+    );
+    if (!card) return;
+    card.classList.toggle("editing", Boolean(isEditing && hasProject));
+  }
+
+  saveProjectDetails() {
+    if (!this.currentProjectId || !this.projects[this.currentProjectId]) {
+      alert("Create or select a project first.");
+      return;
+    }
+
+    const project = this.projects[this.currentProjectId];
+    project.name = (this.elements.projectDetailName?.value || project.name || "")
+      .trim() || project.name;
+    project.clientName = (this.elements.projectClientInput?.value || "").trim();
+    project.clientPhone = (this.elements.projectClientPhoneInput?.value || "")
+      .trim();
+    project.address = (this.elements.projectAddressInput?.value || "").trim();
+    project.townships = this.parseDelimitedInput(
+      this.elements.projectTownshipInput?.value
+    );
+    project.ranges = this.parseDelimitedInput(
+      this.elements.projectRangeInput?.value
+    );
+    project.sections = this.parseDelimitedInput(
+      this.elements.projectSectionInput?.value
+    );
+    project.description = (this.elements.projectDescriptionInput?.value || "")
+      .trim();
+
+    this.saveProjects();
+    this.elements.currentProjectName.textContent = project.name || "No project selected";
+    this.updateProjectList();
+    this.updateSpringboardHero();
+    this.handleSpringboardScroll();
+    this.setProjectDetailsEditing(false);
+  }
+
   deleteCurrentProject() {
     if (!this.currentProjectId || !confirm("Delete entire project and all records?"))
       return;
@@ -595,6 +734,9 @@ export default class AppController {
     this.updateProjectList();
     this.drawProjectOverview();
     this.pointController.renderPointsTable();
+    this.populateProjectDetailsForm(null);
+    this.updateSpringboardHero();
+    this.handleSpringboardScroll();
   }
 
   renderRecordList() {
@@ -717,6 +859,179 @@ export default class AppController {
     this.refreshEvidenceUI(record.id);
   }
 
+  formatListForDisplay(list) {
+    if (!Array.isArray(list) || list.length === 0) return "—";
+    return list.join(", ");
+  }
+
+  updateSpringboardHero() {
+    const project = this.currentProjectId
+      ? this.projects[this.currentProjectId]
+      : null;
+    const hero = this.elements.springboardHero;
+    const titleEl = this.elements.springboardProjectTitle;
+    const descEl = this.elements.springboardProjectDescription;
+    const chipEl = this.elements.springboardStatusChip;
+
+    if (hero) {
+      hero.classList.toggle("empty", !project);
+      if (!project) hero.classList.remove("collapsed");
+    }
+
+    if (!project) {
+      if (titleEl) titleEl.textContent = "No project selected";
+      if (descEl)
+        descEl.textContent =
+          "Create or open a project to see its location context.";
+      if (chipEl) chipEl.textContent = "No project";
+    } else {
+      if (titleEl) titleEl.textContent = project.name || "Active Project";
+      if (descEl)
+        descEl.textContent =
+          project.description?.trim() ||
+          "Add a project description to guide the crew.";
+      if (chipEl) chipEl.textContent = "Active";
+    }
+
+    const setValue = (el, value) => {
+      if (!el) return;
+      el.textContent = value && value.trim ? value.trim() : value;
+    };
+
+    setValue(this.elements.springboardClientValue, project?.clientName || "—");
+    setValue(
+      this.elements.springboardClientPhoneValue,
+      project?.clientPhone || "—"
+    );
+    setValue(this.elements.springboardAddressValue, project?.address || "—");
+    setValue(
+      this.elements.springboardTownshipValue,
+      this.formatListForDisplay(project?.townships || [])
+    );
+    setValue(
+      this.elements.springboardRangeValue,
+      this.formatListForDisplay(project?.ranges || [])
+    );
+    setValue(
+      this.elements.springboardSectionValue,
+      this.formatListForDisplay(project?.sections || [])
+    );
+
+    this.updateSpringboardMapLayer(project);
+  }
+
+  async updateSpringboardMapLayer(project) {
+    const hero = this.elements.springboardHero;
+    if (!hero) return;
+
+    const address = project?.address?.trim();
+    if (!address) {
+      this.currentMapAddressKey = "";
+      this.currentMapUrl = null;
+      hero.style.setProperty("--hero-map-layer", this.defaultHeroMapLayer);
+      return;
+    }
+
+    const normalizedAddress = address.toLowerCase();
+    if (
+      this.currentMapAddressKey === normalizedAddress &&
+      this.currentMapUrl
+    ) {
+      hero.style.setProperty(
+        "--hero-map-layer",
+        `url('${this.currentMapUrl}')`
+      );
+      return;
+    }
+
+    this.currentMapAddressKey = normalizedAddress;
+    hero.style.setProperty("--hero-map-layer", this.defaultHeroMapLayer);
+    const requestId = Date.now();
+    this.pendingMapRequestId = requestId;
+
+    try {
+      const mapUrl = await this.resolveAddressToMap(address);
+      if (this.pendingMapRequestId !== requestId) return;
+      this.currentMapUrl = mapUrl;
+      hero.style.setProperty(
+        "--hero-map-layer",
+        mapUrl ? `url('${mapUrl}')` : this.defaultHeroMapLayer
+      );
+    } catch (err) {
+      console.warn("Map lookup failed", err);
+    }
+  }
+
+  async resolveAddressToMap(address) {
+    const normalized = address.trim().toLowerCase();
+    if (this.geocodeCache[normalized] !== undefined) {
+      return this.geocodeCache[normalized];
+    }
+
+    if (typeof fetch !== "function") {
+      this.geocodeCache[normalized] = null;
+      return null;
+    }
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(
+          address
+        )}`,
+        {
+          headers: {
+            "Accept-Language": "en",
+          },
+        }
+      );
+      const data = await response.json();
+      if (Array.isArray(data) && data.length) {
+        const { lat, lon } = data[0];
+        const mapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lon}&zoom=14&size=1200x600&markers=${lat},${lon},red-pushpin`;
+        this.geocodeCache[normalized] = mapUrl;
+        return mapUrl;
+      }
+    } catch (err) {
+      console.warn("Geocode lookup failed", err);
+    }
+
+    this.geocodeCache[normalized] = null;
+    return null;
+  }
+
+  handleSpringboardScroll() {
+    const hero = this.elements.springboardHero;
+    if (!hero) return;
+    const isActive = this.elements.springboardSection?.classList.contains(
+      "active"
+    );
+    if (!isActive) {
+      hero.style.setProperty("--parallax-offset", "0px");
+      hero.classList.remove("collapsed");
+      this.heroCollapsed = false;
+      return;
+    }
+
+    const scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
+    const offsetTop = hero.offsetTop || 0;
+    const distance = Math.max(0, scrollTop - offsetTop);
+
+    hero.style.setProperty("--parallax-offset", `${distance * 0.35}px`);
+    const collapseThreshold = Math.max(80, hero.offsetHeight * 0.55);
+    const hysteresis = 20;
+
+    if (!this.heroCollapsed && distance > collapseThreshold + hysteresis) {
+      hero.classList.add("collapsed");
+      this.heroCollapsed = true;
+    } else if (
+      this.heroCollapsed &&
+      distance < collapseThreshold - hysteresis
+    ) {
+      hero.classList.remove("collapsed");
+      this.heroCollapsed = false;
+    }
+  }
+
   /* ===================== Evidence Logger ===================== */
   switchTab(targetId) {
     const sections = [
@@ -742,6 +1057,8 @@ export default class AppController {
       sec.classList.toggle("active", isTarget);
       sec.style.display = isTarget ? "block" : "none";
     });
+
+    this.handleSpringboardScroll();
 
     buttons.forEach((btn) => {
       if (!btn) return;
