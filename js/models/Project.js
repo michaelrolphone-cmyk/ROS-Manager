@@ -1,6 +1,7 @@
 import SurveyRecord from "./SurveyRecord.js";
 import EquipmentLog from "./EquipmentLog.js";
 import NavigationBookmark from "./NavigationBookmark.js";
+import LevelRun from "./LevelRun.js";
 
 import Point from "./Point.js";
 import PointFile from "./PointFile.js";
@@ -24,6 +25,7 @@ export default class Project {
     activePointFileId = null,
     navigationBookmarks = [],
     localization = null,
+    levelRuns = [],
   } = {}) {
     this.name = name;
     this.description = description;
@@ -72,6 +74,11 @@ export default class Project {
     this.referencePoints = Array.isArray(referencePoints)
       ? referencePoints
       : [];
+    this.levelRuns = Array.isArray(levelRuns)
+      ? levelRuns.map((run) =>
+          run instanceof LevelRun ? run : LevelRun.fromObject(run)
+        )
+      : [];
   }
 
   static fromObject(obj = {}) {
@@ -106,6 +113,9 @@ export default class Project {
           : NavigationBookmark.fromObject(entry).toObject()
       ),
       localization: this.localization,
+      levelRuns: this.levelRuns.map((run) =>
+        run instanceof LevelRun ? run.toObject() : LevelRun.fromObject(run).toObject()
+      ),
     };
   }
 }
