@@ -2,6 +2,9 @@ import ProjectRepository from "../services/ProjectRepository.js";
 import Project from "../models/Project.js";
 import SurveyRecord from "../models/SurveyRecord.js";
 import TraverseInstruction from "../models/TraverseInstruction.js";
+import CornerEvidence from "../models/CornerEvidence.js";
+import EvidenceTie from "../models/EvidenceTie.js";
+import CornerEvidenceService from "../services/CornerEvidenceService.js";
 
 export default class AppController {
   constructor() {
@@ -16,8 +19,7 @@ export default class AppController {
       drawPoints: "",
       drawLines: "",
     };
-    this.EVIDENCE_KEY = "carlsonSurveyEvidence";
-    this.evidenceByProject = this.loadEvidenceByProject();
+    this.cornerEvidenceService = new CornerEvidenceService();
     this.currentEvidencePhoto = null;
     this.currentEvidenceLocation = null;
     this.currentEvidenceTies = [];
@@ -259,25 +261,6 @@ export default class AppController {
     }
     this.refreshEvidenceUI();
     this.renderEvidenceTies();
-  }
-
-  loadEvidenceByProject() {
-    const raw = localStorage.getItem(this.EVIDENCE_KEY);
-    if (!raw) return {};
-    try {
-      const parsed = JSON.parse(raw);
-      return parsed && typeof parsed === "object" ? parsed : {};
-    } catch (e) {
-      console.warn("Failed to parse evidence", e);
-      return {};
-    }
-  }
-
-  saveEvidenceByProject() {
-    localStorage.setItem(
-      this.EVIDENCE_KEY,
-      JSON.stringify(this.evidenceByProject)
-    );
   }
 
   saveProjects() {
@@ -772,7 +755,7 @@ export default class AppController {
       (p) => p.index === pointIndex
     );
     const record = this.projects[this.currentProjectId]?.records?.[recordId];
-    const entry = {
+    const entry = new CornerEvidence({
       id: Date.now().toString(),
       projectId: this.currentProjectId,
       recordId,
@@ -783,29 +766,25 @@ export default class AppController {
       type: this.elements.evidenceType?.value || "",
       condition: this.elements.evidenceCondition?.value || "",
       notes: this.elements.evidenceNotes?.value.trim() || "",
-      ties: [...this.currentEvidenceTies],
+      ties: this.currentEvidenceTies.map(
+        (tie) =>
+          tie instanceof EvidenceTie ? tie : new EvidenceTie({ ...tie })
+      ),
       photo: this.currentEvidencePhoto || null,
       location: this.currentEvidenceLocation || null,
       createdAt: new Date().toISOString(),
-    };
+    });
 
-    if (!this.evidenceByProject[this.currentProjectId]) {
-      this.evidenceByProject[this.currentProjectId] = [];
-    }
-    this.evidenceByProject[this.currentProjectId].push(entry);
-    this.saveEvidenceByProject();
+    this.cornerEvidenceService.addEntry(entry);
     this.resetEvidenceForm();
     this.renderEvidenceList();
   }
 
-  getCurrentProjectEvidence() {
-    if (!this.currentProjectId) return [];
-    return this.evidenceByProject[this.currentProjectId] || [];
-  }
-
   renderEvidenceList() {
     if (!this.elements.evidenceList || !this.elements.evidenceSummary) return;
-    const evidence = this.getCurrentProjectEvidence();
+    const evidence = this.cornerEvidenceService.getProjectEvidence(
+      this.currentProjectId
+    );
     const container = this.elements.evidenceList;
     container.innerHTML = "";
 
