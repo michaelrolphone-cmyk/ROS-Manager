@@ -707,7 +707,19 @@ export default class AppController {
       this.elements.homeButton.classList.toggle("visible", showHome);
     }
 
-    if (resolvedTarget === "evidenceSection") {
+    this.appLaunchers?.forEach((launcher) => {
+      if (launcher.dataset.target === targetId)
+        launcher.classList.add("active");
+      else launcher.classList.remove("active");
+    });
+
+    if (this.elements.homeButton) {
+      const showHome = targetId !== "springboardSection";
+      this.elements.homeButton.classList.toggle("visible", showHome);
+    }
+
+    if (targetId === "evidenceSection") {
+
       this.refreshEvidenceUI();
     } else if (resolvedTarget === "equipmentSection") {
       this.refreshEquipmentUI();
@@ -1306,6 +1318,8 @@ export default class AppController {
         `;
         container.appendChild(card);
       });
+  }
+
   exportCornerFiling(entry) {
     if (!entry) return;
     const projectName = this.projects[entry.projectId]?.name || "Project";
