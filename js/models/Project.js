@@ -20,6 +20,7 @@ export default class Project {
     pointFiles = [],
     activePointFileId = null,
     navigationBookmarks = [],
+    localization = null,
   } = {}) {
     this.name = name;
     this.description = description;
@@ -52,6 +53,8 @@ export default class Project {
         ? entry
         : NavigationBookmark.fromObject(entry)
     );
+
+    this.localization = localization || null;
 
     Object.entries(records).forEach(([id, record]) => {
       this.records[id] = record instanceof SurveyRecord
@@ -91,6 +94,7 @@ export default class Project {
           ? entry.toObject()
           : NavigationBookmark.fromObject(entry).toObject()
       ),
+      localization: this.localization,
     };
   }
 }

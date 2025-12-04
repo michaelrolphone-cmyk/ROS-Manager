@@ -352,6 +352,22 @@
         padding: 16px;
       }
 
+      .navigation-panel.hidden {
+        display: none;
+      }
+
+      .navigation-map iframe {
+        width: 100%;
+        height: 320px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        background: #e2e8f0;
+      }
+
+      .navigation-map .stat-chip {
+        margin-top: 10px;
+      }
+
       .compass-wrapper {
         display: flex;
         flex-direction: column;
@@ -1741,8 +1757,65 @@
                 <div class="subtitle" id="navigationStatus" style="margin: 0"></div>
               </div>
 
+              <div class="navigation-panel navigation-map hidden" id="navigationMapPanel">
+                <h4 style="margin-top: 0">Map Preview</h4>
+                <iframe
+                  id="navigationMapFrame"
+                  title="Navigation Map"
+                  loading="lazy"
+                  referrerpolicy="no-referrer-when-downgrade"
+                ></iframe>
+                <div class="stat-chip">
+                  <div class="stat-label">Map Status</div>
+                  <div class="stat-value" id="navigationMapStatus">Apply GPS localization to view the map.</div>
+                </div>
+              </div>
+
               <div class="navigation-panel navigation-actions">
                 <h4>Targets &amp; Saved Spots</h4>
+                <div class="card" style="margin: 0 0 12px 0; padding: 12px">
+                  <h4 style="margin: 0 0 8px 0">GPS Localization</h4>
+                  <p class="subtitle" id="localizationSummary" style="margin: 0 0 8px 0">
+                    Choose a known point and enter its GPS coordinates to convert
+                    local traverse and point file coordinates into navigation targets.
+                  </p>
+                  <label for="localizationSource">Anchor Source</label>
+                  <select id="localizationSource">
+                    <option value="traverse">Traverse point</option>
+                    <option value="pointFile">Point file</option>
+                  </select>
+
+                  <div id="localizationTraverseFields">
+                    <label for="localizationRecord">Traverse record</label>
+                    <select id="localizationRecord"></select>
+                    <label for="localizationTraversePoint">Traverse point</label>
+                    <select id="localizationTraversePoint"></select>
+                  </div>
+
+                  <div id="localizationPointFileFields" style="display: none">
+                    <label for="localizationPointFile">Point file</label>
+                    <select id="localizationPointFile"></select>
+                    <label for="localizationPointNumber">Point number</label>
+                    <select id="localizationPointNumber"></select>
+                  </div>
+
+                  <div class="form-grid" style="margin-top: 12px">
+                    <div>
+                      <label for="localizationLat">Anchor Latitude</label>
+                      <input type="text" id="localizationLat" placeholder="e.g., 34.123456" />
+                    </div>
+                    <div>
+                      <label for="localizationLon">Anchor Longitude</label>
+                      <input type="text" id="localizationLon" placeholder="e.g., -117.123456" />
+                    </div>
+                  </div>
+
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px">
+                    <button type="button" class="success" id="applyLocalization">Apply GPS localization</button>
+                    <button type="button" class="secondary" id="clearLocalization">Clear localization</button>
+                  </div>
+                  <div class="subtitle" id="localizationStatus" style="margin-top: 6px"></div>
+                </div>
                 <label for="navigationBookmarkName">Name to save current position</label>
                 <input
                   type="text"
