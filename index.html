@@ -763,11 +763,15 @@
             <div class="form-grid">
               <div>
                 <label for="equipmentSetupBy">Set Up By</label>
-                <input
-                  id="equipmentSetupBy"
-                  type="text"
-                  placeholder="Crew or person responsible"
-                />
+                <select id="equipmentSetupBy"></select>
+              </div>
+              <div>
+                <label for="equipmentUsed">Equipment Used</label>
+                <select id="equipmentUsed" multiple></select>
+                <small class="app-hint">
+                  Hold Ctrl (Windows) or Command (Mac) to select multiple
+                  items.
+                </small>
               </div>
               <div>
                 <label for="captureEquipmentLocation">GPS Location</label>

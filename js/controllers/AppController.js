@@ -249,6 +249,7 @@ export default class AppController {
         "equipmentReferencePointOptions"
       ),
       equipmentSetupBy: document.getElementById("equipmentSetupBy"),
+      equipmentUsed: document.getElementById("equipmentUsed"),
       captureEquipmentLocation: document.getElementById(
         "captureEquipmentLocation"
       ),
@@ -561,10 +562,14 @@ export default class AppController {
       this.elements.equipmentTearDownAt,
       this.elements.equipmentBaseHeight,
       this.elements.equipmentReferencePoint,
+      this.elements.equipmentUsed,
       this.elements.equipmentSetupBy,
       this.elements.equipmentWorkNotes,
     ].forEach((el) => {
       el?.addEventListener("input", () => this.updateEquipmentSaveState());
+      if (el?.tagName === "SELECT") {
+        el.addEventListener("change", () => this.updateEquipmentSaveState());
+      }
     });
 
     this.elements.equipmentReferencePointPicker?.addEventListener(
@@ -1417,6 +1422,8 @@ export default class AppController {
       this.refreshEvidenceUI();
     } else if (resolvedTarget === "equipmentSection") {
       this.refreshEquipmentUI();
+    } else if (resolvedTarget === "traverseSection") {
+      this.renderRecordList();
     }
     if (resolvedTarget === "pointsSection") {
       this.pointController.renderPointsTable();
@@ -1873,6 +1880,8 @@ export default class AppController {
   /* ===================== Equipment Setup ===================== */
   refreshEquipmentUI() {
     this.renderReferencePointOptions();
+    this.renderEquipmentSetupByOptions();
+    this.renderEquipmentPickerOptions();
     this.renderEquipmentList();
     this.updateEquipmentSaveState();
   }
@@ -1883,6 +1892,7 @@ export default class AppController {
       this.elements.equipmentTearDownAt,
       this.elements.equipmentBaseHeight,
       this.elements.equipmentReferencePoint,
+      this.elements.equipmentUsed,
       this.elements.equipmentSetupBy,
       this.elements.equipmentWorkNotes,
     ].forEach((el) => {
@@ -1890,6 +1900,11 @@ export default class AppController {
     });
     if (this.elements.equipmentReferencePointPicker) {
       this.elements.equipmentReferencePointPicker.value = "";
+    }
+    if (this.elements.equipmentUsed) {
+      Array.from(this.elements.equipmentUsed.options).forEach((opt) => {
+        opt.selected = false;
+      });
     }
     if (this.elements.equipmentFormStatus) {
       this.elements.equipmentFormStatus.textContent = "";
@@ -1948,16 +1963,24 @@ export default class AppController {
       }
     });
 
+    const sortedOptions = Array.from(options).sort((a, b) => {
+      const priority = (label) => (/base/i.test(label) || /rerf/i.test(label)) ? 1 : 0;
+      const aPriority = priority(a);
+      const bPriority = priority(b);
+      if (aPriority !== bPriority) return bPriority - aPriority;
+      return a.localeCompare(b, undefined, { sensitivity: "base" });
+    });
+
     picker.innerHTML = "";
     const placeholder = document.createElement("option");
     placeholder.value = "";
     placeholder.textContent =
-      options.size > 0
+      sortedOptions.length > 0
         ? "Select a stored reference point"
         : "No saved reference points";
     picker.appendChild(placeholder);
 
-    options.forEach((label) => {
+    sortedOptions.forEach((label) => {
       const opt = document.createElement("option");
       opt.value = label;
       opt.dataset.label = label;
@@ -1966,10 +1989,101 @@ export default class AppController {
     });
 
     datalist.innerHTML = "";
-    options.forEach((label) => {
+    sortedOptions.forEach((label) => {
       const opt = document.createElement("option");
       opt.value = label;
       datalist.appendChild(opt);
+    });
+  }
+
+  renderEquipmentSetupByOptions() {
+    const select = this.elements.equipmentSetupBy;
+    if (!select) return;
+
+    const previousValue = select.value;
+    select.innerHTML = "";
+    const members = (this.globalSettings.teamMembers || []).filter(Boolean);
+
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent =
+      members.length > 0 ? "Select team member" : "Add team members in settings";
+    select.appendChild(placeholder);
+
+    members
+      .slice()
+      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
+      .forEach((member) => {
+        const opt = document.createElement("option");
+        opt.value = member;
+        opt.textContent = member;
+        select.appendChild(opt);
+      });
+
+    select.value = previousValue;
+    if (previousValue && select.value !== previousValue) {
+      const fallback = document.createElement("option");
+      fallback.value = previousValue;
+      fallback.textContent = previousValue;
+      select.appendChild(fallback);
+      select.value = previousValue;
+    }
+  }
+
+  renderEquipmentPickerOptions() {
+    const select = this.elements.equipmentUsed;
+    if (!select) return;
+
+    const previousSelection = Array.from(select.selectedOptions).map(
+      (opt) => opt.value
+    );
+    const project = this.projects[this.currentProjectId];
+    const names = new Set();
+
+    (this.globalSettings.equipment || [])
+      .filter(Boolean)
+      .forEach((name) => names.add(name));
+    project?.equipmentLogs?.forEach((log) => {
+      (log.equipmentUsed || [])
+        .filter(Boolean)
+        .forEach((name) => names.add(name));
+    });
+    previousSelection.filter(Boolean).forEach((name) => names.add(name));
+
+    const sorted = Array.from(names).sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: "base" })
+    );
+
+    select.innerHTML = "";
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.disabled = true;
+    placeholder.hidden = true;
+    placeholder.textContent =
+      sorted.length > 0
+        ? "Select equipment used (optional)"
+        : "Add equipment names in settings";
+    select.appendChild(placeholder);
+
+    sorted.forEach((name) => {
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      select.appendChild(opt);
+    });
+
+    previousSelection.forEach((name) => {
+      const option = Array.from(select.options).find(
+        (opt) => opt.value === name
+      );
+      if (option) option.selected = true;
+      else {
+        const fallback = document.createElement("option");
+        fallback.value = name;
+        fallback.textContent = name;
+        fallback.selected = true;
+        select.appendChild(fallback);
+      }
     });
   }
 
@@ -2041,12 +2155,18 @@ export default class AppController {
     project.equipmentLogs = project.equipmentLogs || [];
     const referencePoint =
       this.elements.equipmentReferencePoint?.value.trim() || "";
+    const equipmentUsed = Array.from(
+      this.elements.equipmentUsed?.selectedOptions || []
+    )
+      .map((opt) => opt.value)
+      .filter(Boolean);
     const workNotes = this.elements.equipmentWorkNotes?.value.trim() || "";
     const payload = {
       setupAt: this.elements.equipmentSetupAt?.value || "",
       tearDownAt: this.elements.equipmentTearDownAt?.value || "",
       baseHeight: this.elements.equipmentBaseHeight?.value.trim() || "",
       referencePoint,
+      equipmentUsed,
       setupBy: this.elements.equipmentSetupBy?.value.trim() || "",
       workNotes,
     };
@@ -2121,6 +2241,10 @@ export default class AppController {
         const teardownTime = log.tearDownAt
           ? new Date(log.tearDownAt).toLocaleString()
           : "Not recorded";
+        const equipmentList =
+          log.equipmentUsed?.length
+            ? log.equipmentUsed.join(", ")
+            : "None selected";
         const locationText = log.location
           ? `Lat ${log.location.lat.toFixed(6)}, Lon ${log.location.lon.toFixed(
               6
@@ -2137,6 +2261,7 @@ export default class AppController {
           <div>Reference point: ${this.escapeHtml(
             log.referencePoint || ""
           )}</div>
+          <div>Equipment: ${this.escapeHtml(equipmentList)}</div>
           <div>Set up by: ${this.escapeHtml(log.setupBy || "")}</div>
           <div>Location: ${this.escapeHtml(locationText)}</div>
         `;
@@ -2157,6 +2282,16 @@ export default class AppController {
           this.logEquipmentTeardown(log.id)
         );
         actions.appendChild(teardownBtn);
+
+        if (log.location) {
+          const navBtn = document.createElement("button");
+          navBtn.type = "button";
+          navBtn.textContent = "Navigate to this base";
+          navBtn.addEventListener("click", () =>
+            this.openEquipmentInNavigation(log.id)
+          );
+          actions.appendChild(navBtn);
+        }
 
         const editBtn = document.createElement("button");
         editBtn.type = "button";
@@ -2191,6 +2326,21 @@ export default class AppController {
     this.navigationController?.onEquipmentLogsChanged();
   }
 
+  openEquipmentInNavigation(id) {
+    const project = this.projects[this.currentProjectId];
+    if (!project?.equipmentLogs || !this.navigationController) return;
+    const entry = project.equipmentLogs.find((log) => log.id === id);
+    if (!entry?.location) return;
+
+    this.navigationController.renderEquipmentOptions();
+    if (this.elements.navigationEquipmentSelect) {
+      this.elements.navigationEquipmentSelect.value = id;
+    }
+    this.navigationController.applyEquipmentTarget(id);
+    this.switchTab("navigationSection");
+    this.elements.navigationSection?.scrollIntoView({ behavior: "smooth" });
+  }
+
   startEditingEquipmentEntry(id) {
     const project = this.projects[this.currentProjectId];
     if (!project?.equipmentLogs) return;
@@ -2209,6 +2359,24 @@ export default class AppController {
       this.elements.equipmentSetupBy.value = entry.setupBy || "";
     if (this.elements.equipmentWorkNotes)
       this.elements.equipmentWorkNotes.value = entry.workNotes || "";
+    this.renderEquipmentPickerOptions();
+    if (this.elements.equipmentUsed) {
+      const desired = new Set(entry.equipmentUsed || []);
+      Array.from(this.elements.equipmentUsed.options).forEach((opt) => {
+        opt.selected = desired.has(opt.value);
+      });
+    }
+    if (
+      this.elements.equipmentSetupBy &&
+      entry.setupBy &&
+      this.elements.equipmentSetupBy.value !== entry.setupBy
+    ) {
+      const opt = document.createElement("option");
+      opt.value = entry.setupBy;
+      opt.textContent = entry.setupBy;
+      this.elements.equipmentSetupBy.appendChild(opt);
+      this.elements.equipmentSetupBy.value = entry.setupBy;
+    }
     if (this.elements.equipmentFormStatus) {
       this.elements.equipmentFormStatus.textContent =
         "Editing existing equipment entry";
@@ -3491,6 +3659,8 @@ export default class AppController {
       this.globalSettings.teamMembers
     );
     this.renderPointCodes();
+    this.renderEquipmentSetupByOptions();
+    this.renderEquipmentPickerOptions();
   }
 
   renderPillList(container, items) {
