@@ -6,6 +6,7 @@ export default class EquipmentLog {
     baseHeight = "",
     referencePoint = "",
     setupBy = "",
+    workNotes = "",
     location = null,
     recordedAt = new Date().toISOString(),
   } = {}) {
@@ -15,6 +16,7 @@ export default class EquipmentLog {
     this.baseHeight = baseHeight;
     this.referencePoint = referencePoint;
     this.setupBy = setupBy;
+    this.workNotes = workNotes;
     this.location = location;
     this.recordedAt = recordedAt;
   }
@@ -31,6 +33,7 @@ export default class EquipmentLog {
       baseHeight: this.baseHeight,
       referencePoint: this.referencePoint,
       setupBy: this.setupBy,
+      workNotes: this.workNotes,
       location: this.location,
       recordedAt: this.recordedAt,
     };
