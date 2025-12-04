@@ -29,9 +29,8 @@ export default class AppController {
     this.currentTraversePointOptions = [];
     this.currentEquipmentLocation = null;
     this.heroCollapsed = false;
-    this.defaultHeroMapLayer =
-      "url('data:image/svg+xml,%3Csvg width=\\"400\\" height=\\"240\\" viewBox=\\"0 0 400 240\\" fill=\\"none\\" xmlns=\\"http://www.w3.org/2000/svg\\"%3E%3Cg opacity=\\"0.35\\" stroke=\\"%23a5b4fc\\" stroke-width=\\"1.5\\"%3E%3Cpath d=\\"M-40 24C40 52 120 52 200 24C280 -4 360 -4 440 24\\"/%3E%3Cpath d=\\"M-40 84C40 112 120 112 200 84C280 56 360 56 440 84\\"/%3E%3Cpath d=\\"M-40 144C40 172 120 172 200 144C280 116 360 116 440 144\\"/%3E%3Cpath d=\\"M-40 204C40 232 120 232 200 204C280 176 360 176 440 204\\"/%3E%3Cpath d=\\"M120 -20C92 60 92 140 120 220\\"/%3E%3Cpath d=\\"M200 -20C172 60 172 140 200 220\\"/%3E%3Cpath d=\\"M280 -20C252 60 252 140 280 220\\"/%3E%3C/g%3E%3Ccircle cx=\\"200\\" cy=\\"120\\" r=\\"60\\" stroke=\\"%23638cf5\\" stroke-width=\\"2.5\\" opacity=\\"0.35\\"/%3E%3C/svg%3E')";
-    this.geocodeCache = {};
+this.defaultHeroMapLayer =
+  "url('data:image/svg+xml,%3Csvg width=\"400\" height=\"240\" viewBox=\"0 0 400 240\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg opacity=\"0.35\" stroke=\"%23a5b4fc\" stroke-width=\"1.5\"%3E%3Cpath d=\"M-40 24C40 52 120 52 200 24C280 -4 360 -4 440 24\"/%3E%3Cpath d=\"M-40 84C40 112 120 112 200 84C280 56 360 56 440 84\"/%3E%3Cpath d=\"M-40 144C40 172 120 172 200 144C280 116 360 116 440 144\"/%3E%3Cpath d=\"M-40 204C40 232 120 232 200 204C280 176 360 176 440 204\"/%3E%3Cpath d=\"M120 -20C92 60 92 140 120 220\"/%3E%3Cpath d=\"M200 -20C172 60 172 140 200 220\"/%3E%3Cpath d=\"M280 -20C252 60 252 140 280 220\"/%3E%3C/g%3E%3Ccircle cx=\"200\" cy=\"120\" r=\"60\" stroke=\"%23638cf5\" stroke-width=\"2.5\" opacity=\"0.35\"/%3E%3C/svg%3E')";    this.geocodeCache = {};
     this.currentMapAddressKey = "";
     this.currentMapUrl = null;
     this.pendingMapRequestId = 0;
