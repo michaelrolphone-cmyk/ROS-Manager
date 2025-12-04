@@ -1064,6 +1064,22 @@
           justify-content: center;
         }
       }
+
+      @media (max-width: 700px) and (orientation: portrait) {
+        body {
+          max-width: none;
+          width: 100%;
+          padding: 0;
+        }
+
+        .container {
+          border-radius: 0;
+        }
+
+        .springboard-hero {
+          border-radius: 0;
+        }
+      }
     </style>
   </head>
   <body>
