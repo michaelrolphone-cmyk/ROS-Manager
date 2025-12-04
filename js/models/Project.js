@@ -1,10 +1,38 @@
 import SurveyRecord from "./SurveyRecord.js";
 import EquipmentLog from "./EquipmentLog.js";
 
+import Point from "./Point.js";
+import PointFile from "./PointFile.js";
+
 export default class Project {
-  constructor({ name = "", records = {}, equipmentLogs = [] } = {}) {
+  constructor({
+    name = "",
+    records = {},
+    equipmentLogs = [],
+    points = [],
+    pointFiles = [],
+    activePointFileId = null,
+  } = {}) {
     this.name = name;
     this.records = {};
+    this.pointFiles = Array.isArray(pointFiles)
+      ? pointFiles.map((pf) =>
+          pf instanceof PointFile ? pf : PointFile.fromObject(pf)
+        )
+      : [];
+
+    if (this.pointFiles.length === 0 && Array.isArray(points) && points.length) {
+      const fallback = new PointFile({
+        name: "Imported Points",
+        points: points.map((pt) => (pt instanceof Point ? pt : Point.fromObject(pt))),
+      });
+      fallback.resetOriginals();
+      this.pointFiles.push(fallback);
+    }
+
+    this.activePointFileId =
+      activePointFileId || this.pointFiles[0]?.id || null;
+
     Object.entries(records).forEach(([id, record]) => {
       this.records[id] = record instanceof SurveyRecord
         ? record
@@ -28,6 +56,10 @@ export default class Project {
       name: this.name,
       records: Object.fromEntries(entries),
       equipmentLogs: this.equipmentLogs.map((entry) => entry.toObject()),
+      pointFiles: this.pointFiles.map((pf) =>
+        pf instanceof PointFile ? pf.toObject() : PointFile.fromObject(pf).toObject()
+      ),
+      activePointFileId: this.activePointFileId,
     };
   }
 }

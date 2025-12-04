@@ -43,8 +43,47 @@ export default class CornerEvidenceService {
     this.saveEvidence();
   }
 
+  setEvidenceForProject(projectId, entries = []) {
+    this.evidenceByProject[projectId] = entries.map((ev) =>
+      ev instanceof CornerEvidence ? ev : CornerEvidence.fromObject(ev)
+    );
+    this.saveEvidence();
+  }
+
+  replaceAllEvidence(evidenceMap = {}) {
+    this.evidenceByProject = {};
+    Object.entries(evidenceMap || {}).forEach(([projectId, entries]) => {
+      this.evidenceByProject[projectId] = (entries || []).map((ev) =>
+        ev instanceof CornerEvidence ? ev : CornerEvidence.fromObject(ev)
+      );
+    });
+    this.saveEvidence();
+  }
+
+  removeProjectEvidence(projectId) {
+    if (projectId && this.evidenceByProject[projectId]) {
+      delete this.evidenceByProject[projectId];
+      this.saveEvidence();
+    }
+  }
+
   getProjectEvidence(projectId) {
     if (!projectId) return [];
     return this.evidenceByProject[projectId] || [];
+  }
+
+  serializeEvidenceForProject(projectId) {
+    if (!projectId) return [];
+    return (this.evidenceByProject[projectId] || []).map((entry) =>
+      entry.toObject()
+    );
+  }
+
+  serializeAllEvidence() {
+    const output = {};
+    Object.entries(this.evidenceByProject).forEach(([projectId, entries]) => {
+      output[projectId] = entries.map((entry) => entry.toObject());
+    });
+    return output;
   }
 }

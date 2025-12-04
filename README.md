@@ -35,8 +35,12 @@ This offline, browser-based workspace bundles several surveying tools in one pla
   - Select a record and traverse point to attach evidence directly to generated geometry—useful for monument notes, corner perpetuation narratives, or general field ties.【F:index.html†L958-L985】【F:index.html†L1800-L1817】
 - **Monument details and condition**
   - Track evidence type and condition with structured dropdowns for consistent reporting.【F:index.html†L986-L1028】
+- **Consistent styling**
+  - Evidence inputs, dropdowns, and record selectors now mirror Traverse Builder styling with thumbnail previews for each record.【F:index.html†L960-L987】【F:index.html†L1010-L1037】
 - **Notes and witness ties**
   - Record narrative notes plus multiple tie distances, bearings, and descriptions per evidence point.【F:index.html†L1029-L1056】【F:index.html†L1746-L1762】
+- **Media and filings**
+  - Attach multiple photos to each tie and export every corner as a Corner Perpetuation Filing text package alongside JSON backups.【F:index.html†L1038-L1061】【F:js/controllers/AppController.js†L948-L1043】【F:js/controllers/AppController.js†L1045-L1083】
 - **Media and location**
   - Attach optional photos and capture GPS coordinates when available to enrich field documentation.【F:index.html†L1058-L1084】
 - **Project evidence dashboard**
