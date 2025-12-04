@@ -96,7 +96,7 @@
       .springboard-hero {
         background: #0f172a;
         color: white;
-        border-radius: 18px
+        border-radius: 18px;
         padding: 20px 20px 24px;
         margin-bottom: 16px;
         box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
@@ -287,7 +287,7 @@
         justify-content: space-between;
         align-items: center;
         border-radius-bottom: 16px;
-        overflow: hidden;
+        overflow: visible;
         box-shadow: 0 16px 40px rgba(15, 23, 42, 0.28);
         background-image: linear-gradient(
             120deg,
@@ -305,9 +305,21 @@
         content: "";
         position: absolute;
         inset: 0;
-        background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.1), transparent 40%),
-          radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.18), transparent 42%),
-          linear-gradient(180deg, rgba(15, 23, 42, 0.15), rgba(15, 23, 42, 0.65));
+        background: radial-gradient(
+            circle at 20% 20%,
+            rgba(255, 255, 255, 0.1),
+            transparent 40%
+          ),
+          radial-gradient(
+            circle at 80% 20%,
+            rgba(59, 130, 246, 0.18),
+            transparent 42%
+          ),
+          linear-gradient(
+            180deg,
+            rgba(15, 23, 42, 0.15),
+            rgba(15, 23, 42, 0.65)
+          );
         pointer-events: none;
       }
 
@@ -1102,10 +1114,7 @@
           style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap"
         >
           <!-- hidden select (internal) -->
-          <select
-            id="projectSelect"
-            style="display: none"
-          ></select>
+          <select id="projectSelect" style="display: none"></select>
 
           <!-- custom project dropdown -->
           <div id="projectDropdownContainer" class="project-dropdown-container">
@@ -1120,10 +1129,7 @@
             <div id="projectDropdownMenu" class="project-dropdown-menu"></div>
           </div>
 
-          <div
-            id="projectActionsContainer"
-            class="project-actions-container"
-          >
+          <div id="projectActionsContainer" class="project-actions-container">
             <button
               type="button"
               id="projectActionsToggle"
@@ -1133,12 +1139,10 @@
               <span class="arrow">▼</span>
             </button>
             <div id="projectActionsMenu" class="project-actions-menu">
-              <button type="button" id="newProjectButton">Create Project</button>
-              <button
-                type="button"
-                class="danger"
-                id="deleteProjectButton"
-              >
+              <button type="button" id="newProjectButton">
+                Create Project
+              </button>
+              <button type="button" class="danger" id="deleteProjectButton">
                 Delete Current Project
               </button>
               <button type="button" id="exportCurrentButton">
@@ -1189,7 +1193,9 @@
                   Create or open a project to see its location context.
                 </p>
               </div>
-              <span id="springboardStatusChip" class="info-chip">No project</span>
+              <span id="springboardStatusChip" class="info-chip"
+                >No project</span
+              >
             </div>
             <div class="springboard-hero-details">
               <div class="meta-grid">
@@ -1276,12 +1282,16 @@
                     id="projectTownshipInput"
                     placeholder="T12N, T13N"
                   />
-                  <small class="app-hint">Separate multiple entries with commas</small>
+                  <small class="app-hint"
+                    >Separate multiple entries with commas</small
+                  >
                 </div>
                 <div>
                   <label for="projectRangeInput">Range(s)</label>
                   <input type="text" id="projectRangeInput" placeholder="R3W" />
-                  <small class="app-hint">Separate multiple entries with commas</small>
+                  <small class="app-hint"
+                    >Separate multiple entries with commas</small
+                  >
                 </div>
                 <div>
                   <label for="projectSectionInput">Section(s)</label>
@@ -1290,7 +1300,9 @@
                     id="projectSectionInput"
                     placeholder="12, 13"
                   />
-                  <small class="app-hint">Separate multiple entries with commas</small>
+                  <small class="app-hint"
+                    >Separate multiple entries with commas</small
+                  >
                 </div>
                 <div class="full-row">
                   <label for="projectDescriptionInput">Description</label>
@@ -1322,7 +1334,9 @@
             <button class="app-tile" data-target="pointsSection">
               <span class="app-icon">📍</span>
               <span class="app-title">Point Files</span>
-              <span class="app-hint">Manage survey control and stakeout points</span>
+              <span class="app-hint"
+                >Manage survey control and stakeout points</span
+              >
             </button>
             <button class="app-tile" data-target="evidenceSection">
               <span class="app-icon">🧾</span>
@@ -1348,209 +1362,178 @@
 
           <hr />
 
-        <h2>Records of Survey</h2>
-        <div
-          style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap"
-        >
-          <input
-            type="text"
-            id="recordNameInput"
-            placeholder="Record Name (e.g., Tract 1234)"
-          />
-          <button id="createRecordButton">+ New Record</button>
-        </div>
-
-        <div class="record-list" id="recordList"></div>
-
-        <div id="editor" style="display: none">
-          <h2 id="currentRecordName">Record Name</h2>
-          <button
-            class="danger"
-            style="float: right"
-            id="deleteRecordButton"
+          <h2>Records of Survey</h2>
+          <div
+            style="
+              display: flex;
+              gap: 10px;
+              margin-bottom: 15px;
+              flex-wrap: wrap;
+            "
           >
-            Delete Record
-          </button>
-
-          <h3>Starting Point Setup</h3>
-          <div class="form-grid">
-            <div>
-              <label>Starting Point Number &amp; Link</label>
-              <div class="start-point-row">
-              <input
-                type="text"
-                id="startPtNum"
-                placeholder="1"
-              />
-                <div
-                  id="startFromDropdownContainer"
-                  class="start-dropdown-container"
-                >
-                  <button
-                    type="button"
-                    id="startFromDropdownToggle"
-                    class="start-dropdown-toggle"
-                  >
-                    <span class="label" id="startFromDropdownLabel"
-                      >Manual Start</span
-                    >
-                    <span class="arrow">▼</span>
-                  </button>
-                  <div
-                    id="startFromDropdownMenu"
-                    class="start-dropdown-menu"
-                  ></div>
-                </div>
-              </div>
-
-              <label>Northing (Y)</label>
-              <input
-                type="text"
-                id="northing"
-                placeholder="5000"
-              />
-            </div>
-            <div>
-              <label>Easting (X)</label>
-              <input
-                type="text"
-                id="easting"
-                placeholder="5000"
-              />
-              <label>Elevation (Z)</label>
-              <input
-                type="text"
-                id="elevation"
-                placeholder="0"
-              />
-            </div>
-          </div>
-          <label>Backsight Azimuth (dd.mmss)</label>
-          <input
-            type="text"
-            id="bsAzimuth"
-            placeholder="0.0000"
-          />
-
-          <h3>Basis and First Call</h3>
-          <div class="form-grid">
-            <div>
-              <label>Basis of Bearing</label>
-              <input
-            type="text"
-            id="basis"
-            placeholder="N 45°30'15&quot;E"
-          />
-
-              <label>First Distance (feet)</label>
-              <input
-            type="text"
-            id="firstDist"
-            placeholder="265.33"
-          />
-            </div>
-            <div>
-              <!-- Add button moved below table -->
-            </div>
+            <input
+              type="text"
+              id="recordNameInput"
+              placeholder="Record Name (e.g., Tract 1234)"
+            />
+            <button id="createRecordButton">+ New Record</button>
           </div>
 
-          <table id="callsTable" class="calls-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Bearing</th>
-                <th colspan="2">Distance / Actions</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+          <div class="record-list" id="recordList"></div>
 
-          <!-- Add button below list -->
-          <div style="margin-top: 10px">
-            <button id="addCallButton" class="success">
-              + Add Subsequent Call
+          <div id="editor" style="display: none">
+            <h2 id="currentRecordName">Record Name</h2>
+            <button class="danger" style="float: right" id="deleteRecordButton">
+              Delete Record
             </button>
-          </div>
 
-          <!-- ACTIVE RECORD CANVAS HERE -->
-          <h3 style="margin-top: 20px">Traverse Preview</h3>
-          <canvas id="traverseCanvas"></canvas>
+            <h3>Starting Point Setup</h3>
+            <div class="form-grid">
+              <div>
+                <label>Starting Point Number &amp; Link</label>
+                <div class="start-point-row">
+                  <input type="text" id="startPtNum" placeholder="1" />
+                  <div
+                    id="startFromDropdownContainer"
+                    class="start-dropdown-container"
+                  >
+                    <button
+                      type="button"
+                      id="startFromDropdownToggle"
+                      class="start-dropdown-toggle"
+                    >
+                      <span class="label" id="startFromDropdownLabel"
+                        >Manual Start</span
+                      >
+                      <span class="arrow">▼</span>
+                    </button>
+                    <div
+                      id="startFromDropdownMenu"
+                      class="start-dropdown-menu"
+                    ></div>
+                  </div>
+                </div>
 
-          <button id="generateCommandsButton" style="margin-top: 20px">
-            Generate Carlson Commands
-          </button>
-
-          <h3>Carlson Input Commands</h3>
-          <div class="command-grid">
-            <!-- Create Point -->
-            <div class="command-card" data-group="createPoint">
-              <div class="command-card-header">
-                <span>Create Point</span>
-                <button type="button">
-                  Copy
-                </button>
+                <label>Northing (Y)</label>
+                <input type="text" id="northing" placeholder="5000" />
               </div>
-              <pre class="command-preview" id="preview-createPoint">
+              <div>
+                <label>Easting (X)</label>
+                <input type="text" id="easting" placeholder="5000" />
+                <label>Elevation (Z)</label>
+                <input type="text" id="elevation" placeholder="0" />
+              </div>
+            </div>
+            <label>Backsight Azimuth (dd.mmss)</label>
+            <input type="text" id="bsAzimuth" placeholder="0.0000" />
+
+            <h3>Basis and First Call</h3>
+            <div class="form-grid">
+              <div>
+                <label>Basis of Bearing</label>
+                <input type="text" id="basis" placeholder="N 45°30'15&quot;E" />
+
+                <label>First Distance (feet)</label>
+                <input type="text" id="firstDist" placeholder="265.33" />
+              </div>
+              <div>
+                <!-- Add button moved below table -->
+              </div>
+            </div>
+
+            <table id="callsTable" class="calls-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Bearing</th>
+                  <th colspan="2">Distance / Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+
+            <!-- Add button below list -->
+            <div style="margin-top: 10px">
+              <button id="addCallButton" class="success">
+                + Add Subsequent Call
+              </button>
+            </div>
+
+            <!-- ACTIVE RECORD CANVAS HERE -->
+            <h3 style="margin-top: 20px">Traverse Preview</h3>
+            <canvas id="traverseCanvas"></canvas>
+
+            <button id="generateCommandsButton" style="margin-top: 20px">
+              Generate Carlson Commands
+            </button>
+
+            <h3>Carlson Input Commands</h3>
+            <div class="command-grid">
+              <!-- Create Point -->
+              <div class="command-card" data-group="createPoint">
+                <div class="command-card-header">
+                  <span>Create Point</span>
+                  <button type="button">Copy</button>
+                </div>
+                <pre class="command-preview" id="preview-createPoint">
 (empty)</pre
-              >
-              <textarea
-                class="command-full"
-                id="full-createPoint"
-                readonly
-              ></textarea>
-            </div>
-
-            <!-- Occupy Point -->
-            <div class="command-card" data-group="occupyPoint">
-              <div class="command-card-header">
-                <span>Occupy Point</span>
-                <button type="button">
-                  Copy
-                </button>
+                >
+                <textarea
+                  class="command-full"
+                  id="full-createPoint"
+                  readonly
+                ></textarea>
               </div>
-              <pre class="command-preview" id="preview-occupyPoint">
+
+              <!-- Occupy Point -->
+              <div class="command-card" data-group="occupyPoint">
+                <div class="command-card-header">
+                  <span>Occupy Point</span>
+                  <button type="button">Copy</button>
+                </div>
+                <pre class="command-preview" id="preview-occupyPoint">
 (empty)</pre
-              >
-              <textarea
-                class="command-full"
-                id="full-occupyPoint"
-                readonly
-              ></textarea>
-            </div>
-
-            <!-- Draw Points (Traverse) -->
-            <div class="command-card" data-group="drawPoints">
-              <div class="command-card-header">
-                <span>Draw Points</span>
-                <button type="button">
-                  Copy
-                </button>
+                >
+                <textarea
+                  class="command-full"
+                  id="full-occupyPoint"
+                  readonly
+                ></textarea>
               </div>
-              <pre class="command-preview" id="preview-drawPoints">(empty)</pre>
-              <textarea
-                class="command-full"
-                id="full-drawPoints"
-                readonly
-              ></textarea>
-            </div>
 
-            <!-- Draw Lines -->
-            <div class="command-card" data-group="drawLines">
-              <div class="command-card-header">
-                <span>Draw Lines</span>
-                <button type="button">
-                  Copy
-                </button>
+              <!-- Draw Points (Traverse) -->
+              <div class="command-card" data-group="drawPoints">
+                <div class="command-card-header">
+                  <span>Draw Points</span>
+                  <button type="button">Copy</button>
+                </div>
+                <pre class="command-preview" id="preview-drawPoints">
+(empty)</pre
+                >
+                <textarea
+                  class="command-full"
+                  id="full-drawPoints"
+                  readonly
+                ></textarea>
               </div>
-              <pre class="command-preview" id="preview-drawLines">(empty)</pre>
-              <textarea
-                class="command-full"
-                id="full-drawLines"
-                readonly
-              ></textarea>
+
+              <!-- Draw Lines -->
+              <div class="command-card" data-group="drawLines">
+                <div class="command-card-header">
+                  <span>Draw Lines</span>
+                  <button type="button">Copy</button>
+                </div>
+                <pre class="command-preview" id="preview-drawLines">
+(empty)</pre
+                >
+                <textarea
+                  class="command-full"
+                  id="full-drawLines"
+                  readonly
+                ></textarea>
+              </div>
             </div>
           </div>
-        </div>
         </div>
 
         <div id="pointsSection" class="tool-section">
@@ -1562,18 +1545,32 @@
               lon), elevation, code (and description if last column),
               description.
             </p>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center">
+            <div
+              style="
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+                align-items: center;
+              "
+            >
               <button type="button" id="pointImportButton">
                 Import Points CSV
               </button>
-              <button type="button" id="addPointRowButton">Add Point Row</button>
-              <button type="button" id="newPointFileButton">New Point File</button>
+              <button type="button" id="addPointRowButton">
+                Add Point Row
+              </button>
+              <button type="button" id="newPointFileButton">
+                New Point File
+              </button>
               <button type="button" id="downloadPointsButton" class="success">
                 Download Points TXT
               </button>
               <label style="font-weight: 600; color: #1e40af">
                 Active Point File
-                <select id="pointFileSelect" style="margin-left: 8px; padding: 8px">
+                <select
+                  id="pointFileSelect"
+                  style="margin-left: 8px; padding: 8px"
+                >
                   <option>No point files</option>
                 </select>
               </label>
@@ -1599,7 +1596,9 @@
               </thead>
               <tbody id="pointsTableBody">
                 <tr>
-                  <td colspan="7">Create or select a project to manage points.</td>
+                  <td colspan="7">
+                    Create or select a project to manage points.
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -1610,8 +1609,8 @@
           <div class="card">
             <h3>Evidence Capture</h3>
             <p class="subtitle" style="margin-top: 0">
-              Link field notes and photos directly to traverse points generated from
-              your records of survey.
+              Link field notes and photos directly to traverse points generated
+              from your records of survey.
             </p>
 
             <div class="form-grid">
@@ -1636,7 +1635,10 @@
                     class="start-dropdown-menu"
                   ></div>
                 </div>
-                <select id="evidenceRecordSelect" style="display: none"></select>
+                <select
+                  id="evidenceRecordSelect"
+                  style="display: none"
+                ></select>
               </div>
               <div>
                 <label for="evidencePointSelect">Traverse Point</label>
@@ -1683,11 +1685,19 @@
             <div class="form-grid">
               <div>
                 <label for="evidenceTieDistance">Tie Distance</label>
-                <input id="evidenceTieDistance" type="text" placeholder="24.50 ft" />
+                <input
+                  id="evidenceTieDistance"
+                  type="text"
+                  placeholder="24.50 ft"
+                />
               </div>
               <div>
                 <label for="evidenceTieBearing">Tie Bearing</label>
-                <input id="evidenceTieBearing" type="text" placeholder="N35°E" />
+                <input
+                  id="evidenceTieBearing"
+                  type="text"
+                  placeholder="N35°E"
+                />
               </div>
             </div>
 
@@ -1714,13 +1724,31 @@
             <label for="evidencePhoto">Photo (optional)</label>
             <input id="evidencePhoto" type="file" accept="image/*" />
 
-            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
-              <button type="button" id="captureLocation">Get GPS Location</button>
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                flex-wrap: wrap;
+              "
+            >
+              <button type="button" id="captureLocation">
+                Get GPS Location
+              </button>
               <span id="evidenceLocationStatus" class="subtitle"></span>
             </div>
 
-            <div style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap">
-              <button type="button" class="success" id="saveEvidenceButton">Save Evidence</button>
+            <div
+              style="
+                margin-top: 12px;
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+              "
+            >
+              <button type="button" class="success" id="saveEvidenceButton">
+                Save Evidence
+              </button>
               <button type="button" id="resetEvidenceButton">Reset Form</button>
             </div>
           </div>
@@ -1736,7 +1764,8 @@
           <div class="card">
             <h3>Equipment Setup Log</h3>
             <p class="subtitle" style="margin-top: 0">
-              Track base station setup and teardown information for this project.
+              Track base station setup and teardown information for this
+              project.
             </p>
 
             <div class="form-grid">
@@ -1745,7 +1774,9 @@
                 <input id="equipmentSetupAt" type="datetime-local" />
               </div>
               <div>
-                <label for="equipmentTearDownAt">Tear Down Date &amp; Time</label>
+                <label for="equipmentTearDownAt"
+                  >Tear Down Date &amp; Time</label
+                >
                 <input id="equipmentTearDownAt" type="datetime-local" />
               </div>
             </div>
@@ -1800,11 +1831,20 @@
 
             <div id="equipmentFormStatus" class="equipment-form-status"></div>
 
-            <div style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap">
+            <div
+              style="
+                margin-top: 12px;
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+              "
+            >
               <button type="button" class="success" id="saveEquipmentButton">
                 Save Equipment Entry
               </button>
-              <button type="button" id="resetEquipmentButton">Reset Form</button>
+              <button type="button" id="resetEquipmentButton">
+                Reset Form
+              </button>
             </div>
           </div>
 
@@ -1820,13 +1860,17 @@
             <h3>Navigation</h3>
             <p class="subtitle" style="margin-top: 0">
               Draw a compass, follow headings, and return to important project
-              locations. Capture stakeout targets, travel headings, and equipment
-              bases so you can walk the correct line in the field.
+              locations. Capture stakeout targets, travel headings, and
+              equipment bases so you can walk the correct line in the field.
             </p>
 
             <div class="navigation-grid">
               <div class="navigation-panel compass-wrapper">
-                <canvas id="navigationCompass" width="320" height="320"></canvas>
+                <canvas
+                  id="navigationCompass"
+                  width="320"
+                  height="320"
+                ></canvas>
                 <div class="compass-readouts">
                   <div class="stat-chip">
                     <div class="stat-label">Heading Source</div>
@@ -1834,21 +1878,32 @@
                   </div>
                   <div class="stat-chip">
                     <div class="stat-label">Target Bearing</div>
-                    <div class="stat-value" id="navigationTargetBearing">--</div>
+                    <div class="stat-value" id="navigationTargetBearing">
+                      --
+                    </div>
                   </div>
                   <div class="stat-chip">
                     <div class="stat-label">Distance to Target</div>
-                    <div class="stat-value" id="navigationTargetDistance">--</div>
+                    <div class="stat-value" id="navigationTargetDistance">
+                      --
+                    </div>
                   </div>
                   <div class="stat-chip">
                     <div class="stat-label">Line Offset</div>
                     <div class="stat-value" id="navigationOffset">--</div>
                   </div>
                 </div>
-                <div class="subtitle" id="navigationStatus" style="margin: 0"></div>
+                <div
+                  class="subtitle"
+                  id="navigationStatus"
+                  style="margin: 0"
+                ></div>
               </div>
 
-              <div class="navigation-panel navigation-map hidden" id="navigationMapPanel">
+              <div
+                class="navigation-panel navigation-map hidden"
+                id="navigationMapPanel"
+              >
                 <h4 style="margin-top: 0">Map Preview</h4>
                 <iframe
                   id="navigationMapFrame"
@@ -1858,7 +1913,9 @@
                 ></iframe>
                 <div class="stat-chip">
                   <div class="stat-label">Map Status</div>
-                  <div class="stat-value" id="navigationMapStatus">Apply GPS localization to view the map.</div>
+                  <div class="stat-value" id="navigationMapStatus">
+                    Apply GPS localization to view the map.
+                  </div>
                 </div>
               </div>
 
@@ -1866,9 +1923,14 @@
                 <h4>Targets &amp; Saved Spots</h4>
                 <div class="card" style="margin: 0 0 12px 0; padding: 12px">
                   <h4 style="margin: 0 0 8px 0">GPS Localization</h4>
-                  <p class="subtitle" id="localizationSummary" style="margin: 0 0 8px 0">
-                    Choose a known point and enter its GPS coordinates to convert
-                    local traverse and point file coordinates into navigation targets.
+                  <p
+                    class="subtitle"
+                    id="localizationSummary"
+                    style="margin: 0 0 8px 0"
+                  >
+                    Choose a known point and enter its GPS coordinates to
+                    convert local traverse and point file coordinates into
+                    navigation targets.
                   </p>
                   <label for="localizationSource">Anchor Source</label>
                   <select id="localizationSource">
@@ -1879,7 +1941,9 @@
                   <div id="localizationTraverseFields">
                     <label for="localizationRecord">Traverse record</label>
                     <select id="localizationRecord"></select>
-                    <label for="localizationTraversePoint">Traverse point</label>
+                    <label for="localizationTraversePoint"
+                      >Traverse point</label
+                    >
                     <select id="localizationTraversePoint"></select>
                   </div>
 
@@ -1893,38 +1957,86 @@
                   <div class="form-grid" style="margin-top: 12px">
                     <div>
                       <label for="localizationLat">Anchor Latitude</label>
-                      <input type="text" id="localizationLat" placeholder="e.g., 34.123456" />
+                      <input
+                        type="text"
+                        id="localizationLat"
+                        placeholder="e.g., 34.123456"
+                      />
                     </div>
                     <div>
                       <label for="localizationLon">Anchor Longitude</label>
-                      <input type="text" id="localizationLon" placeholder="e.g., -117.123456" />
+                      <input
+                        type="text"
+                        id="localizationLon"
+                        placeholder="e.g., -117.123456"
+                      />
                     </div>
                   </div>
 
-                  <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px">
-                    <button type="button" class="success" id="applyLocalization">Apply GPS localization</button>
-                    <button type="button" class="secondary" id="clearLocalization">Clear localization</button>
+                  <div
+                    style="
+                      display: flex;
+                      gap: 8px;
+                      flex-wrap: wrap;
+                      margin-top: 10px;
+                    "
+                  >
+                    <button
+                      type="button"
+                      class="success"
+                      id="applyLocalization"
+                    >
+                      Apply GPS localization
+                    </button>
+                    <button
+                      type="button"
+                      class="secondary"
+                      id="clearLocalization"
+                    >
+                      Clear localization
+                    </button>
                   </div>
-                  <div class="subtitle" id="localizationStatus" style="margin-top: 6px"></div>
+                  <div
+                    class="subtitle"
+                    id="localizationStatus"
+                    style="margin-top: 6px"
+                  ></div>
                 </div>
-                <label for="navigationBookmarkName">Name to save current position</label>
+                <label for="navigationBookmarkName"
+                  >Name to save current position</label
+                >
                 <input
                   type="text"
                   id="navigationBookmarkName"
                   placeholder="E.g., Truck, Property corner, Cache"
                 />
-                <button id="saveNavigationBookmark">Save current location</button>
+                <button id="saveNavigationBookmark">
+                  Save current location
+                </button>
                 <div class="subtitle" id="navigationBookmarkStatus"></div>
 
                 <label for="navigationTargetSelect">Navigate to</label>
                 <select id="navigationTargetSelect"></select>
 
-                <label for="navigationEquipmentSelect">Equipment setup (base)</label>
+                <label for="navigationEquipmentSelect"
+                  >Equipment setup (base)</label
+                >
                 <select id="navigationEquipmentSelect"></select>
 
-                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px">
-                  <button class="secondary" id="refreshNavigation">Refresh sources</button>
-                  <button id="clearNavigationTarget" class="danger">Clear target</button>
+                <div
+                  style="
+                    display: flex;
+                    gap: 8px;
+                    flex-wrap: wrap;
+                    margin-top: 4px;
+                  "
+                >
+                  <button class="secondary" id="refreshNavigation">
+                    Refresh sources
+                  </button>
+                  <button id="clearNavigationTarget" class="danger">
+                    Clear target
+                  </button>
                 </div>
 
                 <div class="bookmark-list" id="navigationBookmarksList"></div>
