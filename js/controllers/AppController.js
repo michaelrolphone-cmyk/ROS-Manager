@@ -398,16 +398,16 @@ export default class AppController {
       this.currentProjectId = null;
       this.currentRecordId = null;
       this.elements.currentProjectName.textContent = "No project selected";
-    this.elements.editor.style.display = "none";
-    this.renderRecordList();
-    this.updateProjectList();
-    this.drawProjectOverview();
-    this.hideProjectForm();
-    this.refreshEvidenceUI();
-    this.resetEquipmentForm();
-    this.refreshEquipmentUI();
-    return;
-  }
+      this.elements.editor.style.display = "none";
+      this.renderRecordList();
+      this.updateProjectList();
+      this.drawProjectOverview();
+      this.hideProjectForm();
+      this.refreshEvidenceUI();
+      this.resetEquipmentForm();
+      this.refreshEquipmentUI();
+      return;
+    }
     this.currentProjectId = id;
     this.currentRecordId = null;
     this.elements.currentProjectName.textContent = this.projects[id].name;
