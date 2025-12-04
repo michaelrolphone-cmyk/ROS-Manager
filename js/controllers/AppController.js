@@ -99,6 +99,7 @@ export default class AppController {
       projectActionsToggle: document.getElementById("projectActionsToggle"),
       projectActionsMenu: document.getElementById("projectActionsMenu"),
       homeButton: document.getElementById("homeButton"),
+      appToolbar: document.querySelector(".app-toolbar"),
       pageHeader: document.querySelector(".header"),
       projectControls: document.getElementById("projectControls"),
       projectNameInput: document.getElementById("projectNameInput"),
@@ -106,6 +107,7 @@ export default class AppController {
       projectDetailName: document.getElementById("projectDetailName"),
       projectClientInput: document.getElementById("projectClientInput"),
       projectClientPhoneInput: document.getElementById("projectClientPhoneInput"),
+      projectClientEmailInput: document.getElementById("projectClientEmailInput"),
       projectAddressInput: document.getElementById("projectAddressInput"),
       projectTownshipInput: document.getElementById("projectTownshipInput"),
       projectRangeInput: document.getElementById("projectRangeInput"),
@@ -126,9 +128,13 @@ export default class AppController {
         "springboardClientPhoneValue"
       ),
       springboardAddressValue: document.getElementById("springboardAddressValue"),
-      springboardTownshipValue: document.getElementById("springboardTownshipValue"),
-      springboardRangeValue: document.getElementById("springboardRangeValue"),
-      springboardSectionValue: document.getElementById("springboardSectionValue"),
+      springboardClientEmailValue: document.getElementById(
+        "springboardClientEmailValue"
+      ),
+      springboardCallButton: document.getElementById("springboardCallButton"),
+      springboardMapButton: document.getElementById("springboardMapButton"),
+      springboardEmailButton: document.getElementById("springboardEmailButton"),
+      springboardTrsValue: document.getElementById("springboardTrsValue"),
       recordNameInput: document.getElementById("recordNameInput"),
       recordList: document.getElementById("recordList"),
       editor: document.getElementById("editor"),
@@ -708,6 +714,7 @@ export default class AppController {
       [this.elements.projectDetailName, project?.name || ""],
       [this.elements.projectClientInput, project?.clientName || ""],
       [this.elements.projectClientPhoneInput, project?.clientPhone || ""],
+      [this.elements.projectClientEmailInput, project?.clientEmail || ""],
       [this.elements.projectAddressInput, project?.address || ""],
       [
         this.elements.projectTownshipInput,
@@ -767,6 +774,8 @@ export default class AppController {
       .trim() || project.name;
     project.clientName = (this.elements.projectClientInput?.value || "").trim();
     project.clientPhone = (this.elements.projectClientPhoneInput?.value || "")
+      .trim();
+    project.clientEmail = (this.elements.projectClientEmailInput?.value || "")
       .trim();
     project.address = (this.elements.projectAddressInput?.value || "").trim();
     project.townships = this.parseDelimitedInput(
@@ -967,23 +976,57 @@ export default class AppController {
       el.textContent = value && value.trim ? value.trim() : value;
     };
 
+    const setContactAction = (el, href) => {
+      if (!el) return;
+      if (href) {
+        el.href = href;
+        el.setAttribute("aria-disabled", "false");
+        el.classList.remove("disabled");
+      } else {
+        el.removeAttribute("href");
+        el.setAttribute("aria-disabled", "true");
+        el.classList.add("disabled");
+      }
+    };
+
+    const phone = project?.clientPhone?.trim() || "";
+    const address = project?.address?.trim() || "";
+    const email = project?.clientEmail?.trim() || "";
+
     setValue(this.elements.springboardClientValue, project?.clientName || "—");
+    setValue(this.elements.springboardClientPhoneValue, phone || "—");
+    setValue(this.elements.springboardAddressValue, address || "—");
+    setValue(this.elements.springboardClientEmailValue, email || "—");
+
+    const phoneHref = phone ? `tel:${phone.replace(/[^0-9+]/g, "")}` : "";
+    const mapHref = address
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+          address
+        )}`
+      : "";
+    const emailHref = email ? `mailto:${email}` : "";
+
+    setContactAction(this.elements.springboardCallButton, phoneHref);
+    setContactAction(this.elements.springboardMapButton, mapHref);
+    setContactAction(this.elements.springboardEmailButton, emailHref);
+
+    const formatPart = (label, values) => {
+      const normalized = Array.isArray(values) ? values : [];
+      if (normalized.length === 0) return "";
+      const formatted = this.formatListForDisplay(normalized);
+      if (formatted === "—") return "";
+      return `${label} ${formatted}`;
+    };
+
+    const trsParts = [
+      formatPart("T", project?.townships),
+      formatPart("R", project?.ranges),
+      formatPart("Sec", project?.sections),
+    ].filter(Boolean);
+
     setValue(
-      this.elements.springboardClientPhoneValue,
-      project?.clientPhone || "—"
-    );
-    setValue(this.elements.springboardAddressValue, project?.address || "—");
-    setValue(
-      this.elements.springboardTownshipValue,
-      this.formatListForDisplay(project?.townships || [])
-    );
-    setValue(
-      this.elements.springboardRangeValue,
-      this.formatListForDisplay(project?.ranges || [])
-    );
-    setValue(
-      this.elements.springboardSectionValue,
-      this.formatListForDisplay(project?.sections || [])
+      this.elements.springboardTrsValue,
+      trsParts.length ? trsParts.join(" • ") : "—"
     );
 
     this.updateSpringboardMapLayer(project);
@@ -1119,20 +1162,18 @@ export default class AppController {
       );
     });
 
-    if (this.elements.homeButton) {
-      const showHome = resolvedTarget !== "springboardSection";
-      this.elements.homeButton.classList.toggle("visible", showHome);
-    }
-
     this.appLaunchers?.forEach((launcher) => {
       if (launcher.dataset.target === targetId)
         launcher.classList.add("active");
       else launcher.classList.remove("active");
     });
 
+    const onSpringboard = resolvedTarget === "springboardSection";
     if (this.elements.homeButton) {
-      const showHome = targetId !== "springboardSection";
-      this.elements.homeButton.classList.toggle("visible", showHome);
+      this.elements.homeButton.classList.toggle("visible", !onSpringboard);
+    }
+    if (this.elements.appToolbar) {
+      this.elements.appToolbar.classList.toggle("hidden", onSpringboard);
     }
 
     if (targetId === "evidenceSection") {

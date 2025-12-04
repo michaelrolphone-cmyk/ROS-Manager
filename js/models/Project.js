@@ -12,6 +12,7 @@ export default class Project {
     address = "",
     clientName = "",
     clientPhone = "",
+    clientEmail = "",
     townships = [],
     ranges = [],
     sections = [],
@@ -29,6 +30,7 @@ export default class Project {
     this.address = address;
     this.clientName = clientName;
     this.clientPhone = clientPhone;
+    this.clientEmail = clientEmail;
     this.townships = Array.isArray(townships) ? townships : [];
     this.ranges = Array.isArray(ranges) ? ranges : [];
     this.sections = Array.isArray(sections) ? sections : [];
@@ -87,6 +89,7 @@ export default class Project {
       address: this.address,
       clientName: this.clientName,
       clientPhone: this.clientPhone,
+      clientEmail: this.clientEmail,
       townships: this.townships,
       ranges: this.ranges,
       sections: this.sections,
