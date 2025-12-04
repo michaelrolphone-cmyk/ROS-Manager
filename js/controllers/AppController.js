@@ -78,6 +78,18 @@ export default class AppController {
       evidenceTabButton: document.getElementById("evidenceTabButton"),
       traverseSection: document.getElementById("traverseSection"),
       evidenceSection: document.getElementById("evidenceSection"),
+      evidenceRecordDropdownContainer: document.getElementById(
+        "evidenceRecordDropdownContainer"
+      ),
+      evidenceRecordDropdownToggle: document.getElementById(
+        "evidenceRecordDropdownToggle"
+      ),
+      evidenceRecordDropdownMenu: document.getElementById(
+        "evidenceRecordDropdownMenu"
+      ),
+      evidenceRecordDropdownLabel: document.getElementById(
+        "evidenceRecordDropdownLabel"
+      ),
       evidenceRecordSelect: document.getElementById("evidenceRecordSelect"),
       evidencePointSelect: document.getElementById("evidencePointSelect"),
       evidenceType: document.getElementById("evidenceType"),
@@ -86,6 +98,7 @@ export default class AppController {
       evidenceTieDistance: document.getElementById("evidenceTieDistance"),
       evidenceTieBearing: document.getElementById("evidenceTieBearing"),
       evidenceTieDescription: document.getElementById("evidenceTieDescription"),
+      evidenceTiePhotos: document.getElementById("evidenceTiePhotos"),
       addEvidenceTie: document.getElementById("addEvidenceTie"),
       evidenceTiesList: document.getElementById("evidenceTiesList"),
       evidenceTiesHint: document.getElementById("evidenceTiesHint"),
@@ -126,6 +139,11 @@ export default class AppController {
       this.toggleProjectDropdown()
     );
 
+    this.elements.evidenceRecordDropdownToggle?.addEventListener(
+      "click",
+      () => this.toggleEvidenceRecordDropdown()
+    );
+
     this.elements.projectActionsToggle?.addEventListener("click", (e) => {
       e.stopPropagation();
       this.toggleProjectActionsMenu();
@@ -134,6 +152,9 @@ export default class AppController {
     document.addEventListener("click", (e) => {
       if (!this.elements.projectActionsContainer?.contains(e.target)) {
         this.closeProjectActionsMenu();
+      }
+      if (!this.elements.evidenceRecordDropdownContainer?.contains(e.target)) {
+        this.closeEvidenceRecordDropdown();
       }
     });
 
@@ -215,8 +236,7 @@ export default class AppController {
     );
 
     this.elements.evidenceRecordSelect?.addEventListener("change", () => {
-      this.refreshEvidencePointOptions();
-      this.updateEvidenceSaveState();
+      this.handleEvidenceRecordChange();
     });
 
     this.elements.evidencePointSelect?.addEventListener("change", () =>
@@ -274,11 +294,17 @@ export default class AppController {
       return;
     }
     const proj = this.projects[this.currentProjectId];
+    const evidence = this.cornerEvidenceService.serializeEvidenceForProject(
+      this.currentProjectId
+    );
     const payload = {
       type: "CarlsonSurveyManagerProjects",
-      version: 1,
+      version: 2,
       projects: {
         [this.currentProjectId]: proj.toObject(),
+      },
+      evidence: {
+        [this.currentProjectId]: evidence,
       },
     };
     this.downloadJson(
@@ -294,8 +320,9 @@ export default class AppController {
     }
     const payload = {
       type: "CarlsonSurveyManagerProjects",
-      version: 1,
+      version: 2,
       projects: this.serializeProjects(),
+      evidence: this.cornerEvidenceService.serializeAllEvidence(),
     };
     this.downloadJson(payload, "carlson-all-projects.json");
   }
@@ -303,6 +330,18 @@ export default class AppController {
   downloadJson(payload, filename) {
     const json = JSON.stringify(payload, null, 2);
     const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  downloadText(content, filename) {
+    const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -333,6 +372,11 @@ export default class AppController {
         Object.entries(data.projects).forEach(([id, proj]) => {
           this.projects[id] = Project.fromObject(proj);
         });
+        const evidenceMap =
+          data.evidence && typeof data.evidence === "object"
+            ? data.evidence
+            : {};
+        this.cornerEvidenceService.replaceAllEvidence(evidenceMap);
         this.saveProjects();
         this.updateProjectList();
         if (Object.keys(data.projects).length > 0) {
@@ -392,6 +436,7 @@ export default class AppController {
     if (!this.currentProjectId || !confirm("Delete entire project and all records?"))
       return;
     delete this.projects[this.currentProjectId];
+    this.cornerEvidenceService.removeProjectEvidence(this.currentProjectId);
     this.saveProjects();
     this.currentProjectId = null;
     this.currentRecordId = null;
@@ -562,8 +607,15 @@ export default class AppController {
 
   populateEvidenceRecordOptions(forceRecordId = null) {
     const select = this.elements.evidenceRecordSelect;
+    const menu = this.elements.evidenceRecordDropdownMenu;
+    const label = this.elements.evidenceRecordDropdownLabel;
     if (!select) return;
     select.innerHTML = "";
+    if (menu) menu.innerHTML = "";
+
+    const setLabel = (text) => {
+      if (label) label.textContent = text;
+    };
 
     if (!this.currentProjectId || !this.projects[this.currentProjectId]) {
       const opt = document.createElement("option");
@@ -571,6 +623,7 @@ export default class AppController {
       opt.disabled = true;
       opt.selected = true;
       select.appendChild(opt);
+      setLabel(opt.textContent);
       return;
     }
 
@@ -582,6 +635,7 @@ export default class AppController {
       opt.disabled = true;
       opt.selected = true;
       select.appendChild(opt);
+      setLabel(opt.textContent);
       return;
     }
 
@@ -593,12 +647,46 @@ export default class AppController {
           : ids[0];
 
     ids.forEach((id) => {
+      const recordName = records[id].name || "Untitled record";
       const opt = document.createElement("option");
       opt.value = id;
-      opt.textContent = records[id].name || "Untitled record";
+      opt.textContent = recordName;
       if (id === targetId) opt.selected = true;
       select.appendChild(opt);
+
+      if (menu) {
+        const option = document.createElement("div");
+        option.className = "start-option";
+        option.dataset.recordId = id;
+        const nameSpan = document.createElement("span");
+        nameSpan.className = "start-option-name";
+        nameSpan.textContent = recordName;
+        const canvasWrapper = document.createElement("div");
+        canvasWrapper.className = "start-option-canvas";
+        const canvas = document.createElement("canvas");
+        canvas.width = 50;
+        canvas.height = 50;
+        canvasWrapper.appendChild(canvas);
+        option.append(nameSpan, canvasWrapper);
+        option.addEventListener("click", () => {
+          select.value = id;
+          this.handleEvidenceRecordChange();
+          this.closeEvidenceRecordDropdown();
+        });
+        menu.appendChild(option);
+        try {
+          const pts = this.computeTraversePointsForRecord(
+            this.currentProjectId,
+            id
+          );
+          this.drawTraversePreview(canvas, pts);
+        } catch (e) {
+          // ignore
+        }
+      }
     });
+
+    this.syncEvidenceRecordDropdownSelection();
   }
 
   refreshEvidencePointOptions() {
@@ -648,7 +736,22 @@ export default class AppController {
     }));
   }
 
-  addEvidenceTie() {
+  async readFilesAsDataUrls(fileList) {
+    if (!fileList) return [];
+    const files = Array.from(fileList);
+    const readers = files.map(
+      (file) =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        })
+    );
+    return Promise.all(readers).catch(() => []);
+  }
+
+  async addEvidenceTie() {
     const dist = this.elements.evidenceTieDistance?.value.trim();
     const bearing = this.elements.evidenceTieBearing?.value.trim();
     const desc = this.elements.evidenceTieDescription?.value.trim();
@@ -656,10 +759,19 @@ export default class AppController {
       alert("Add at least one field for a tie.");
       return;
     }
-    this.currentEvidenceTies.push({ distance: dist, bearing, description: desc });
+    const photos = await this.readFilesAsDataUrls(
+      this.elements.evidenceTiePhotos?.files
+    );
+    this.currentEvidenceTies.push({
+      distance: dist,
+      bearing,
+      description: desc,
+      photos,
+    });
     this.elements.evidenceTieDistance.value = "";
     this.elements.evidenceTieBearing.value = "";
     this.elements.evidenceTieDescription.value = "";
+    if (this.elements.evidenceTiePhotos) this.elements.evidenceTiePhotos.value = "";
     this.renderEvidenceTies();
   }
 
@@ -674,10 +786,10 @@ export default class AppController {
     this.elements.evidenceTiesHint.textContent = `${this.currentEvidenceTies.length} tie(s) added.`;
     this.currentEvidenceTies.forEach((tie, idx) => {
       const li = document.createElement("li");
-      const parts = [tie.distance, tie.bearing, tie.description]
-        .filter(Boolean)
-        .map((p) => this.escapeHtml(p));
-      li.innerHTML = `${parts.join(" · ")}`;
+      const parts = [tie.distance, tie.bearing, tie.description].filter(Boolean);
+      const textSpan = document.createElement("span");
+      textSpan.textContent = parts.join(" · ");
+      li.appendChild(textSpan);
       const removeBtn = document.createElement("span");
       removeBtn.textContent = "Remove";
       removeBtn.style.cursor = "pointer";
@@ -688,6 +800,18 @@ export default class AppController {
         this.renderEvidenceTies();
       });
       li.appendChild(removeBtn);
+      if (tie.photos?.length) {
+        const photosRow = document.createElement("div");
+        photosRow.className = "tie-photos";
+        tie.photos.forEach((src) => {
+          const img = document.createElement("img");
+          img.src = src;
+          img.className = "tie-photo-thumb";
+          img.alt = "Tie photo";
+          photosRow.appendChild(img);
+        });
+        li.appendChild(photosRow);
+      }
       list.appendChild(li);
     });
   }
@@ -816,32 +940,147 @@ export default class AppController {
       .forEach((ev) => {
         const card = document.createElement("div");
         card.className = "card";
-        const tiesHtml = (ev.ties || [])
-          .map((t) =>
-            `<li>${this.escapeHtml([t.distance, t.bearing, t.description].filter(Boolean).join(" · "))}</li>`
-          )
-          .join(" ");
-        card.innerHTML = `
-          <strong>${this.escapeHtml(ev.pointLabel || "Traverse point")}</strong>
-          <div class="subtitle" style="margin-top:4px">${this.escapeHtml(
-            ev.recordName || "Record"
-          )} · Saved ${new Date(ev.createdAt).toLocaleString()}</div>
-          ${
-            ev.coords
-              ? `<div>Coords: E ${ev.coords.x.toFixed(2)}, N ${ev.coords.y.toFixed(2)}</div>`
-              : ""
-          }
-          ${ev.type ? `<div>Type: ${this.escapeHtml(ev.type)}</div>` : ""}
-          ${
-            ev.condition
-              ? `<div>Condition: ${this.escapeHtml(ev.condition)}</div>`
-              : ""
-          }
-          ${ev.notes ? `<div style="margin-top:6px">${this.escapeHtml(ev.notes)}</div>` : ""}
-          ${tiesHtml ? `<div><strong>Ties</strong><ul>${tiesHtml}</ul></div>` : ""}
-        `;
+        const title = document.createElement("strong");
+        title.textContent = ev.pointLabel || "Traverse point";
+        const meta = document.createElement("div");
+        meta.className = "subtitle";
+        meta.style.marginTop = "4px";
+        meta.textContent = `${ev.recordName || "Record"} · Saved ${new Date(
+          ev.createdAt
+        ).toLocaleString()}`;
+        card.append(title, meta);
+
+        if (ev.coords) {
+          const coords = document.createElement("div");
+          coords.textContent = `Coords: E ${ev.coords.x.toFixed(
+            2
+          )}, N ${ev.coords.y.toFixed(2)}`;
+          card.appendChild(coords);
+        }
+        if (ev.type) {
+          const type = document.createElement("div");
+          type.textContent = `Type: ${ev.type}`;
+          card.appendChild(type);
+        }
+        if (ev.condition) {
+          const condition = document.createElement("div");
+          condition.textContent = `Condition: ${ev.condition}`;
+          card.appendChild(condition);
+        }
+        if (ev.notes) {
+          const notes = document.createElement("div");
+          notes.style.marginTop = "6px";
+          notes.textContent = ev.notes;
+          card.appendChild(notes);
+        }
+
+        const mediaRow = document.createElement("div");
+        mediaRow.className = "evidence-media-grid";
+        if (ev.photo) {
+          const photoImg = document.createElement("img");
+          photoImg.src = ev.photo;
+          photoImg.alt = "Evidence photo";
+          photoImg.className = "evidence-thumb";
+          mediaRow.appendChild(photoImg);
+        }
+        if (ev.location) {
+          const loc = document.createElement("div");
+          loc.textContent = `GPS: Lat ${ev.location.lat.toFixed(
+            6
+          )}, Lon ${ev.location.lon.toFixed(6)} (±${ev.location.accuracy.toFixed(
+            1
+          )} m)`;
+          mediaRow.appendChild(loc);
+        }
+        if (mediaRow.childNodes.length > 0) {
+          card.appendChild(mediaRow);
+        }
+
+        if (ev.ties?.length) {
+          const tiesWrap = document.createElement("div");
+          const tiesHeading = document.createElement("strong");
+          tiesHeading.textContent = "Ties";
+          const ul = document.createElement("ul");
+          ev.ties.forEach((t) => {
+            const li = document.createElement("li");
+            const parts = [t.distance, t.bearing, t.description].filter(Boolean);
+            li.textContent = parts.join(" · ");
+            if (t.photos?.length) {
+              const tiePhotos = document.createElement("div");
+              tiePhotos.className = "tie-photos";
+              t.photos.forEach((src) => {
+                const img = document.createElement("img");
+                img.src = src;
+                img.className = "tie-photo-thumb";
+                img.alt = "Tie photo";
+                tiePhotos.appendChild(img);
+              });
+              li.appendChild(tiePhotos);
+            }
+            ul.appendChild(li);
+          });
+          tiesWrap.append(tiesHeading, ul);
+          card.appendChild(tiesWrap);
+        }
+
+        const actionsRow = document.createElement("div");
+        actionsRow.style.marginTop = "8px";
+        const exportBtn = document.createElement("button");
+        exportBtn.type = "button";
+        exportBtn.textContent = "Export CPF";
+        exportBtn.addEventListener("click", () =>
+          this.exportCornerFiling(ev)
+        );
+        actionsRow.appendChild(exportBtn);
+        card.appendChild(actionsRow);
         container.appendChild(card);
       });
+  }
+
+  exportCornerFiling(entry) {
+    if (!entry) return;
+    const projectName = this.projects[entry.projectId]?.name || "Project";
+    const lines = [];
+    lines.push("Corner Perpetuation Filing");
+    lines.push(`Project: ${projectName}`);
+    lines.push(`Record: ${entry.recordName || "Record"}`);
+    lines.push(`Traverse Point: ${entry.pointLabel || "Traverse point"}`);
+    lines.push(`Created: ${new Date(entry.createdAt).toLocaleString()}`);
+    if (entry.coords) {
+      lines.push(
+        `Coordinates: Easting ${entry.coords.x.toFixed(2)}, Northing ${entry.coords.y.toFixed(2)}`
+      );
+    }
+    if (entry.location) {
+      lines.push(
+        `GPS: Lat ${entry.location.lat.toFixed(6)}, Lon ${entry.location.lon.toFixed(6)} (±${entry.location.accuracy.toFixed(1)} m)`
+      );
+    }
+    if (entry.type) lines.push(`Evidence Type: ${entry.type}`);
+    if (entry.condition) lines.push(`Condition: ${entry.condition}`);
+    if (entry.notes) {
+      lines.push("Notes:");
+      lines.push(entry.notes);
+    }
+    if (entry.ties?.length) {
+      lines.push("Ties:");
+      entry.ties.forEach((tie, idx) => {
+        const pieces = [tie.distance || "", tie.bearing || "", tie.description || ""]
+          .filter(Boolean)
+          .join(" · ");
+        const photoLabel = tie.photos?.length
+          ? ` (Photos attached: ${tie.photos.length})`
+          : "";
+        lines.push(`  ${idx + 1}. ${pieces}${photoLabel}`);
+      });
+    }
+    if (entry.photo) {
+      lines.push("Monument Photo: Captured (image stored with exports)");
+    }
+    const fileBase = (entry.pointLabel || "corner")
+      .replace(/[^\w\-]+/g, "_")
+      .toLowerCase();
+    this.downloadText(lines.join("\n"), `${fileBase}-cpf.txt`);
   }
 
   resetEvidenceForm() {
@@ -849,6 +1088,7 @@ export default class AppController {
     if (this.elements.evidenceCondition) this.elements.evidenceCondition.value = "";
     if (this.elements.evidenceNotes) this.elements.evidenceNotes.value = "";
     if (this.elements.evidencePhoto) this.elements.evidencePhoto.value = "";
+    if (this.elements.evidenceTiePhotos) this.elements.evidenceTiePhotos.value = "";
     if (this.elements.evidenceLocationStatus)
       this.elements.evidenceLocationStatus.textContent = "";
     this.currentEvidencePhoto = null;
@@ -1484,6 +1724,37 @@ export default class AppController {
   }
 
   /* ===================== Dropdowns ===================== */
+  toggleEvidenceRecordDropdown() {
+    this.elements.evidenceRecordDropdownContainer?.classList.toggle("open");
+  }
+
+  closeEvidenceRecordDropdown() {
+    this.elements.evidenceRecordDropdownContainer?.classList.remove("open");
+  }
+
+  syncEvidenceRecordDropdownSelection() {
+    const select = this.elements.evidenceRecordSelect;
+    const menu = this.elements.evidenceRecordDropdownMenu;
+    const label = this.elements.evidenceRecordDropdownLabel;
+    if (label && select) {
+      const selectedOpt = select.options[select.selectedIndex];
+      label.textContent = selectedOpt?.textContent || "Select a record";
+    }
+    if (menu && select) {
+      const currentId = select.value;
+      menu.querySelectorAll(".start-option").forEach((node) => {
+        if (node.dataset.recordId === currentId) node.classList.add("active");
+        else node.classList.remove("active");
+      });
+    }
+  }
+
+  handleEvidenceRecordChange() {
+    this.refreshEvidencePointOptions();
+    this.updateEvidenceSaveState();
+    this.syncEvidenceRecordDropdownSelection();
+  }
+
   toggleProjectDropdown() {
     this.elements.projectDropdownContainer.classList.toggle("open");
     this.updateProjectList();
