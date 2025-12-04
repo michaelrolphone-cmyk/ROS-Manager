@@ -1,7 +1,7 @@
 import ProjectRepository from "../services/ProjectRepository.js";
 import Project from "../models/Project.js";
-import Record from "../models/Record.js";
-import Call from "../models/Call.js";
+import SurveyRecord from "../models/SurveyRecord.js";
+import TraverseInstruction from "../models/TraverseInstruction.js";
 
 export default class AppController {
   constructor() {
@@ -357,7 +357,11 @@ export default class AppController {
     const name = (this.elements.recordNameInput?.value || "").trim();
     if (!name) return alert("Enter a record name");
     const id = Date.now().toString();
-    const newRecord = new Record({ name, calls: [], startFromRecordId: null });
+    const newRecord = new SurveyRecord({
+      name,
+      calls: [],
+      startFromRecordId: null,
+    });
     this.projects[this.currentProjectId].records[id] = newRecord;
     if (this.elements.recordNameInput) this.elements.recordNameInput.value = "";
     this.saveProjects();
@@ -409,7 +413,7 @@ export default class AppController {
       const bearing = tr.querySelector(".bearing").value.trim();
       const dist = tr.querySelector(".distance").value.trim();
       if (bearing || dist) {
-        record.calls.push(new Call(bearing, dist));
+        record.calls.push(new TraverseInstruction(bearing, dist));
       }
     });
 

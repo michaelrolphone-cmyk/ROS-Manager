@@ -1,13 +1,13 @@
-import Record from "./Record.js";
+import SurveyRecord from "./SurveyRecord.js";
 
 export default class Project {
   constructor({ name = "", records = {} } = {}) {
     this.name = name;
     this.records = {};
     Object.entries(records).forEach(([id, record]) => {
-      this.records[id] = record instanceof Record
+      this.records[id] = record instanceof SurveyRecord
         ? record
-        : Record.fromObject(record);
+        : SurveyRecord.fromObject(record);
     });
   }
 

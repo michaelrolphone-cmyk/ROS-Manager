@@ -1,11 +1,11 @@
-export default class Call {
+export default class TraverseInstruction {
   constructor(bearing = "", distance = "") {
     this.bearing = bearing;
     this.distance = distance;
   }
 
   static fromObject(obj = {}) {
-    return new Call(obj.bearing || "", obj.distance || "");
+    return new TraverseInstruction(obj.bearing || "", obj.distance || "");
   }
 
   toObject() {

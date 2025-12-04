@@ -1,6 +1,6 @@
-import Call from "./Call.js";
+import TraverseInstruction from "./TraverseInstruction.js";
 
-export default class Record {
+export default class SurveyRecord {
   constructor({
     name = "",
     startPtNum = "1",
@@ -22,15 +22,19 @@ export default class Record {
     this.basis = basis;
     this.firstDist = firstDist;
     this.calls = calls.map((call) =>
-      call instanceof Call ? call : Call.fromObject(call)
+      call instanceof TraverseInstruction
+        ? call
+        : TraverseInstruction.fromObject(call)
     );
     this.startFromRecordId = startFromRecordId;
   }
 
   static fromObject(obj = {}) {
-    return new Record({
+    return new SurveyRecord({
       ...obj,
-      calls: (obj.calls || []).map((call) => Call.fromObject(call)),
+      calls: (obj.calls || []).map((call) =>
+        TraverseInstruction.fromObject(call)
+      ),
     });
   }
 
