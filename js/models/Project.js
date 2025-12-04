@@ -1,5 +1,6 @@
 import SurveyRecord from "./SurveyRecord.js";
 import EquipmentLog from "./EquipmentLog.js";
+import NavigationBookmark from "./NavigationBookmark.js";
 
 import Point from "./Point.js";
 import PointFile from "./PointFile.js";
@@ -12,6 +13,7 @@ export default class Project {
     points = [],
     pointFiles = [],
     activePointFileId = null,
+    navigationBookmarks = [],
   } = {}) {
     this.name = name;
     this.records = {};
@@ -32,6 +34,12 @@ export default class Project {
 
     this.activePointFileId =
       activePointFileId || this.pointFiles[0]?.id || null;
+
+    this.navigationBookmarks = navigationBookmarks.map((entry) =>
+      entry instanceof NavigationBookmark
+        ? entry
+        : NavigationBookmark.fromObject(entry)
+    );
 
     Object.entries(records).forEach(([id, record]) => {
       this.records[id] = record instanceof SurveyRecord
@@ -60,6 +68,11 @@ export default class Project {
         pf instanceof PointFile ? pf.toObject() : PointFile.fromObject(pf).toObject()
       ),
       activePointFileId: this.activePointFileId,
+      navigationBookmarks: this.navigationBookmarks.map((entry) =>
+        entry instanceof NavigationBookmark
+          ? entry.toObject()
+          : NavigationBookmark.fromObject(entry).toObject()
+      ),
     };
   }
 }

@@ -7,6 +7,7 @@ import EvidenceTie from "../models/EvidenceTie.js";
 import CornerEvidenceService from "../services/CornerEvidenceService.js";
 import EquipmentLog from "../models/EquipmentLog.js";
 import PointController from "./PointController.js";
+import NavigationController from "./NavigationController.js";
 
 export default class AppController {
   constructor() {
@@ -43,6 +44,31 @@ export default class AppController {
       getCurrentProject: () =>
         this.currentProjectId ? this.projects[this.currentProjectId] : null,
       saveProjects: () => this.saveProjects(),
+    });
+    this.navigationController = new NavigationController({
+      elements: {
+        compassCanvas: this.elements.navigationCompass,
+        headingLabel: this.elements.navigationHeadingValue,
+        targetBearingLabel: this.elements.navigationTargetBearing,
+        targetDistanceLabel: this.elements.navigationTargetDistance,
+        offsetLabel: this.elements.navigationOffset,
+        statusLabel: this.elements.navigationStatus,
+        bookmarkName: this.elements.navigationBookmarkName,
+        saveBookmarkButton: this.elements.saveNavigationBookmark,
+        bookmarkStatus: this.elements.navigationBookmarkStatus,
+        targetSelect: this.elements.navigationTargetSelect,
+        equipmentSelect: this.elements.navigationEquipmentSelect,
+        bookmarksList: this.elements.navigationBookmarksList,
+        refreshButton: this.elements.refreshNavigation,
+        clearTargetButton: this.elements.clearNavigationTarget,
+      },
+      getCurrentProject: () =>
+        this.currentProjectId ? this.projects[this.currentProjectId] : null,
+      saveProjects: () => this.saveProjects(),
+      getEquipmentLogs: () =>
+        this.currentProjectId
+          ? this.projects[this.currentProjectId]?.equipmentLogs || []
+          : [],
     });
     this.bindStaticEvents();
     this.initialize();
@@ -157,6 +183,20 @@ export default class AppController {
       resetEquipmentButton: document.getElementById("resetEquipmentButton"),
       equipmentList: document.getElementById("equipmentList"),
       equipmentSummary: document.getElementById("equipmentSummary"),
+      navigationCompass: document.getElementById("navigationCompass"),
+      navigationHeadingValue: document.getElementById("navigationHeadingValue"),
+      navigationTargetBearing: document.getElementById("navigationTargetBearing"),
+      navigationTargetDistance: document.getElementById("navigationTargetDistance"),
+      navigationOffset: document.getElementById("navigationOffset"),
+      navigationStatus: document.getElementById("navigationStatus"),
+      navigationBookmarkName: document.getElementById("navigationBookmarkName"),
+      saveNavigationBookmark: document.getElementById("saveNavigationBookmark"),
+      navigationBookmarkStatus: document.getElementById("navigationBookmarkStatus"),
+      navigationTargetSelect: document.getElementById("navigationTargetSelect"),
+      navigationEquipmentSelect: document.getElementById("navigationEquipmentSelect"),
+      navigationBookmarksList: document.getElementById("navigationBookmarksList"),
+      refreshNavigation: document.getElementById("refreshNavigation"),
+      clearNavigationTarget: document.getElementById("clearNavigationTarget"),
     };
   }
 
@@ -506,6 +546,7 @@ export default class AppController {
       this.refreshEquipmentUI();
       this.pointController.renderPointsTable();
       this.refreshEvidenceUI();
+      this.navigationController?.onProjectChanged();
       return;
     }
 
@@ -521,6 +562,7 @@ export default class AppController {
     this.refreshEvidenceUI();
     this.resetEquipmentForm();
     this.refreshEquipmentUI();
+    this.navigationController?.onProjectChanged();
   }
 
   newProject() {
@@ -1270,6 +1312,7 @@ export default class AppController {
     project.equipmentLogs.push(entry);
     this.saveProjects();
     this.renderEquipmentList();
+    this.navigationController?.onEquipmentLogsChanged();
     this.resetEquipmentForm();
   }
 

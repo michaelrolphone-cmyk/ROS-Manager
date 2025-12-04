@@ -190,6 +190,84 @@
         background: #16a34a;
       }
 
+      .navigation-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+        align-items: start;
+      }
+
+      .navigation-panel {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px;
+      }
+
+      .compass-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .compass-readouts {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+      }
+
+      .stat-chip {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 10px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      }
+
+      .stat-label {
+        font-size: 0.85rem;
+        color: #475569;
+        margin-bottom: 4px;
+      }
+
+      .stat-value {
+        font-weight: 700;
+        color: #0f172a;
+        font-size: 1.1rem;
+      }
+
+      .navigation-actions label {
+        display: block;
+        margin: 8px 0 4px;
+        font-weight: 600;
+        color: #0f172a;
+      }
+
+      .navigation-actions input,
+      .navigation-actions select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        margin-bottom: 10px;
+      }
+
+      .bookmark-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .bookmark-card {
+        border: 1px solid #e2e8f0;
+        padding: 10px;
+        border-radius: 10px;
+        background: white;
+      }
+
       .row-modified {
         background: #fff7d6;
       }
@@ -1379,15 +1457,60 @@
           <div class="card">
             <h3>Navigation</h3>
             <p class="subtitle" style="margin-top: 0">
-              Plan routes and waypoints associated with your active project. Use
-              this space to bring together traverse outputs, stakeout points,
-              and any future navigation helpers.
+              Draw a compass, follow headings, and return to important project
+              locations. Capture stakeout targets, travel headings, and equipment
+              bases so you can walk the correct line in the field.
             </p>
-            <p>
-              Navigation tools will live here. As modules are added, they will
-              automatically appear on the home springboard and be scoped to the
-              selected project.
-            </p>
+
+            <div class="navigation-grid">
+              <div class="navigation-panel compass-wrapper">
+                <canvas id="navigationCompass" width="320" height="320"></canvas>
+                <div class="compass-readouts">
+                  <div class="stat-chip">
+                    <div class="stat-label">Heading Source</div>
+                    <div class="stat-value" id="navigationHeadingValue">--</div>
+                  </div>
+                  <div class="stat-chip">
+                    <div class="stat-label">Target Bearing</div>
+                    <div class="stat-value" id="navigationTargetBearing">--</div>
+                  </div>
+                  <div class="stat-chip">
+                    <div class="stat-label">Distance to Target</div>
+                    <div class="stat-value" id="navigationTargetDistance">--</div>
+                  </div>
+                  <div class="stat-chip">
+                    <div class="stat-label">Line Offset</div>
+                    <div class="stat-value" id="navigationOffset">--</div>
+                  </div>
+                </div>
+                <div class="subtitle" id="navigationStatus" style="margin: 0"></div>
+              </div>
+
+              <div class="navigation-panel navigation-actions">
+                <h4>Targets &amp; Saved Spots</h4>
+                <label for="navigationBookmarkName">Name to save current position</label>
+                <input
+                  type="text"
+                  id="navigationBookmarkName"
+                  placeholder="E.g., Truck, Property corner, Cache"
+                />
+                <button id="saveNavigationBookmark">Save current location</button>
+                <div class="subtitle" id="navigationBookmarkStatus"></div>
+
+                <label for="navigationTargetSelect">Navigate to</label>
+                <select id="navigationTargetSelect"></select>
+
+                <label for="navigationEquipmentSelect">Equipment setup (base)</label>
+                <select id="navigationEquipmentSelect"></select>
+
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px">
+                  <button class="secondary" id="refreshNavigation">Refresh sources</button>
+                  <button id="clearNavigationTarget" class="danger">Clear target</button>
+                </div>
+
+                <div class="bookmark-list" id="navigationBookmarksList"></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
