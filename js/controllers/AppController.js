@@ -105,6 +105,7 @@ export default class AppController {
       evidenceTabButton: document.getElementById("evidenceTabButton"),
       equipmentTabButton: document.getElementById("equipmentTabButton"),
       springboardSection: document.getElementById("springboardSection"),
+      springboardGrid: document.querySelector(".springboard-grid"),
       navigationSection: document.getElementById("navigationSection"),
       traverseSection: document.getElementById("traverseSection"),
       pointsSection: document.getElementById("pointsSection"),
@@ -204,6 +205,16 @@ export default class AppController {
       launcher.addEventListener("click", () =>
         this.switchTab(launcher.dataset.target)
       );
+    });
+
+    this.elements.springboardGrid?.addEventListener("click", (evt) => {
+      const launcher = evt.target.closest(".app-tile");
+      if (!launcher) return;
+      const target = launcher.dataset.target;
+      if (target) {
+        evt.preventDefault();
+        this.switchTab(target);
+      }
     });
 
     document.addEventListener("click", (e) => {
