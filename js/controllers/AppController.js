@@ -86,6 +86,8 @@ export default class AppController {
       pointFileSelect: document.getElementById("pointFileSelect"),
       newPointFileButton: document.getElementById("newPointFileButton"),
       downloadPointsButton: document.getElementById("downloadPointsButton"),
+      pointsTabButton: document.getElementById("pointsTabButton"),
+      pointsSection: document.getElementById("pointsSection"),
       startFromDropdownContainer: document.getElementById(
         "startFromDropdownContainer"
       ),
@@ -99,9 +101,11 @@ export default class AppController {
       deleteRecordButton: document.getElementById("deleteRecordButton"),
       cancelProjectButton: document.getElementById("cancelProjectButton"),
       traverseTabButton: document.getElementById("traverseTabButton"),
+      pointsTabButton: document.getElementById("pointsTabButton"),
       evidenceTabButton: document.getElementById("evidenceTabButton"),
       equipmentTabButton: document.getElementById("equipmentTabButton"),
       traverseSection: document.getElementById("traverseSection"),
+      pointsSection: document.getElementById("pointsSection"),
       evidenceSection: document.getElementById("evidenceSection"),
       equipmentSection: document.getElementById("equipmentSection"),
       evidenceRecordDropdownContainer: document.getElementById(
@@ -271,6 +275,9 @@ export default class AppController {
 
     this.elements.traverseTabButton?.addEventListener("click", () =>
       this.switchTab("traverseSection")
+    );
+    this.elements.pointsTabButton?.addEventListener("click", () =>
+      this.switchTab("pointsSection")
     );
     this.elements.evidenceTabButton?.addEventListener("click", () =>
       this.switchTab("evidenceSection")
@@ -648,11 +655,13 @@ export default class AppController {
   switchTab(targetId) {
     const sections = [
       this.elements.traverseSection,
+      this.elements.pointsSection,
       this.elements.evidenceSection,
       this.elements.equipmentSection,
     ];
     const buttons = [
       this.elements.traverseTabButton,
+      this.elements.pointsTabButton,
       this.elements.evidenceTabButton,
       this.elements.equipmentTabButton,
     ];
@@ -676,6 +685,9 @@ export default class AppController {
       this.refreshEvidenceUI();
     } else if (targetId === "equipmentSection") {
       this.refreshEquipmentUI();
+    }
+    if (targetId === "pointsSection") {
+      this.pointController.renderPointsTable();
     }
   }
 
