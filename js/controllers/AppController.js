@@ -6,10 +6,12 @@ import CornerEvidence from "../models/CornerEvidence.js";
 import EvidenceTie from "../models/EvidenceTie.js";
 import CornerEvidenceService from "../services/CornerEvidenceService.js";
 import PointController from "./PointController.js";
+import NavigationController from "./NavigationController.js";
 
 export default class AppController {
   constructor() {
     this.STORAGE_KEY = "carlsonSurveyProjects";
+    this.NAV_TARGET_KEY = "surveyNavigationTarget";
     this.repository = new ProjectRepository(this.STORAGE_KEY);
     this.projects = this.repository.loadProjects();
     this.currentProjectId = null;
@@ -25,7 +27,6 @@ export default class AppController {
     this.currentEvidenceLocation = null;
     this.currentEvidenceTies = [];
     this.currentTraversePointOptions = [];
-
     this.cacheDom();
     this.pointController = new PointController({
       elements: {
@@ -40,6 +41,9 @@ export default class AppController {
       getCurrentProject: () =>
         this.currentProjectId ? this.projects[this.currentProjectId] : null,
       saveProjects: () => this.saveProjects(),
+    });
+    this.navigationController = new NavigationController({
+      elements: this.elements,
     });
     this.bindStaticEvents();
     this.initialize();
@@ -131,6 +135,24 @@ export default class AppController {
       resetEvidenceButton: document.getElementById("resetEvidenceButton"),
       evidenceList: document.getElementById("evidenceList"),
       evidenceSummary: document.getElementById("evidenceSummary"),
+      navigationTabButton: document.getElementById("navigationTabButton"),
+      navigationSection: document.getElementById("navigationSection"),
+      navigationCompass: document.getElementById("navigationCompass"),
+      navigationStatus: document.getElementById("navigationStatus"),
+      navigationDistance: document.getElementById("navigationDistance"),
+      navigationHeadingSource: document.getElementById(
+        "navigationHeadingSource"
+      ),
+      navigationDetails: document.getElementById("navigationDetails"),
+      targetSummary: document.getElementById("targetSummary"),
+      enableCompassButton: document.getElementById("enableCompassButton"),
+      setTargetButton: document.getElementById("setTargetButton"),
+      clearTargetButton: document.getElementById("clearTargetButton"),
+      manualTargetLat: document.getElementById("manualTargetLat"),
+      manualTargetLon: document.getElementById("manualTargetLon"),
+      saveManualTargetButton: document.getElementById(
+        "saveManualTargetButton"
+      ),
     };
   }
 
@@ -256,6 +278,9 @@ export default class AppController {
     this.elements.evidenceTabButton?.addEventListener("click", () =>
       this.switchTab("evidenceSection")
     );
+    this.elements.navigationTabButton?.addEventListener("click", () =>
+      this.switchTab("navigationSection")
+    );
 
     this.elements.evidenceRecordSelect?.addEventListener("change", () => {
       this.handleEvidenceRecordChange();
@@ -291,6 +316,19 @@ export default class AppController {
     this.elements.evidenceCondition?.addEventListener("change", () =>
       this.updateEvidenceSaveState()
     );
+
+    this.elements.enableCompassButton?.addEventListener("click", () =>
+      this.navigationController.enableCompassSensor()
+    );
+    this.elements.setTargetButton?.addEventListener("click", () =>
+      this.navigationController.markCurrentLocationAsTarget()
+    );
+    this.elements.clearTargetButton?.addEventListener("click", () =>
+      this.navigationController.clearTargetLocation()
+    );
+    this.elements.saveManualTargetButton?.addEventListener("click", () =>
+      this.navigationController.saveManualTarget()
+    );
   }
 
   initialize() {
@@ -304,6 +342,7 @@ export default class AppController {
     }
     this.refreshEvidenceUI();
     this.renderEvidenceTies();
+    this.navigationController.initNavigation();
   }
 
   saveProjects() {
@@ -599,10 +638,12 @@ export default class AppController {
     const sections = [
       this.elements.traverseSection,
       this.elements.evidenceSection,
+      this.elements.navigationSection,
     ];
     const buttons = [
       this.elements.traverseTabButton,
       this.elements.evidenceTabButton,
+      this.elements.navigationTabButton,
     ];
     sections.forEach((sec) => {
       if (!sec) return;
@@ -622,6 +663,9 @@ export default class AppController {
 
     if (targetId === "evidenceSection") {
       this.refreshEvidenceUI();
+    }
+    if (targetId === "navigationSection") {
+      this.drawNavigationCompass();
     }
   }
 

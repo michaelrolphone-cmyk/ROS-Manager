@@ -202,6 +202,51 @@
         margin-top: 20px;
         border-collapse: collapse;
       }
+
+      .navigation-layout {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 20px;
+        align-items: start;
+        margin-top: 10px;
+      }
+
+      .navigation-layout canvas {
+        width: 100%;
+        max-width: 320px;
+        background: #0f172a;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      }
+
+      .navigation-meta {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 10px;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        background: #e0ecff;
+        color: #1e40af;
+        border: 1px solid #bfdbfe;
+      }
+
+      .navigation-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 10px 0;
+      }
+
+      .navigation-actions input {
+        max-width: 220px;
+      }
       th,
       td {
         padding: 10px;
@@ -809,6 +854,14 @@
           >
             Evidence Logger
           </button>
+          <button
+            type="button"
+            class="tab-btn"
+            data-target="navigationSection"
+            id="navigationTabButton"
+          >
+            Navigation
+          </button>
         </div>
 
         <div id="traverseSection" class="tool-section active">
@@ -1197,6 +1250,61 @@
             <h3>Project Evidence Points</h3>
             <p class="subtitle" id="evidenceSummary" style="margin-top: 0"></p>
             <div id="evidenceList"></div>
+          </div>
+        </div>
+
+        <div id="navigationSection" class="tool-section">
+          <div class="card">
+            <h3>Navigation & Compass</h3>
+            <p class="subtitle" id="navigationStatus" style="margin-top: 0">
+              Waiting for location…
+            </p>
+
+            <div class="navigation-actions">
+              <button type="button" id="enableCompassButton">
+                Enable Compass Sensor
+              </button>
+              <button type="button" id="setTargetButton" class="success">
+                Mark Current Location as Target
+              </button>
+              <button type="button" id="clearTargetButton" class="secondary">
+                Clear Target
+              </button>
+            </div>
+
+            <div class="navigation-actions">
+              <input
+                type="text"
+                id="manualTargetLat"
+                placeholder="Target Latitude"
+              />
+              <input
+                type="text"
+                id="manualTargetLon"
+                placeholder="Target Longitude"
+              />
+              <button type="button" id="saveManualTargetButton">
+                Save Manual Target
+              </button>
+            </div>
+
+            <div class="navigation-layout">
+              <canvas id="navigationCompass" width="320" height="320"></canvas>
+              <div>
+                <div class="navigation-meta">
+                  <div>
+                    <div class="badge" id="navigationHeadingSource">Heading: —</div>
+                  </div>
+                  <div>
+                    <div class="badge" id="navigationDistance">Distance: —</div>
+                  </div>
+                </div>
+                <p class="subtitle" id="targetSummary" style="margin-top: 12px">
+                  No target recorded yet.
+                </p>
+                <div id="navigationDetails" class="subtitle"></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
