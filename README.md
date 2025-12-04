@@ -46,6 +46,14 @@ This offline, browser-based workspace bundles several surveying tools in one pla
 - **Project evidence dashboard**
   - View a summary of all evidence entries for the active project with quick access to each item.【F:index.html†L1086-L1103】【F:index.html†L1784-L1799】
 
+### Equipment Setup Log
+- **Base station tracking**
+  - Record setup and tear down date/time, base station height, reference point, and crew member for each session.【F:index.html†L1064-L1113】
+- **GPS capture**
+  - Capture the logging device's GPS location with accuracy details to help relocate the base station later.【F:index.html†L1115-L1137】
+- **Per-project log**
+  - Review all saved equipment entries for the active project in a dedicated log view.【F:index.html†L1139-L1146】
+
 ## Tips
 - Use meaningful project/record names to keep the project and Start From dropdowns readable.
 - Traverse Builder and Evidence Logger share the same dataset, so you can capture evidence immediately after generating traverse points.

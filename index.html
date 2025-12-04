@@ -809,6 +809,14 @@
           >
             Evidence Logger
           </button>
+          <button
+            type="button"
+            class="tab-btn"
+            data-target="equipmentSection"
+            id="equipmentTabButton"
+          >
+            Equipment Setup
+          </button>
         </div>
 
         <div id="traverseSection" class="tool-section active">
@@ -1197,6 +1205,78 @@
             <h3>Project Evidence Points</h3>
             <p class="subtitle" id="evidenceSummary" style="margin-top: 0"></p>
             <div id="evidenceList"></div>
+          </div>
+        </div>
+
+        <div id="equipmentSection" class="tool-section">
+          <div class="card">
+            <h3>Equipment Setup Log</h3>
+            <p class="subtitle" style="margin-top: 0">
+              Track base station setup and teardown information for this project.
+            </p>
+
+            <div class="form-grid">
+              <div>
+                <label for="equipmentSetupAt">Setup Date &amp; Time</label>
+                <input id="equipmentSetupAt" type="datetime-local" />
+              </div>
+              <div>
+                <label for="equipmentTearDownAt">Tear Down Date &amp; Time</label>
+                <input id="equipmentTearDownAt" type="datetime-local" />
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div>
+                <label for="equipmentBaseHeight">Base Station Height</label>
+                <input
+                  id="equipmentBaseHeight"
+                  type="text"
+                  placeholder="e.g., 1.500 m"
+                />
+              </div>
+              <div>
+                <label for="equipmentReferencePoint">Reference Point</label>
+                <input
+                  id="equipmentReferencePoint"
+                  type="text"
+                  placeholder="Control point or benchmark used"
+                />
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div>
+                <label for="equipmentSetupBy">Set Up By</label>
+                <input
+                  id="equipmentSetupBy"
+                  type="text"
+                  placeholder="Crew or person responsible"
+                />
+              </div>
+              <div>
+                <label for="captureEquipmentLocation">GPS Location</label>
+                <div style="display: flex; gap: 10px; align-items: center">
+                  <button type="button" id="captureEquipmentLocation">
+                    Get GPS Location
+                  </button>
+                  <span id="equipmentLocationStatus" class="subtitle"></span>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap">
+              <button type="button" class="success" id="saveEquipmentButton">
+                Save Equipment Entry
+              </button>
+              <button type="button" id="resetEquipmentButton">Reset Form</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Equipment Records</h3>
+            <p class="subtitle" id="equipmentSummary" style="margin-top: 0"></p>
+            <div id="equipmentList"></div>
           </div>
         </div>
       </div>

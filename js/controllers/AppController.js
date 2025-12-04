@@ -5,6 +5,7 @@ import TraverseInstruction from "../models/TraverseInstruction.js";
 import CornerEvidence from "../models/CornerEvidence.js";
 import EvidenceTie from "../models/EvidenceTie.js";
 import CornerEvidenceService from "../services/CornerEvidenceService.js";
+import EquipmentLog from "../models/EquipmentLog.js";
 import PointController from "./PointController.js";
 
 export default class AppController {
@@ -25,6 +26,7 @@ export default class AppController {
     this.currentEvidenceLocation = null;
     this.currentEvidenceTies = [];
     this.currentTraversePointOptions = [];
+    this.currentEquipmentLocation = null;
 
     this.cacheDom();
     this.pointController = new PointController({
@@ -98,8 +100,10 @@ export default class AppController {
       cancelProjectButton: document.getElementById("cancelProjectButton"),
       traverseTabButton: document.getElementById("traverseTabButton"),
       evidenceTabButton: document.getElementById("evidenceTabButton"),
+      equipmentTabButton: document.getElementById("equipmentTabButton"),
       traverseSection: document.getElementById("traverseSection"),
       evidenceSection: document.getElementById("evidenceSection"),
+      equipmentSection: document.getElementById("equipmentSection"),
       evidenceRecordDropdownContainer: document.getElementById(
         "evidenceRecordDropdownContainer"
       ),
@@ -131,6 +135,21 @@ export default class AppController {
       resetEvidenceButton: document.getElementById("resetEvidenceButton"),
       evidenceList: document.getElementById("evidenceList"),
       evidenceSummary: document.getElementById("evidenceSummary"),
+      equipmentSetupAt: document.getElementById("equipmentSetupAt"),
+      equipmentTearDownAt: document.getElementById("equipmentTearDownAt"),
+      equipmentBaseHeight: document.getElementById("equipmentBaseHeight"),
+      equipmentReferencePoint: document.getElementById("equipmentReferencePoint"),
+      equipmentSetupBy: document.getElementById("equipmentSetupBy"),
+      captureEquipmentLocation: document.getElementById(
+        "captureEquipmentLocation"
+      ),
+      equipmentLocationStatus: document.getElementById(
+        "equipmentLocationStatus"
+      ),
+      saveEquipmentButton: document.getElementById("saveEquipmentButton"),
+      resetEquipmentButton: document.getElementById("resetEquipmentButton"),
+      equipmentList: document.getElementById("equipmentList"),
+      equipmentSummary: document.getElementById("equipmentSummary"),
     };
   }
 
@@ -256,6 +275,9 @@ export default class AppController {
     this.elements.evidenceTabButton?.addEventListener("click", () =>
       this.switchTab("evidenceSection")
     );
+    this.elements.equipmentTabButton?.addEventListener("click", () =>
+      this.switchTab("equipmentSection")
+    );
 
     this.elements.evidenceRecordSelect?.addEventListener("change", () => {
       this.handleEvidenceRecordChange();
@@ -277,6 +299,10 @@ export default class AppController {
       this.captureEvidenceLocation()
     );
 
+    this.elements.captureEquipmentLocation?.addEventListener("click", () =>
+      this.captureEquipmentLocation()
+    );
+
     this.elements.saveEvidenceButton?.addEventListener("click", () =>
       this.saveEvidenceEntry()
     );
@@ -291,6 +317,24 @@ export default class AppController {
     this.elements.evidenceCondition?.addEventListener("change", () =>
       this.updateEvidenceSaveState()
     );
+
+    [
+      this.elements.equipmentSetupAt,
+      this.elements.equipmentTearDownAt,
+      this.elements.equipmentBaseHeight,
+      this.elements.equipmentReferencePoint,
+      this.elements.equipmentSetupBy,
+    ].forEach((el) => {
+      el?.addEventListener("input", () => this.updateEquipmentSaveState());
+    });
+
+    this.elements.saveEquipmentButton?.addEventListener("click", () =>
+      this.saveEquipmentEntry()
+    );
+
+    this.elements.resetEquipmentButton?.addEventListener("click", () =>
+      this.resetEquipmentForm()
+    );
   }
 
   initialize() {
@@ -304,6 +348,7 @@ export default class AppController {
     }
     this.refreshEvidenceUI();
     this.renderEvidenceTies();
+    this.refreshEquipmentUI();
   }
 
   saveProjects() {
@@ -425,6 +470,9 @@ export default class AppController {
       this.updateProjectList();
       this.drawProjectOverview();
       this.hideProjectForm();
+      this.refreshEvidenceUI();
+      this.resetEquipmentForm();
+      this.refreshEquipmentUI();
       this.pointController.renderPointsTable();
       this.refreshEvidenceUI();
       return;
@@ -440,6 +488,8 @@ export default class AppController {
     this.hideProjectForm();
     this.pointController.renderPointsTable();
     this.refreshEvidenceUI();
+    this.resetEquipmentForm();
+    this.refreshEquipmentUI();
   }
 
   newProject() {
@@ -599,10 +649,12 @@ export default class AppController {
     const sections = [
       this.elements.traverseSection,
       this.elements.evidenceSection,
+      this.elements.equipmentSection,
     ];
     const buttons = [
       this.elements.traverseTabButton,
       this.elements.evidenceTabButton,
+      this.elements.equipmentTabButton,
     ];
     sections.forEach((sec) => {
       if (!sec) return;
@@ -622,6 +674,8 @@ export default class AppController {
 
     if (targetId === "evidenceSection") {
       this.refreshEvidenceUI();
+    } else if (targetId === "equipmentSection") {
+      this.refreshEquipmentUI();
     }
   }
 
@@ -1064,6 +1118,156 @@ export default class AppController {
       });
   }
 
+  /* ===================== Equipment Setup ===================== */
+  refreshEquipmentUI() {
+    this.renderEquipmentList();
+    this.updateEquipmentSaveState();
+  }
+
+  resetEquipmentForm() {
+    [
+      this.elements.equipmentSetupAt,
+      this.elements.equipmentTearDownAt,
+      this.elements.equipmentBaseHeight,
+      this.elements.equipmentReferencePoint,
+      this.elements.equipmentSetupBy,
+    ].forEach((el) => {
+      if (el) el.value = "";
+    });
+    if (this.elements.equipmentLocationStatus) {
+      this.elements.equipmentLocationStatus.textContent = "";
+    }
+    this.currentEquipmentLocation = null;
+    this.updateEquipmentSaveState();
+  }
+
+  updateEquipmentSaveState() {
+    if (!this.elements.saveEquipmentButton) return;
+    const requiredFields = [
+      this.elements.equipmentSetupAt,
+      this.elements.equipmentBaseHeight,
+      this.elements.equipmentReferencePoint,
+      this.elements.equipmentSetupBy,
+    ];
+    const canSave =
+      !!this.currentProjectId &&
+      requiredFields.every((el) => el && el.value.trim().length > 0);
+    this.elements.saveEquipmentButton.disabled = !canSave;
+  }
+
+  captureEquipmentLocation() {
+    if (!navigator.geolocation) {
+      if (this.elements.equipmentLocationStatus) {
+        this.elements.equipmentLocationStatus.textContent =
+          "Geolocation not supported.";
+      }
+      return;
+    }
+    if (this.elements.equipmentLocationStatus) {
+      this.elements.equipmentLocationStatus.textContent = "Getting location…";
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        this.currentEquipmentLocation = {
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+        };
+        if (this.elements.equipmentLocationStatus) {
+          this.elements.equipmentLocationStatus.textContent = `Lat ${pos.coords.latitude.toFixed(6)}, Lon ${pos.coords.longitude.toFixed(
+            6
+          )} (±${pos.coords.accuracy.toFixed(1)} m)`;
+        }
+        this.updateEquipmentSaveState();
+      },
+      () => {
+        if (this.elements.equipmentLocationStatus) {
+          this.elements.equipmentLocationStatus.textContent =
+            "Unable to get location.";
+        }
+      },
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  }
+
+  saveEquipmentEntry() {
+    if (!this.currentProjectId || !this.projects[this.currentProjectId]) return;
+    const project = this.projects[this.currentProjectId];
+    const entry = new EquipmentLog({
+      id: Date.now().toString(),
+      setupAt: this.elements.equipmentSetupAt?.value || "",
+      tearDownAt: this.elements.equipmentTearDownAt?.value || "",
+      baseHeight: this.elements.equipmentBaseHeight?.value.trim() || "",
+      referencePoint:
+        this.elements.equipmentReferencePoint?.value.trim() || "",
+      setupBy: this.elements.equipmentSetupBy?.value.trim() || "",
+      location: this.currentEquipmentLocation,
+      recordedAt: new Date().toISOString(),
+    });
+
+    project.equipmentLogs = project.equipmentLogs || [];
+    project.equipmentLogs.push(entry);
+    this.saveProjects();
+    this.renderEquipmentList();
+    this.resetEquipmentForm();
+  }
+
+  renderEquipmentList() {
+    if (!this.elements.equipmentList || !this.elements.equipmentSummary) return;
+    const container = this.elements.equipmentList;
+    container.innerHTML = "";
+
+    const project = this.projects[this.currentProjectId];
+    if (!project) {
+      this.elements.equipmentSummary.textContent =
+        "Select a project to view equipment logs.";
+      return;
+    }
+
+    const logs = project.equipmentLogs || [];
+    if (logs.length === 0) {
+      this.elements.equipmentSummary.textContent =
+        "No equipment setups saved yet.";
+      return;
+    }
+
+    this.elements.equipmentSummary.textContent = `${logs.length} entr${
+      logs.length === 1 ? "y" : "ies"
+    } logged.`;
+
+    logs
+      .slice()
+      .sort((a, b) => new Date(b.setupAt || b.recordedAt) - new Date(a.setupAt || a.recordedAt))
+      .forEach((log) => {
+        const card = document.createElement("div");
+        card.className = "card";
+        const setupTime = log.setupAt
+          ? new Date(log.setupAt).toLocaleString()
+          : "Not set";
+        const teardownTime = log.tearDownAt
+          ? new Date(log.tearDownAt).toLocaleString()
+          : "Not recorded";
+        const locationText = log.location
+          ? `Lat ${log.location.lat.toFixed(6)}, Lon ${log.location.lon.toFixed(
+              6
+            )} (±${log.location.accuracy.toFixed(1)} m)`
+          : "No GPS captured";
+        card.innerHTML = `
+          <strong>Base Station Setup</strong>
+          <div class="subtitle" style="margin-top:4px">Logged ${new Date(
+            log.recordedAt
+          ).toLocaleString()}</div>
+          <div>Setup at: ${this.escapeHtml(setupTime)}</div>
+          <div>Tear down: ${this.escapeHtml(teardownTime)}</div>
+          <div>Base height: ${this.escapeHtml(log.baseHeight || "")}</div>
+          <div>Reference point: ${this.escapeHtml(
+            log.referencePoint || ""
+          )}</div>
+          <div>Set up by: ${this.escapeHtml(log.setupBy || "")}</div>
+          <div>Location: ${this.escapeHtml(locationText)}</div>
+        `;
+        container.appendChild(card);
+      });
   exportCornerFiling(entry) {
     if (!entry) return;
     const projectName = this.projects[entry.projectId]?.name || "Project";
