@@ -96,11 +96,12 @@
       .springboard-hero {
         background: #0f172a;
         color: white;
-        border-radius: 18px;
+        border-radius: 18px
         padding: 20px 20px 24px;
         margin-bottom: 16px;
         box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
         overflow: hidden;
+        margin: 10px -30px;
       }
 
       .springboard-hero-header {
@@ -271,8 +272,13 @@
         font-size: 0.9rem;
       }
       .header {
+        background: #1e40af;
+        color: white;
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         position: sticky;
-        top: 10px;
         z-index: 5;
         background: #0f172a;
         color: white;
@@ -280,10 +286,14 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        border-radius: 16px;
+        border-radius-bottom: 16px;
         overflow: hidden;
         box-shadow: 0 16px 40px rgba(15, 23, 42, 0.28);
-        background-image: linear-gradient(120deg, rgba(14, 165, 233, 0.18), rgba(59, 130, 246, 0.25)),
+        background-image: linear-gradient(
+            120deg,
+            rgba(14, 165, 233, 0.18),
+            rgba(59, 130, 246, 0.25)
+          ),
           var(--header-map-layer, none),
           url('data:image/svg+xml,%3Csvg width="400" height="240" viewBox="0 0 400 240" fill="none" xmlns="http://www.w3.org/2000/svg"%3E%3Cg opacity="0.35" stroke="%23a5b4fc" stroke-width="1.5"%3E%3Cpath d="M-40 24C40 52 120 52 200 24C280 -4 360 -4 440 24"/%3E%3Cpath d="M-40 84C40 112 120 112 200 84C280 56 360 56 440 84"/%3E%3Cpath d="M-40 144C40 172 120 172 200 144C280 116 360 116 440 144"/%3E%3Cpath d="M-40 204C40 232 120 232 200 204C280 176 360 176 440 204"/%3E%3Cpath d="M120 -20C92 60 92 140 120 220"/%3E%3Cpath d="M200 -20C172 60 172 140 200 220"/%3E%3Cpath d="M280 -20C252 60 252 140 280 220"/%3E%3C/g%3E%3Ccircle cx="200" cy="120" r="60" stroke="%23638cf5" stroke-width="2.5" opacity="0.35"/%3E%3C/svg%3E');
         background-repeat: no-repeat;
