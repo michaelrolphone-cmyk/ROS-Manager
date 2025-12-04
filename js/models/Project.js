@@ -8,6 +8,12 @@ import PointFile from "./PointFile.js";
 export default class Project {
   constructor({
     name = "",
+    description = "",
+    address = "",
+    clientName = "",
+    townships = [],
+    ranges = [],
+    sections = [],
     records = {},
     equipmentLogs = [],
     points = [],
@@ -16,6 +22,12 @@ export default class Project {
     navigationBookmarks = [],
   } = {}) {
     this.name = name;
+    this.description = description;
+    this.address = address;
+    this.clientName = clientName;
+    this.townships = Array.isArray(townships) ? townships : [];
+    this.ranges = Array.isArray(ranges) ? ranges : [];
+    this.sections = Array.isArray(sections) ? sections : [];
     this.records = {};
     this.pointFiles = Array.isArray(pointFiles)
       ? pointFiles.map((pf) =>
@@ -62,6 +74,12 @@ export default class Project {
     ]);
     return {
       name: this.name,
+      description: this.description,
+      address: this.address,
+      clientName: this.clientName,
+      townships: this.townships,
+      ranges: this.ranges,
+      sections: this.sections,
       records: Object.fromEntries(entries),
       equipmentLogs: this.equipmentLogs.map((entry) => entry.toObject()),
       pointFiles: this.pointFiles.map((pf) =>

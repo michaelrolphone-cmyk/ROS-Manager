@@ -92,6 +92,25 @@ export default class AppController {
       projectControls: document.getElementById("projectControls"),
       projectNameInput: document.getElementById("projectNameInput"),
       currentProjectName: document.getElementById("currentProjectName"),
+      projectDetailName: document.getElementById("projectDetailName"),
+      projectClientInput: document.getElementById("projectClientInput"),
+      projectAddressInput: document.getElementById("projectAddressInput"),
+      projectTownshipInput: document.getElementById("projectTownshipInput"),
+      projectRangeInput: document.getElementById("projectRangeInput"),
+      projectSectionInput: document.getElementById("projectSectionInput"),
+      projectDescriptionInput: document.getElementById("projectDescriptionInput"),
+      saveProjectDetailsButton: document.getElementById("saveProjectDetailsButton"),
+      springboardHero: document.getElementById("springboardHero"),
+      springboardProjectTitle: document.getElementById("springboardProjectTitle"),
+      springboardProjectDescription: document.getElementById(
+        "springboardProjectDescription"
+      ),
+      springboardStatusChip: document.getElementById("springboardStatusChip"),
+      springboardClientValue: document.getElementById("springboardClientValue"),
+      springboardAddressValue: document.getElementById("springboardAddressValue"),
+      springboardTownshipValue: document.getElementById("springboardTownshipValue"),
+      springboardRangeValue: document.getElementById("springboardRangeValue"),
+      springboardSectionValue: document.getElementById("springboardSectionValue"),
       recordNameInput: document.getElementById("recordNameInput"),
       recordList: document.getElementById("recordList"),
       editor: document.getElementById("editor"),
@@ -222,6 +241,9 @@ export default class AppController {
     document
       .getElementById("createRecordButton")
       ?.addEventListener("click", () => this.createRecord());
+    this.elements.saveProjectDetailsButton?.addEventListener("click", () =>
+      this.saveProjectDetails()
+    );
 
     this.elements.projectDropdownToggle?.addEventListener("click", () =>
       this.toggleProjectDropdown()
@@ -405,6 +427,9 @@ export default class AppController {
     this.elements.resetEquipmentButton?.addEventListener("click", () =>
       this.resetEquipmentForm()
     );
+
+    window.addEventListener("scroll", () => this.handleSpringboardScroll());
+    window.addEventListener("resize", () => this.handleSpringboardScroll());
   }
 
   initialize() {
@@ -415,11 +440,14 @@ export default class AppController {
     } else {
       this.drawProjectOverview();
       this.pointController.renderPointsTable();
+      this.populateProjectDetailsForm(null);
+      this.updateSpringboardHero();
     }
     this.refreshEvidenceUI();
     this.renderEvidenceTies();
     this.refreshEquipmentUI();
     this.switchTab("springboardSection");
+    this.handleSpringboardScroll();
   }
 
   saveProjects() {
@@ -547,6 +575,8 @@ export default class AppController {
       this.pointController.renderPointsTable();
       this.refreshEvidenceUI();
       this.navigationController?.onProjectChanged();
+      this.populateProjectDetailsForm(null);
+      this.updateSpringboardHero();
       return;
     }
 
@@ -563,6 +593,9 @@ export default class AppController {
     this.resetEquipmentForm();
     this.refreshEquipmentUI();
     this.navigationController?.onProjectChanged();
+    this.populateProjectDetailsForm(this.projects[id]);
+    this.updateSpringboardHero();
+    this.handleSpringboardScroll();
   }
 
   newProject() {
@@ -581,6 +614,71 @@ export default class AppController {
     this.loadProject(id);
   }
 
+  populateProjectDetailsForm(project) {
+    const fields = [
+      [this.elements.projectDetailName, project?.name || ""],
+      [this.elements.projectClientInput, project?.clientName || ""],
+      [this.elements.projectAddressInput, project?.address || ""],
+      [
+        this.elements.projectTownshipInput,
+        project?.townships?.length ? project.townships.join(", ") : "",
+      ],
+      [
+        this.elements.projectRangeInput,
+        project?.ranges?.length ? project.ranges.join(", ") : "",
+      ],
+      [
+        this.elements.projectSectionInput,
+        project?.sections?.length ? project.sections.join(", ") : "",
+      ],
+      [this.elements.projectDescriptionInput, project?.description || ""],
+    ];
+
+    fields.forEach(([el, value]) => {
+      if (el) {
+        el.value = value;
+        el.disabled = !project;
+      }
+    });
+  }
+
+  parseDelimitedInput(value = "") {
+    return value
+      .split(/[,;\n]/)
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+  }
+
+  saveProjectDetails() {
+    if (!this.currentProjectId || !this.projects[this.currentProjectId]) {
+      alert("Create or select a project first.");
+      return;
+    }
+
+    const project = this.projects[this.currentProjectId];
+    project.name = (this.elements.projectDetailName?.value || project.name || "")
+      .trim() || project.name;
+    project.clientName = (this.elements.projectClientInput?.value || "").trim();
+    project.address = (this.elements.projectAddressInput?.value || "").trim();
+    project.townships = this.parseDelimitedInput(
+      this.elements.projectTownshipInput?.value
+    );
+    project.ranges = this.parseDelimitedInput(
+      this.elements.projectRangeInput?.value
+    );
+    project.sections = this.parseDelimitedInput(
+      this.elements.projectSectionInput?.value
+    );
+    project.description = (this.elements.projectDescriptionInput?.value || "")
+      .trim();
+
+    this.saveProjects();
+    this.elements.currentProjectName.textContent = project.name || "No project selected";
+    this.updateProjectList();
+    this.updateSpringboardHero();
+    this.handleSpringboardScroll();
+  }
+
   deleteCurrentProject() {
     if (!this.currentProjectId || !confirm("Delete entire project and all records?"))
       return;
@@ -595,6 +693,9 @@ export default class AppController {
     this.updateProjectList();
     this.drawProjectOverview();
     this.pointController.renderPointsTable();
+    this.populateProjectDetailsForm(null);
+    this.updateSpringboardHero();
+    this.handleSpringboardScroll();
   }
 
   renderRecordList() {
@@ -717,6 +818,82 @@ export default class AppController {
     this.refreshEvidenceUI(record.id);
   }
 
+  formatListForDisplay(list) {
+    if (!Array.isArray(list) || list.length === 0) return "—";
+    return list.join(", ");
+  }
+
+  updateSpringboardHero() {
+    const project = this.currentProjectId
+      ? this.projects[this.currentProjectId]
+      : null;
+    const hero = this.elements.springboardHero;
+    const titleEl = this.elements.springboardProjectTitle;
+    const descEl = this.elements.springboardProjectDescription;
+    const chipEl = this.elements.springboardStatusChip;
+
+    if (hero) {
+      hero.classList.toggle("empty", !project);
+      if (!project) hero.classList.remove("collapsed");
+    }
+
+    if (!project) {
+      if (titleEl) titleEl.textContent = "No project selected";
+      if (descEl)
+        descEl.textContent =
+          "Create or open a project to see its location context.";
+      if (chipEl) chipEl.textContent = "No project";
+    } else {
+      if (titleEl) titleEl.textContent = project.name || "Active Project";
+      if (descEl)
+        descEl.textContent =
+          project.description?.trim() ||
+          "Add a project description to guide the crew.";
+      if (chipEl) chipEl.textContent = "Active";
+    }
+
+    const setValue = (el, value) => {
+      if (!el) return;
+      el.textContent = value && value.trim ? value.trim() : value;
+    };
+
+    setValue(this.elements.springboardClientValue, project?.clientName || "—");
+    setValue(this.elements.springboardAddressValue, project?.address || "—");
+    setValue(
+      this.elements.springboardTownshipValue,
+      this.formatListForDisplay(project?.townships || [])
+    );
+    setValue(
+      this.elements.springboardRangeValue,
+      this.formatListForDisplay(project?.ranges || [])
+    );
+    setValue(
+      this.elements.springboardSectionValue,
+      this.formatListForDisplay(project?.sections || [])
+    );
+  }
+
+  handleSpringboardScroll() {
+    const hero = this.elements.springboardHero;
+    if (!hero) return;
+    const isActive = this.elements.springboardSection?.classList.contains(
+      "active"
+    );
+    if (!isActive) {
+      hero.style.setProperty("--parallax-offset", "0px");
+      hero.classList.remove("collapsed");
+      return;
+    }
+
+    const scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
+    const offsetTop = hero.offsetTop || 0;
+    const distance = Math.max(0, scrollTop - offsetTop);
+
+    hero.style.setProperty("--parallax-offset", `${distance * 0.35}px`);
+    const collapseThreshold = Math.max(80, hero.offsetHeight * 0.55);
+    hero.classList.toggle("collapsed", distance > collapseThreshold);
+  }
+
   /* ===================== Evidence Logger ===================== */
   switchTab(targetId) {
     const sections = [
@@ -742,6 +919,8 @@ export default class AppController {
       sec.classList.toggle("active", isTarget);
       sec.style.display = isTarget ? "block" : "none";
     });
+
+    this.handleSpringboardScroll();
 
     buttons.forEach((btn) => {
       if (!btn) return;
