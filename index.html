@@ -29,6 +29,37 @@
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
         overflow: hidden;
       }
+
+      .tab-nav {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+      }
+
+      .tab-btn {
+        border: 1px solid #cbd5f5;
+        background: #e0ecff;
+        color: #1e40af;
+        padding: 10px 14px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      .tab-btn.active {
+        background: #1e40af;
+        color: white;
+        box-shadow: 0 4px 12px rgba(30, 64, 175, 0.25);
+      }
+
+      .tool-section {
+        display: none;
+      }
+
+      .tool-section.active {
+        display: block;
+      }
       .header {
         background: #1e40af;
         color: white;
@@ -179,6 +210,28 @@
         margin-top: 30px;
         color: #666;
         font-size: 0.9em;
+      }
+
+      .card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px;
+        margin: 12px 0;
+      }
+
+      .card h3 {
+        margin: 0 0 10px 0;
+        color: #1e293b;
+      }
+
+      .ties-list {
+        margin: 6px 0;
+        padding-left: 18px;
+      }
+
+      .ties-list li {
+        margin-bottom: 4px;
       }
 
       /* Command cards layout */
@@ -669,6 +722,27 @@
           </div>
         </div>
 
+        <div class="tab-nav">
+          <button
+            type="button"
+            class="tab-btn active"
+            data-target="traverseSection"
+            id="traverseTabButton"
+          >
+            Traverse Builder
+          </button>
+          <button
+            type="button"
+            class="tab-btn"
+            data-target="evidenceSection"
+            id="evidenceTabButton"
+          >
+            Evidence Logger
+          </button>
+        </div>
+
+        <div id="traverseSection" class="tool-section active">
+
         <h3>Project Overview</h3>
         <canvas id="projectOverviewCanvas"></canvas>
 
@@ -875,6 +949,105 @@
                 readonly
               ></textarea>
             </div>
+          </div>
+        </div>
+
+        <div id="evidenceSection" class="tool-section">
+          <div class="card">
+            <h3>Evidence Capture</h3>
+            <p class="subtitle" style="margin-top: 0">
+              Link field notes and photos directly to traverse points generated from
+              your records of survey.
+            </p>
+
+            <div class="form-grid">
+              <div>
+                <label for="evidenceRecordSelect">Record</label>
+                <select id="evidenceRecordSelect"></select>
+              </div>
+              <div>
+                <label for="evidencePointSelect">Traverse Point</label>
+                <select id="evidencePointSelect"></select>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div>
+                <label for="evidenceType">Evidence Type</label>
+                <select id="evidenceType">
+                  <option value="">Select…</option>
+                  <option>Iron Rod</option>
+                  <option>Rebar w/ Cap</option>
+                  <option>Concrete Monument</option>
+                  <option>Fence Corner</option>
+                  <option>Tree Witness</option>
+                  <option>Occupation Line Evidence</option>
+                  <option>Structure / Wall</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div>
+                <label for="evidenceCondition">Condition / Status</label>
+                <select id="evidenceCondition">
+                  <option value="">Select…</option>
+                  <option>Found in good condition</option>
+                  <option>Found disturbed</option>
+                  <option>Leaning / damaged</option>
+                  <option>Buried</option>
+                  <option>Destroyed / unreliable</option>
+                  <option>Suspect / conflicting</option>
+                </select>
+              </div>
+            </div>
+
+            <label for="evidenceNotes">Notes / Field sketch</label>
+            <textarea
+              id="evidenceNotes"
+              rows="3"
+              placeholder="Describe monument, occupation, caps, witness ties, etc."
+            ></textarea>
+
+            <div class="form-grid">
+              <div>
+                <label for="evidenceTieDistance">Tie Distance</label>
+                <input id="evidenceTieDistance" type="text" placeholder="24.50 ft" />
+              </div>
+              <div>
+                <label for="evidenceTieBearing">Tie Bearing</label>
+                <input id="evidenceTieBearing" type="text" placeholder="N35°E" />
+              </div>
+            </div>
+
+            <label for="evidenceTieDescription">Tie Description</label>
+            <textarea
+              id="evidenceTieDescription"
+              rows="2"
+              placeholder="Tree blaze, fence post, rebar, etc."
+            ></textarea>
+            <button type="button" id="addEvidenceTie">Add Tie</button>
+            <p class="subtitle" id="evidenceTiesHint" style="margin: 6px 0 0 0">
+              No ties added yet.
+            </p>
+            <ul id="evidenceTiesList" class="ties-list"></ul>
+
+            <label for="evidencePhoto">Photo (optional)</label>
+            <input id="evidencePhoto" type="file" accept="image/*" />
+
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+              <button type="button" id="captureLocation">Get GPS Location</button>
+              <span id="evidenceLocationStatus" class="subtitle"></span>
+            </div>
+
+            <div style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap">
+              <button type="button" class="success" id="saveEvidenceButton">Save Evidence</button>
+              <button type="button" id="resetEvidenceButton">Reset Form</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Project Evidence Points</h3>
+            <p class="subtitle" id="evidenceSummary" style="margin-top: 0"></p>
+            <div id="evidenceList"></div>
           </div>
         </div>
       </div>
