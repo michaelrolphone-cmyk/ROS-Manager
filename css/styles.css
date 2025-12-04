@@ -604,6 +604,28 @@ body {
         margin-top: 20px;
         border-collapse: collapse;
       }
+
+      .table-scroll {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .table-scroll table {
+        min-width: 720px;
+      }
+
+      /* Keep table inputs from overflowing their cells */
+      .table-scroll td input[type="text"],
+      .table-scroll td input[type="number"],
+      .table-scroll td input[type="email"],
+      .table-scroll td input[type="tel"],
+      .table-scroll td input[type="url"] {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+
       th,
       td {
         padding: 10px;

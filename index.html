@@ -508,6 +508,9 @@
               <button type="button" id="newPointFileButton">
                 New Point File
               </button>
+              <button type="button" id="renamePointFileButton">
+                Rename Point File
+              </button>
               <button type="button" id="downloadPointsButton" class="success">
                 Download Points TXT
               </button>
@@ -520,6 +523,18 @@
                   <option>No point files</option>
                 </select>
               </label>
+              <label style="font-weight: 600; color: #0f172a">
+                From Record
+                <select
+                  id="pointsFromRecordSelect"
+                  style="margin-left: 8px; padding: 8px"
+                >
+                  <option>Select a project first</option>
+                </select>
+              </label>
+              <button id="generatePointsFromTraverseButton" type="button">
+                Generate Point File
+              </button>
               <input
                 type="file"
                 id="pointsFileInput"
@@ -528,26 +543,28 @@
               />
             </div>
 
-            <table id="pointsTable">
-              <thead>
-                <tr>
-                  <th>Point #</th>
-                  <th>X / Lat</th>
-                  <th>Y / Lon</th>
-                  <th>Elevation</th>
-                  <th>Code</th>
-                  <th>Description</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="pointsTableBody">
-                <tr>
-                  <td colspan="7">
-                    Create or select a project to manage points.
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div class="table-scroll">
+              <table id="pointsTable">
+                <thead>
+                  <tr>
+                    <th>Point #</th>
+                    <th>X / Lat</th>
+                    <th>Y / Lon</th>
+                    <th>Elevation</th>
+                    <th>Code</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="pointsTableBody">
+                  <tr>
+                    <td colspan="7">
+                      Create or select a project to manage points.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 

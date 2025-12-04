@@ -6,6 +6,7 @@ import CornerEvidence from "../models/CornerEvidence.js";
 import EvidenceTie from "../models/EvidenceTie.js";
 import CornerEvidenceService from "../services/CornerEvidenceService.js";
 import EquipmentLog from "../models/EquipmentLog.js";
+import Point from "../models/Point.js";
 import PointController from "./PointController.js";
 import NavigationController from "./NavigationController.js";
 import GlobalSettingsService from "../services/GlobalSettingsService.js";
@@ -51,6 +52,7 @@ export default class AppController {
         addPointRowButton: this.elements.addPointRowButton,
         pointFileSelect: this.elements.pointFileSelect,
         newPointFileButton: this.elements.newPointFileButton,
+        renamePointFileButton: this.elements.renamePointFileButton,
         downloadPointsButton: this.elements.downloadPointsButton,
       },
       getCurrentProject: () =>
@@ -175,7 +177,12 @@ export default class AppController {
       addPointRowButton: document.getElementById("addPointRowButton"),
       pointFileSelect: document.getElementById("pointFileSelect"),
       newPointFileButton: document.getElementById("newPointFileButton"),
+      renamePointFileButton: document.getElementById("renamePointFileButton"),
       downloadPointsButton: document.getElementById("downloadPointsButton"),
+      pointsFromRecordSelect: document.getElementById("pointsFromRecordSelect"),
+      generatePointsFromTraverseButton: document.getElementById(
+        "generatePointsFromTraverseButton"
+      ),
       startFromDropdownContainer: document.getElementById(
         "startFromDropdownContainer"
       ),
@@ -519,6 +526,11 @@ export default class AppController {
       this.addEvidenceTie()
     );
 
+    this.elements.generatePointsFromTraverseButton?.addEventListener(
+      "click",
+      () => this.generatePointFileFromRecord()
+    );
+
     this.elements.evidencePhoto?.addEventListener("change", (e) =>
       this.handleEvidencePhoto(e.target.files?.[0] || null)
     );
@@ -600,6 +612,7 @@ export default class AppController {
     } else {
       this.drawProjectOverview();
       this.pointController.renderPointsTable();
+      this.populatePointGenerationOptions();
       this.populateProjectDetailsForm(null);
       this.updateSpringboardHero();
     }
@@ -800,6 +813,7 @@ export default class AppController {
       this.refreshEvidenceUI();
       this.populateLocalizationSelectors();
       this.navigationController?.onProjectChanged();
+      this.populatePointGenerationOptions();
       this.populateProjectDetailsForm(null);
       this.updateSpringboardHero();
       return;
@@ -819,6 +833,7 @@ export default class AppController {
     this.refreshEquipmentUI();
     this.populateLocalizationSelectors();
     this.navigationController?.onProjectChanged();
+    this.populatePointGenerationOptions();
     this.populateProjectDetailsForm(this.projects[id]);
     this.updateSpringboardHero();
     this.handleSpringboardScroll();
@@ -1004,6 +1019,7 @@ export default class AppController {
     });
 
     this.drawProjectOverview();
+    this.populatePointGenerationOptions();
   }
 
   toggleProjectActionsMenu() {
@@ -1029,6 +1045,55 @@ export default class AppController {
     if (this.elements.projectNameInput) {
       this.elements.projectNameInput.value = "";
     }
+  }
+
+  populatePointGenerationOptions() {
+    const select = this.elements.pointsFromRecordSelect;
+    const button = this.elements.generatePointsFromTraverseButton;
+    if (!select) return;
+
+    const previous = select.value;
+    select.innerHTML = "";
+
+    const project = this.currentProjectId
+      ? this.projects[this.currentProjectId]
+      : null;
+
+    const disable = (message) => {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = message;
+      opt.disabled = true;
+      opt.selected = true;
+      select.appendChild(opt);
+      select.disabled = true;
+      if (button) button.disabled = true;
+    };
+
+    if (!project) {
+      disable("Select a project first");
+      return;
+    }
+
+    const records = project.records || {};
+    const ids = Object.keys(records);
+    if (!ids.length) {
+      disable("No records yet");
+      return;
+    }
+
+    select.disabled = false;
+    if (button) button.disabled = false;
+
+    ids.forEach((id, idx) => {
+      const opt = document.createElement("option");
+      opt.value = id;
+      opt.textContent = records[id].name || `Record ${idx + 1}`;
+      if (id === previous || (!previous && idx === 0)) {
+        opt.selected = true;
+      }
+      select.appendChild(opt);
+    });
   }
 
   createRecord() {
@@ -1074,6 +1139,51 @@ export default class AppController {
     this.renderRecordList();
     this.generateCommands();
     this.refreshEvidenceUI(record.id);
+    this.populatePointGenerationOptions();
+  }
+
+  generatePointFileFromRecord() {
+    const project = this.currentProjectId
+      ? this.projects[this.currentProjectId]
+      : null;
+    if (!project) return alert("Select a project first");
+
+    const recordId = this.elements.pointsFromRecordSelect?.value;
+    const record = project.records?.[recordId];
+    if (!record) return alert("Choose a record to generate points from.");
+
+    const traversePoints = this.computeTraversePointsForRecord(
+      this.currentProjectId,
+      recordId
+    );
+    if (!traversePoints.length) {
+      alert("No traverse points available for this record.");
+      return;
+    }
+
+    const startNumber = parseInt(record.startPtNum, 10);
+    const baseNumber = Number.isFinite(startNumber) ? startNumber : 1;
+    const elevation = record.elevation || "";
+    const descriptionBase = record.name
+      ? `Generated from ${record.name}`
+      : "Generated from traverse";
+
+    const points = traversePoints.map(
+      (pt, idx) =>
+        new Point({
+          pointNumber: (baseNumber + idx).toString(),
+          x: pt.x?.toString() || "",
+          y: pt.y?.toString() || "",
+          elevation,
+          description: descriptionBase,
+        })
+    );
+
+    const name = `${record.name || "Record"} Points`;
+    const created = this.pointController.createPointFileFromPoints(name, points);
+    if (created) {
+      alert(`Created point file "${created.name}" with ${points.length} point(s).`);
+    }
   }
 
   formatListForDisplay(list) {
