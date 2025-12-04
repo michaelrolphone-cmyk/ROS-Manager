@@ -1,7 +1,8 @@
 import SurveyRecord from "./SurveyRecord.js";
+import EquipmentLog from "./EquipmentLog.js";
 
 export default class Project {
-  constructor({ name = "", records = {} } = {}) {
+  constructor({ name = "", records = {}, equipmentLogs = [] } = {}) {
     this.name = name;
     this.records = {};
     Object.entries(records).forEach(([id, record]) => {
@@ -9,6 +10,9 @@ export default class Project {
         ? record
         : SurveyRecord.fromObject(record);
     });
+    this.equipmentLogs = equipmentLogs.map((entry) =>
+      entry instanceof EquipmentLog ? entry : EquipmentLog.fromObject(entry)
+    );
   }
 
   static fromObject(obj = {}) {
@@ -23,6 +27,7 @@ export default class Project {
     return {
       name: this.name,
       records: Object.fromEntries(entries),
+      equipmentLogs: this.equipmentLogs.map((entry) => entry.toObject()),
     };
   }
 }
