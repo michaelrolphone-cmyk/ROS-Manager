@@ -31,6 +31,12 @@ export default class AppController {
       projectDropdownToggle: document.getElementById("projectDropdownToggle"),
       projectDropdownMenu: document.getElementById("projectDropdownMenu"),
       projectDropdownLabel: document.getElementById("projectDropdownLabel"),
+      projectActionsContainer: document.getElementById(
+        "projectActionsContainer"
+      ),
+      projectActionsToggle: document.getElementById("projectActionsToggle"),
+      projectActionsMenu: document.getElementById("projectActionsMenu"),
+      projectControls: document.getElementById("projectControls"),
       projectNameInput: document.getElementById("projectNameInput"),
       currentProjectName: document.getElementById("currentProjectName"),
       recordNameInput: document.getElementById("recordNameInput"),
@@ -59,6 +65,7 @@ export default class AppController {
       addCallButton: document.getElementById("addCallButton"),
       generateCommandsButton: document.getElementById("generateCommandsButton"),
       deleteRecordButton: document.getElementById("deleteRecordButton"),
+      cancelProjectButton: document.getElementById("cancelProjectButton"),
     };
   }
 
@@ -87,6 +94,21 @@ export default class AppController {
 
     this.elements.projectDropdownToggle?.addEventListener("click", () =>
       this.toggleProjectDropdown()
+    );
+
+    this.elements.projectActionsToggle?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.toggleProjectActionsMenu();
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!this.elements.projectActionsContainer?.contains(e.target)) {
+        this.closeProjectActionsMenu();
+      }
+    });
+
+    this.elements.projectActionsMenu?.addEventListener("click", () =>
+      this.closeProjectActionsMenu()
     );
 
     this.elements.projectSelect?.addEventListener("change", (e) =>
@@ -144,6 +166,10 @@ export default class AppController {
 
     this.elements.deleteRecordButton?.addEventListener("click", () =>
       this.deleteCurrentRecord()
+    );
+
+    this.elements.cancelProjectButton?.addEventListener("click", () =>
+      this.hideProjectForm()
     );
 
     const commandGrid = document.querySelector(".command-grid");
@@ -256,6 +282,7 @@ export default class AppController {
       this.renderRecordList();
       this.updateProjectList();
       this.drawProjectOverview();
+      this.hideProjectForm();
       return;
     }
     this.currentProjectId = id;
@@ -265,15 +292,11 @@ export default class AppController {
     this.renderRecordList();
     this.updateProjectList();
     this.drawProjectOverview();
+    this.hideProjectForm();
   }
 
   newProject() {
-    const name = prompt("Project Name:");
-    if (!name) return;
-    const id = Date.now().toString();
-    this.projects[id] = new Project({ name, records: {} });
-    this.saveProjects();
-    this.loadProject(id);
+    this.showProjectForm();
   }
 
   createProject() {
@@ -284,6 +307,7 @@ export default class AppController {
     this.projects[id] = new Project({ name, records: {} });
     this.saveProjects();
     if (input) input.value = "";
+    this.hideProjectForm();
     this.loadProject(id);
   }
 
@@ -349,6 +373,31 @@ export default class AppController {
     });
 
     this.drawProjectOverview();
+  }
+
+  toggleProjectActionsMenu() {
+    this.elements.projectActionsContainer?.classList.toggle("open");
+  }
+
+  closeProjectActionsMenu() {
+    this.elements.projectActionsContainer?.classList.remove("open");
+  }
+
+  showProjectForm() {
+    this.closeProjectActionsMenu();
+    if (this.elements.projectControls) {
+      this.elements.projectControls.classList.add("visible");
+    }
+    this.elements.projectNameInput?.focus();
+  }
+
+  hideProjectForm() {
+    if (this.elements.projectControls) {
+      this.elements.projectControls.classList.remove("visible");
+    }
+    if (this.elements.projectNameInput) {
+      this.elements.projectNameInput.value = "";
+    }
   }
 
   createRecord() {

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Carlson Survey Manager</title>
+    <title>Record of Survey Manager</title>
     <style>
       body {
         font-family: "Segoe UI", Arial, sans-serif;
@@ -14,7 +14,7 @@
         color: #2d3748;
       }
       h1 {
-        color: #1e40af;
+        color: #ffffff;
         text-align: center;
         margin-bottom: 10px;
       }
@@ -42,14 +42,18 @@
       }
       .project-controls {
         margin-bottom: 10px;
-        display: flex;
+        display: none;
         gap: 10px;
         flex-wrap: wrap;
+        align-items: center;
+      }
+      .project-controls.visible {
+        display: flex;
       }
       .project-controls input,
       .project-controls button {
         padding: 10px;
-        border-radius: 6px;
+        border-radius: 8px;
         border: 1px solid #ccc;
       }
       button {
@@ -57,6 +61,8 @@
         color: white;
         border: none;
         cursor: pointer;
+        border-radius: 10px;
+        padding: 10px 12px;
       }
       button:hover {
         background: #1e3a8a;
@@ -70,8 +76,6 @@
 
       .record-list {
         margin: 20px 0;
-        max-height: 200px;
-        overflow-y: auto;
         border: 1px solid #ddd;
         border-radius: 8px;
       }
@@ -256,8 +260,9 @@
         gap: 4px;
       }
       .row-controls button {
-        padding: 4px 6px;
+        padding: 6px 10px;
         font-size: 11px;
+        border-radius: 8px;
       }
 
       /* Bearing arrow icon */
@@ -306,7 +311,7 @@
       }
       .project-dropdown-toggle {
         padding: 8px 12px;
-        border-radius: 6px;
+        border-radius: 8px;
         background: #ffffff;
         color: #1e40af;
         border: none;
@@ -372,6 +377,53 @@
         width: 80px;
         height: 40px;
         object-fit: contain;
+      }
+
+      /* Project actions dropdown */
+      .project-actions-container {
+        position: relative;
+        display: inline-block;
+      }
+      .project-actions-toggle {
+        background: #0f172a;
+        color: #ffffff;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .project-actions-toggle .arrow {
+        font-size: 0.8rem;
+      }
+      .project-actions-menu {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        margin-top: 6px;
+        background: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        padding: 6px;
+        min-width: 200px;
+        display: none;
+        flex-direction: column;
+        gap: 6px;
+        z-index: 25;
+      }
+      .project-actions-container.open .project-actions-menu {
+        display: flex;
+      }
+      .project-actions-menu button {
+        width: 100%;
+        text-align: left;
+        background: #e0ecff;
+        color: #1e293b;
+        border-radius: 8px;
+        padding: 8px 10px;
+      }
+      .project-actions-menu button.danger {
+        background: #fee2e2;
+        color: #991b1b;
       }
 
       /* Start-from dropdown next to starting point */
@@ -548,7 +600,7 @@
   <body>
     <div class="container">
       <div class="header">
-        <h1>Carlson Survey Manager</h1>
+        <h1>Record of Survey Manager</h1>
         <div
           style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap"
         >
@@ -571,26 +623,50 @@
             <div id="projectDropdownMenu" class="project-dropdown-menu"></div>
           </div>
 
-          <button id="newProjectButton">New Project</button>
+          <div
+            id="projectActionsContainer"
+            class="project-actions-container"
+          >
+            <button
+              type="button"
+              id="projectActionsToggle"
+              class="project-actions-toggle"
+            >
+              <span>Project Actions</span>
+              <span class="arrow">▼</span>
+            </button>
+            <div id="projectActionsMenu" class="project-actions-menu">
+              <button type="button" id="newProjectButton">Create Project</button>
+              <button
+                type="button"
+                class="danger"
+                id="deleteProjectButton"
+              >
+                Delete Current Project
+              </button>
+              <button type="button" id="exportCurrentButton">
+                Export Current
+              </button>
+              <button type="button" id="exportAllButton">Export All</button>
+              <button type="button" id="importButton">Import</button>
+            </div>
+          </div>
         </div>
       </div>
 
       <div class="content">
         <p class="subtitle" id="currentProjectName">No project selected</p>
 
-        <div class="project-controls">
+        <div class="project-controls" id="projectControls">
           <input
             type="text"
             id="projectNameInput"
             placeholder="New Project Name"
           />
-          <button id="createProjectButton">Create Project</button>
-          <button class="danger" id="deleteProjectButton">
-            Delete Current Project
-          </button>
-          <button id="exportCurrentButton">Export Current</button>
-          <button id="exportAllButton">Export All</button>
-          <button id="importButton">Import</button>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap">
+            <button id="createProjectButton">Create Project</button>
+            <button type="button" id="cancelProjectButton">Cancel</button>
+          </div>
         </div>
 
         <h3>Project Overview</h3>
