@@ -29,6 +29,7 @@ export default class AppController {
     this.currentEquipmentLocation = null;
 
     this.cacheDom();
+    this.appLaunchers = document.querySelectorAll(".app-tile");
     this.pointController = new PointController({
       elements: {
         pointImportButton: this.elements.pointImportButton,
@@ -61,6 +62,7 @@ export default class AppController {
       ),
       projectActionsToggle: document.getElementById("projectActionsToggle"),
       projectActionsMenu: document.getElementById("projectActionsMenu"),
+      homeButton: document.getElementById("homeButton"),
       projectControls: document.getElementById("projectControls"),
       projectNameInput: document.getElementById("projectNameInput"),
       currentProjectName: document.getElementById("currentProjectName"),
@@ -86,8 +88,6 @@ export default class AppController {
       pointFileSelect: document.getElementById("pointFileSelect"),
       newPointFileButton: document.getElementById("newPointFileButton"),
       downloadPointsButton: document.getElementById("downloadPointsButton"),
-      pointsTabButton: document.getElementById("pointsTabButton"),
-      pointsSection: document.getElementById("pointsSection"),
       startFromDropdownContainer: document.getElementById(
         "startFromDropdownContainer"
       ),
@@ -104,6 +104,8 @@ export default class AppController {
       pointsTabButton: document.getElementById("pointsTabButton"),
       evidenceTabButton: document.getElementById("evidenceTabButton"),
       equipmentTabButton: document.getElementById("equipmentTabButton"),
+      springboardSection: document.getElementById("springboardSection"),
+      navigationSection: document.getElementById("navigationSection"),
       traverseSection: document.getElementById("traverseSection"),
       pointsSection: document.getElementById("pointsSection"),
       evidenceSection: document.getElementById("evidenceSection"),
@@ -192,6 +194,16 @@ export default class AppController {
     this.elements.projectActionsToggle?.addEventListener("click", (e) => {
       e.stopPropagation();
       this.toggleProjectActionsMenu();
+    });
+
+    this.elements.homeButton?.addEventListener("click", () =>
+      this.switchTab("springboardSection")
+    );
+
+    this.appLaunchers?.forEach((launcher) => {
+      launcher.addEventListener("click", () =>
+        this.switchTab(launcher.dataset.target)
+      );
     });
 
     document.addEventListener("click", (e) => {
@@ -356,6 +368,7 @@ export default class AppController {
     this.refreshEvidenceUI();
     this.renderEvidenceTies();
     this.refreshEquipmentUI();
+    this.switchTab("springboardSection");
   }
 
   saveProjects() {
@@ -654,39 +667,52 @@ export default class AppController {
   /* ===================== Evidence Logger ===================== */
   switchTab(targetId) {
     const sections = [
+      this.elements.springboardSection,
       this.elements.traverseSection,
       this.elements.pointsSection,
       this.elements.evidenceSection,
       this.elements.equipmentSection,
+      this.elements.navigationSection,
     ];
+    const validSection = sections.find((sec) => sec?.id === targetId);
+    const resolvedTarget = validSection ? targetId : "springboardSection";
     const buttons = [
       this.elements.traverseTabButton,
       this.elements.pointsTabButton,
       this.elements.evidenceTabButton,
       this.elements.equipmentTabButton,
     ];
+
     sections.forEach((sec) => {
       if (!sec) return;
-      if (sec.id === targetId) {
-        sec.classList.add("active");
-        sec.style.display = "block";
-      } else {
-        sec.classList.remove("active");
-        sec.style.display = "none";
-      }
-    });
-    buttons.forEach((btn) => {
-      if (!btn) return;
-      if (btn.dataset.target === targetId) btn.classList.add("active");
-      else btn.classList.remove("active");
+      const isTarget = sec.id === resolvedTarget;
+      sec.classList.toggle("active", isTarget);
+      sec.style.display = isTarget ? "block" : "none";
     });
 
-    if (targetId === "evidenceSection") {
+    buttons.forEach((btn) => {
+      if (!btn) return;
+      btn.classList.toggle("active", btn.dataset.target === resolvedTarget);
+    });
+
+    this.appLaunchers?.forEach((launcher) => {
+      launcher.classList.toggle(
+        "active",
+        launcher.dataset.target === resolvedTarget
+      );
+    });
+
+    if (this.elements.homeButton) {
+      const showHome = resolvedTarget !== "springboardSection";
+      this.elements.homeButton.classList.toggle("visible", showHome);
+    }
+
+    if (resolvedTarget === "evidenceSection") {
       this.refreshEvidenceUI();
-    } else if (targetId === "equipmentSection") {
+    } else if (resolvedTarget === "equipmentSection") {
       this.refreshEquipmentUI();
     }
-    if (targetId === "pointsSection") {
+    if (resolvedTarget === "pointsSection") {
       this.pointController.renderPointsTable();
     }
   }
