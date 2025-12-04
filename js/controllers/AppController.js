@@ -674,27 +674,38 @@ export default class AppController {
       this.elements.equipmentSection,
       this.elements.navigationSection,
     ];
+    const validSection = sections.find((sec) => sec?.id === targetId);
+    const resolvedTarget = validSection ? targetId : "springboardSection";
     const buttons = [
       this.elements.traverseTabButton,
       this.elements.pointsTabButton,
       this.elements.evidenceTabButton,
       this.elements.equipmentTabButton,
     ];
+
     sections.forEach((sec) => {
       if (!sec) return;
-      if (sec.id === targetId) {
-        sec.classList.add("active");
-        sec.style.display = "block";
-      } else {
-        sec.classList.remove("active");
-        sec.style.display = "none";
-      }
+      const isTarget = sec.id === resolvedTarget;
+      sec.classList.toggle("active", isTarget);
+      sec.style.display = isTarget ? "block" : "none";
     });
+
     buttons.forEach((btn) => {
       if (!btn) return;
-      if (btn.dataset.target === targetId) btn.classList.add("active");
-      else btn.classList.remove("active");
+      btn.classList.toggle("active", btn.dataset.target === resolvedTarget);
     });
+
+    this.appLaunchers?.forEach((launcher) => {
+      launcher.classList.toggle(
+        "active",
+        launcher.dataset.target === resolvedTarget
+      );
+    });
+
+    if (this.elements.homeButton) {
+      const showHome = resolvedTarget !== "springboardSection";
+      this.elements.homeButton.classList.toggle("visible", showHome);
+    }
 
     this.appLaunchers?.forEach((launcher) => {
       if (launcher.dataset.target === targetId)
@@ -708,11 +719,12 @@ export default class AppController {
     }
 
     if (targetId === "evidenceSection") {
+
       this.refreshEvidenceUI();
-    } else if (targetId === "equipmentSection") {
+    } else if (resolvedTarget === "equipmentSection") {
       this.refreshEquipmentUI();
     }
-    if (targetId === "pointsSection") {
+    if (resolvedTarget === "pointsSection") {
       this.pointController.renderPointsTable();
     }
   }
