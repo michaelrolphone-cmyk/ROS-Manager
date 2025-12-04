@@ -1169,3 +1169,145 @@ body {
       .input-row input {
         flex: 1 1 180px;
       }
+
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+
+      .leveling-toolbar {
+        display: flex;
+        align-items: flex-end;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+      }
+
+      .leveling-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+        align-items: end;
+      }
+
+      .leveling-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 8px;
+        padding: 10px;
+        border: 1px dashed #cbd5e1;
+        border-radius: 10px;
+        background: #f8fafc;
+      }
+
+      .leveling-summary .label {
+        margin: 0;
+        font-size: 12px;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .leveling-summary .value {
+        margin: 4px 0 0;
+        font-weight: 700;
+        font-size: 1rem;
+      }
+
+      .mini-note {
+        display: inline-block;
+        color: #475569;
+        font-size: 12px;
+      }
+
+      .leveling-table-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin: 14px 0 8px;
+      }
+
+      .leveling-table input[type="text"],
+      .leveling-table input[type="number"] {
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .leveling-table {
+        width: 100%;
+        table-layout: auto;
+      }
+
+      .leveling-table td {
+        vertical-align: top;
+      }
+
+      .leveling-table .computed {
+        color: #0f172a;
+        font-weight: 600;
+      }
+
+      .leveling-table .notes-desktop {
+        min-width: 180px;
+      }
+
+      .leveling-table .row-actions {
+        width: 72px;
+        text-align: center;
+        white-space: nowrap;
+      }
+
+      .leveling-table .row-actions button {
+        width: 100%;
+      }
+
+      .note-mobile-row {
+        display: none;
+      }
+
+      .note-mobile-row td {
+        background: #f8fafc;
+      }
+
+      .note-mobile-label {
+        display: block;
+        font-size: 12px;
+        color: #475569;
+        margin-bottom: 4px;
+      }
+
+      .note-input {
+        width: 100%;
+      }
+
+      @media (max-width: 720px) {
+        .leveling-table th:nth-child(4),
+        .leveling-table td.notes-desktop {
+          display: none;
+        }
+
+        .note-mobile-row {
+          display: table-row;
+        }
+
+        .note-mobile-row td {
+          padding: 10px;
+          border-top: 0;
+          border-left: 1px solid #cbd5e1;
+          border-right: 1px solid #cbd5e1;
+          border-bottom: 1px solid #cbd5e1;
+        }
+
+        .level-row td {
+          padding: 10px;
+        }
+      }
+
+      .leveling-actions {
+        display: flex;
+        gap: 8px;
+      }
