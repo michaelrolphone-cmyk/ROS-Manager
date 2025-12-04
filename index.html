@@ -46,6 +46,10 @@
         flex-wrap: wrap;
       }
 
+      .app-toolbar.hidden {
+        display: none;
+      }
+
       .home-button {
         display: none;
         align-items: center;
@@ -163,6 +167,40 @@
         display: block;
         margin-top: 4px;
         font-weight: 700;
+      }
+
+      .value-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        justify-content: space-between;
+      }
+
+      .value-row .value {
+        flex: 1;
+      }
+
+      .meta-action {
+        padding: 6px 10px;
+        border-radius: 10px;
+        background: rgba(59, 130, 246, 0.15);
+        color: #bfdbfe;
+        font-weight: 700;
+        text-decoration: none;
+        border: 1px solid rgba(191, 219, 254, 0.3);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        transition: background 0.15s ease, color 0.15s ease;
+      }
+
+      .meta-action:hover {
+        background: rgba(59, 130, 246, 0.25);
+        color: #e2e8f0;
+      }
+
+      .meta-action.disabled {
+        opacity: 0.55;
+        pointer-events: none;
+        cursor: not-allowed;
       }
 
       .project-details-card {
@@ -1205,23 +1243,50 @@
                 </div>
                 <div class="meta-card">
                   <div class="label">Client Phone</div>
-                  <span class="value" id="springboardClientPhoneValue">—</span>
+                  <div class="value-row">
+                    <span class="value" id="springboardClientPhoneValue">—</span>
+                    <a
+                      id="springboardCallButton"
+                      class="meta-action"
+                      href="#"
+                      target="_self"
+                      aria-label="Call client"
+                      >Call</a
+                    >
+                  </div>
                 </div>
                 <div class="meta-card">
                   <div class="label">Address</div>
-                  <span class="value" id="springboardAddressValue">—</span>
+                  <div class="value-row">
+                    <span class="value" id="springboardAddressValue">—</span>
+                    <a
+                      id="springboardMapButton"
+                      class="meta-action"
+                      href="#"
+                      target="_blank"
+                      rel="noopener"
+                      aria-label="Open address in maps"
+                      >Map</a
+                    >
+                  </div>
                 </div>
                 <div class="meta-card">
-                  <div class="label">Township(s)</div>
-                  <span class="value" id="springboardTownshipValue">—</span>
+                  <div class="label">Client Email</div>
+                  <div class="value-row">
+                    <span class="value" id="springboardClientEmailValue">—</span>
+                    <a
+                      id="springboardEmailButton"
+                      class="meta-action"
+                      href="#"
+                      target="_self"
+                      aria-label="Email client"
+                      >Email</a
+                    >
+                  </div>
                 </div>
                 <div class="meta-card">
-                  <div class="label">Range(s)</div>
-                  <span class="value" id="springboardRangeValue">—</span>
-                </div>
-                <div class="meta-card">
-                  <div class="label">Section(s)</div>
-                  <span class="value" id="springboardSectionValue">—</span>
+                  <div class="label">Township / Range / Section</div>
+                  <span class="value" id="springboardTrsValue">—</span>
                 </div>
               </div>
             </div>
@@ -1265,6 +1330,14 @@
                     type="text"
                     id="projectClientPhoneInput"
                     placeholder="(555) 123-4567"
+                  />
+                </div>
+                <div>
+                  <label for="projectClientEmailInput">Client Email</label>
+                  <input
+                    type="email"
+                    id="projectClientEmailInput"
+                    placeholder="client@example.com"
                   />
                 </div>
                 <div class="full-row">
