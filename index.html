@@ -94,43 +94,13 @@
       }
 
       .springboard-hero {
-        --hero-map-layer: url('data:image/svg+xml,%3Csvg width="400" height="240" viewBox="0 0 400 240" fill="none" xmlns="http://www.w3.org/2000/svg"%3E%3Cg opacity="0.35" stroke="%23a5b4fc" stroke-width="1.5"%3E%3Cpath d="M-40 24C40 52 120 52 200 24C280 -4 360 -4 440 24"/%3E%3Cpath d="M-40 84C40 112 120 112 200 84C280 56 360 56 440 84"/%3E%3Cpath d="M-40 144C40 172 120 172 200 144C280 116 360 116 440 144"/%3E%3Cpath d="M-40 204C40 232 120 232 200 204C280 176 360 176 440 204"/%3E%3Cpath d="M120 -20C92 60 92 140 120 220"/%3E%3Cpath d="M200 -20C172 60 172 140 200 220"/%3E%3Cpath d="M280 -20C252 60 252 140 280 220"/%3E%3C/g%3E%3Ccircle cx="200" cy="120" r="60" stroke="%23638cf5" stroke-width="2.5" opacity="0.35"/%3E%3C/svg%3E');
-        position: sticky;
-        top: 0;
-        z-index: 3;
         background: #0f172a;
         color: white;
         border-radius: 18px;
         padding: 20px 20px 24px;
         margin-bottom: 16px;
-        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.28);
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
         overflow: hidden;
-        background-image: linear-gradient(120deg, rgba(14, 165, 233, 0.18), rgba(59, 130, 246, 0.25)),
-          var(--hero-map-layer),
-          url('data:image/svg+xml,%3Csvg width="400" height="240" viewBox="0 0 400 240" fill="none" xmlns="http://www.w3.org/2000/svg"%3E%3Cg opacity="0.35" stroke="%23a5b4fc" stroke-width="1.5"%3E%3Cpath d="M-40 24C40 52 120 52 200 24C280 -4 360 -4 440 24"/%3E%3Cpath d="M-40 84C40 112 120 112 200 84C280 56 360 56 440 84"/%3E%3Cpath d="M-40 144C40 172 120 172 200 144C280 116 360 116 440 144"/%3E%3Cpath d="M-40 204C40 232 120 232 200 204C280 176 360 176 440 204"/%3E%3Cpath d="M120 -20C92 60 92 140 120 220"/%3E%3Cpath d="M200 -20C172 60 172 140 200 220"/%3E%3Cpath d="M280 -20C252 60 252 140 280 220"/%3E%3C/g%3E%3Ccircle cx="200" cy="120" r="60" stroke="%23638cf5" stroke-width="2.5" opacity="0.35"/%3E%3C/svg%3E');
-        background-repeat: no-repeat;
-        background-size: cover;
-        background-position: center calc(50% + var(--parallax-offset, 0px));
-        transition: padding 0.25s ease, border-radius 0.25s ease,
-          box-shadow 0.25s ease, background-image 0.25s ease;
-          box-shadow 0.25s ease;
-      }
-
-      .springboard-hero::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.1), transparent 40%),
-          radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.18), transparent 42%),
-          linear-gradient(180deg, rgba(15, 23, 42, 0.15), rgba(15, 23, 42, 0.65));
-        pointer-events: none;
-      }
-
-      .springboard-hero.collapsed {
-        padding: 12px 18px 14px;
-        border-bottom-left-radius: 12px;
-        border-bottom-right-radius: 12px;
-        box-shadow: 0 10px 26px rgba(15, 23, 42, 0.24);
       }
 
       .springboard-hero-header {
@@ -157,18 +127,6 @@
         position: relative;
         z-index: 1;
         margin-top: 12px;
-        transition: opacity 0.2s ease, max-height 0.2s ease, margin 0.2s ease;
-      }
-
-      .springboard-hero.collapsed .springboard-hero-details {
-        opacity: 0;
-        max-height: 0;
-        margin-top: 0;
-        overflow: hidden;
-      }
-
-      .springboard-hero.collapsed .springboard-hero-title {
-        font-size: 1.35rem;
       }
 
       .eyebrow {
@@ -313,12 +271,39 @@
         font-size: 0.9rem;
       }
       .header {
-        background: #1e40af;
+        position: sticky;
+        top: 10px;
+        z-index: 5;
+        background: #0f172a;
         color: white;
         padding: 20px;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.28);
+        background-image: linear-gradient(120deg, rgba(14, 165, 233, 0.18), rgba(59, 130, 246, 0.25)),
+          var(--header-map-layer, none),
+          url('data:image/svg+xml,%3Csvg width="400" height="240" viewBox="0 0 400 240" fill="none" xmlns="http://www.w3.org/2000/svg"%3E%3Cg opacity="0.35" stroke="%23a5b4fc" stroke-width="1.5"%3E%3Cpath d="M-40 24C40 52 120 52 200 24C280 -4 360 -4 440 24"/%3E%3Cpath d="M-40 84C40 112 120 112 200 84C280 56 360 56 440 84"/%3E%3Cpath d="M-40 144C40 172 120 172 200 144C280 116 360 116 440 144"/%3E%3Cpath d="M-40 204C40 232 120 232 200 204C280 176 360 176 440 204"/%3E%3Cpath d="M120 -20C92 60 92 140 120 220"/%3E%3Cpath d="M200 -20C172 60 172 140 200 220"/%3E%3Cpath d="M280 -20C252 60 252 140 280 220"/%3E%3C/g%3E%3Ccircle cx="200" cy="120" r="60" stroke="%23638cf5" stroke-width="2.5" opacity="0.35"/%3E%3C/svg%3E');
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-position: center calc(50% + var(--parallax-offset, 0px));
+      }
+
+      .header::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.1), transparent 40%),
+          radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.18), transparent 42%),
+          linear-gradient(180deg, rgba(15, 23, 42, 0.15), rgba(15, 23, 42, 0.65));
+        pointer-events: none;
+      }
+
+      .header > * {
+        position: relative;
+        z-index: 1;
       }
       .content {
         padding: 25px;
@@ -497,6 +482,23 @@
         width: 80px;
         height: 80px;
         object-fit: contain;
+      }
+
+      .equipment-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .equipment-actions button {
+        padding: 8px 10px;
+      }
+
+      .equipment-form-status {
+        margin-top: 6px;
+        color: #0f172a;
+        font-weight: 600;
       }
 
       .form-grid {
@@ -1749,11 +1751,14 @@
               </div>
               <div>
                 <label for="equipmentReferencePoint">Reference Point</label>
+                <select id="equipmentReferencePointPicker"></select>
                 <input
                   id="equipmentReferencePoint"
                   type="text"
                   placeholder="Control point or benchmark used"
+                  list="equipmentReferencePointOptions"
                 />
+                <datalist id="equipmentReferencePointOptions"></datalist>
               </div>
             </div>
 
@@ -1776,6 +1781,14 @@
                 </div>
               </div>
             </div>
+
+            <label for="equipmentWorkNotes">Work / Daily Goal</label>
+            <textarea
+              id="equipmentWorkNotes"
+              placeholder="Describe today's objectives or tasks to pair with this setup"
+            ></textarea>
+
+            <div id="equipmentFormStatus" class="equipment-form-status"></div>
 
             <div style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap">
               <button type="button" class="success" id="saveEquipmentButton">

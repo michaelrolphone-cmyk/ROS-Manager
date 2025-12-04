@@ -28,9 +28,10 @@ export default class AppController {
     this.currentEvidenceTies = [];
     this.currentTraversePointOptions = [];
     this.currentEquipmentLocation = null;
-    this.heroCollapsed = false;
-this.defaultHeroMapLayer =
-  "url('data:image/svg+xml,%3Csvg width=\"400\" height=\"240\" viewBox=\"0 0 400 240\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg opacity=\"0.35\" stroke=\"%23a5b4fc\" stroke-width=\"1.5\"%3E%3Cpath d=\"M-40 24C40 52 120 52 200 24C280 -4 360 -4 440 24\"/%3E%3Cpath d=\"M-40 84C40 112 120 112 200 84C280 56 360 56 440 84\"/%3E%3Cpath d=\"M-40 144C40 172 120 172 200 144C280 116 360 116 440 144\"/%3E%3Cpath d=\"M-40 204C40 232 120 232 200 204C280 176 360 176 440 204\"/%3E%3Cpath d=\"M120 -20C92 60 92 140 120 220\"/%3E%3Cpath d=\"M200 -20C172 60 172 140 200 220\"/%3E%3Cpath d=\"M280 -20C252 60 252 140 280 220\"/%3E%3C/g%3E%3Ccircle cx=\"200\" cy=\"120\" r=\"60\" stroke=\"%23638cf5\" stroke-width=\"2.5\" opacity=\"0.35\"/%3E%3C/svg%3E')";    this.geocodeCache = {};
+    this.editingEquipmentId = null;
+    this.defaultHeaderMapLayer =
+      "url('data:image/svg+xml,%3Csvg width=\"400\" height=\"240\" viewBox=\"0 0 400 240\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg opacity=\"0.35\" stroke=\"%23a5b4fc\" stroke-width=\"1.5\"%3E%3Cpath d=\"M-40 24C40 52 120 52 200 24C280 -4 360 -4 440 24\"/%3E%3Cpath d=\"M-40 84C40 112 120 112 200 84C280 56 360 56 440 84\"/%3E%3Cpath d=\"M-40 144C40 172 120 172 200 144C280 116 360 116 440 144\"/%3E%3Cpath d=\"M-40 204C40 232 120 232 200 204C280 176 360 176 440 204\"/%3E%3Cpath d=\"M120 -20C92 60 92 140 120 220\"/%3E%3Cpath d=\"M200 -20C172 60 172 140 200 220\"/%3E%3Cpath d=\"M280 -20C252 60 252 140 280 220\"/%3E%3C/g%3E%3Ccircle cx=\"200\" cy=\"120\" r=\"60\" stroke=\"%23638cf5\" stroke-width=\"2.5\" opacity=\"0.35\"/%3E%3C/svg%3E')";
+    this.geocodeCache = {};
     this.currentMapAddressKey = "";
     this.currentMapUrl = null;
     this.pendingMapRequestId = 0;
@@ -98,6 +99,7 @@ this.defaultHeroMapLayer =
       projectActionsToggle: document.getElementById("projectActionsToggle"),
       projectActionsMenu: document.getElementById("projectActionsMenu"),
       homeButton: document.getElementById("homeButton"),
+      pageHeader: document.querySelector(".header"),
       projectControls: document.getElementById("projectControls"),
       projectNameInput: document.getElementById("projectNameInput"),
       currentProjectName: document.getElementById("currentProjectName"),
@@ -207,6 +209,12 @@ this.defaultHeroMapLayer =
       equipmentTearDownAt: document.getElementById("equipmentTearDownAt"),
       equipmentBaseHeight: document.getElementById("equipmentBaseHeight"),
       equipmentReferencePoint: document.getElementById("equipmentReferencePoint"),
+      equipmentReferencePointPicker: document.getElementById(
+        "equipmentReferencePointPicker"
+      ),
+      equipmentReferencePointOptions: document.getElementById(
+        "equipmentReferencePointOptions"
+      ),
       equipmentSetupBy: document.getElementById("equipmentSetupBy"),
       captureEquipmentLocation: document.getElementById(
         "captureEquipmentLocation"
@@ -216,6 +224,8 @@ this.defaultHeroMapLayer =
       ),
       saveEquipmentButton: document.getElementById("saveEquipmentButton"),
       resetEquipmentButton: document.getElementById("resetEquipmentButton"),
+      equipmentWorkNotes: document.getElementById("equipmentWorkNotes"),
+      equipmentFormStatus: document.getElementById("equipmentFormStatus"),
       equipmentList: document.getElementById("equipmentList"),
       equipmentSummary: document.getElementById("equipmentSummary"),
       navigationCompass: document.getElementById("navigationCompass"),
@@ -465,9 +475,15 @@ this.defaultHeroMapLayer =
       this.elements.equipmentBaseHeight,
       this.elements.equipmentReferencePoint,
       this.elements.equipmentSetupBy,
+      this.elements.equipmentWorkNotes,
     ].forEach((el) => {
       el?.addEventListener("input", () => this.updateEquipmentSaveState());
     });
+
+    this.elements.equipmentReferencePointPicker?.addEventListener(
+      "change",
+      (e) => this.handleReferencePointSelection(e)
+    );
 
     this.elements.saveEquipmentButton?.addEventListener("click", () =>
       this.saveEquipmentEntry()
@@ -522,6 +538,7 @@ this.defaultHeroMapLayer =
     this.repository.saveProjects(this.projects);
     this.populateLocalizationSelectors();
     this.navigationController?.renderTargetOptions();
+    this.renderReferencePointOptions();
   }
 
   /* ===================== Export / Import ===================== */
@@ -973,14 +990,17 @@ this.defaultHeroMapLayer =
   }
 
   async updateSpringboardMapLayer(project) {
-    const hero = this.elements.springboardHero;
-    if (!hero) return;
+    const header = this.elements.pageHeader;
+    if (!header) return;
 
     const address = project?.address?.trim();
     if (!address) {
       this.currentMapAddressKey = "";
       this.currentMapUrl = null;
-      hero.style.setProperty("--hero-map-layer", this.defaultHeroMapLayer);
+      header.style.setProperty(
+        "--header-map-layer",
+        this.defaultHeaderMapLayer
+      );
       return;
     }
 
@@ -989,15 +1009,15 @@ this.defaultHeroMapLayer =
       this.currentMapAddressKey === normalizedAddress &&
       this.currentMapUrl
     ) {
-      hero.style.setProperty(
-        "--hero-map-layer",
+      header.style.setProperty(
+        "--header-map-layer",
         `url('${this.currentMapUrl}')`
       );
       return;
     }
 
     this.currentMapAddressKey = normalizedAddress;
-    hero.style.setProperty("--hero-map-layer", this.defaultHeroMapLayer);
+    header.style.setProperty("--header-map-layer", this.defaultHeaderMapLayer);
     const requestId = Date.now();
     this.pendingMapRequestId = requestId;
 
@@ -1005,9 +1025,9 @@ this.defaultHeroMapLayer =
       const mapUrl = await this.resolveAddressToMap(address);
       if (this.pendingMapRequestId !== requestId) return;
       this.currentMapUrl = mapUrl;
-      hero.style.setProperty(
-        "--hero-map-layer",
-        mapUrl ? `url('${mapUrl}')` : this.defaultHeroMapLayer
+      header.style.setProperty(
+        "--header-map-layer",
+        mapUrl ? `url('${mapUrl}')` : this.defaultHeaderMapLayer
       );
     } catch (err) {
       console.warn("Map lookup failed", err);
@@ -1052,36 +1072,11 @@ this.defaultHeroMapLayer =
   }
 
   handleSpringboardScroll() {
-    const hero = this.elements.springboardHero;
-    if (!hero) return;
-    const isActive = this.elements.springboardSection?.classList.contains(
-      "active"
-    );
-    if (!isActive) {
-      hero.style.setProperty("--parallax-offset", "0px");
-      hero.classList.remove("collapsed");
-      this.heroCollapsed = false;
-      return;
-    }
+    const header = this.elements.pageHeader;
+    if (!header) return;
 
     const scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
-    const offsetTop = hero.offsetTop || 0;
-    const distance = Math.max(0, scrollTop - offsetTop);
-
-    hero.style.setProperty("--parallax-offset", `${distance * 0.35}px`);
-    const collapseThreshold = Math.max(80, hero.offsetHeight * 0.55);
-    const hysteresis = 20;
-
-    if (!this.heroCollapsed && distance > collapseThreshold + hysteresis) {
-      hero.classList.add("collapsed");
-      this.heroCollapsed = true;
-    } else if (
-      this.heroCollapsed &&
-      distance < collapseThreshold - hysteresis
-    ) {
-      hero.classList.remove("collapsed");
-      this.heroCollapsed = false;
-    }
+    header.style.setProperty("--parallax-offset", `${scrollTop * 0.25}px`);
   }
 
   /* ===================== Evidence Logger ===================== */
@@ -1592,6 +1587,7 @@ this.defaultHeroMapLayer =
 
   /* ===================== Equipment Setup ===================== */
   refreshEquipmentUI() {
+    this.renderReferencePointOptions();
     this.renderEquipmentList();
     this.updateEquipmentSaveState();
   }
@@ -1603,13 +1599,24 @@ this.defaultHeroMapLayer =
       this.elements.equipmentBaseHeight,
       this.elements.equipmentReferencePoint,
       this.elements.equipmentSetupBy,
+      this.elements.equipmentWorkNotes,
     ].forEach((el) => {
       if (el) el.value = "";
     });
+    if (this.elements.equipmentReferencePointPicker) {
+      this.elements.equipmentReferencePointPicker.value = "";
+    }
+    if (this.elements.equipmentFormStatus) {
+      this.elements.equipmentFormStatus.textContent = "";
+    }
+    if (this.elements.saveEquipmentButton) {
+      this.elements.saveEquipmentButton.textContent = "Save Equipment Entry";
+    }
     if (this.elements.equipmentLocationStatus) {
       this.elements.equipmentLocationStatus.textContent = "";
     }
     this.currentEquipmentLocation = null;
+    this.editingEquipmentId = null;
     this.updateEquipmentSaveState();
   }
 
@@ -1625,6 +1632,85 @@ this.defaultHeroMapLayer =
       !!this.currentProjectId &&
       requiredFields.every((el) => el && el.value.trim().length > 0);
     this.elements.saveEquipmentButton.disabled = !canSave;
+  }
+
+  renderReferencePointOptions() {
+    const picker = this.elements.equipmentReferencePointPicker;
+    const datalist = this.elements.equipmentReferencePointOptions;
+    const project = this.projects[this.currentProjectId];
+    if (!picker || !datalist || !project) {
+      if (picker) picker.innerHTML = "";
+      if (datalist) datalist.innerHTML = "";
+      return;
+    }
+
+    const options = new Set();
+    (project.pointFiles || []).forEach((pf) => {
+      (pf.points || []).forEach((pt) => {
+        const labelParts = [pt.pointNumber, pt.description]
+          .map((part) => part?.toString().trim())
+          .filter(Boolean);
+        const label = labelParts.join(" · ");
+        if (label) options.add(label);
+      });
+    });
+    (project.referencePoints || []).forEach((name) => {
+      if (name && name.trim()) options.add(name.trim());
+    });
+    (project.equipmentLogs || []).forEach((log) => {
+      if (log.referencePoint && log.referencePoint.trim()) {
+        options.add(log.referencePoint.trim());
+      }
+    });
+
+    picker.innerHTML = "";
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent =
+      options.size > 0
+        ? "Select a stored reference point"
+        : "No saved reference points";
+    picker.appendChild(placeholder);
+
+    options.forEach((label) => {
+      const opt = document.createElement("option");
+      opt.value = label;
+      opt.dataset.label = label;
+      opt.textContent = label;
+      picker.appendChild(opt);
+    });
+
+    datalist.innerHTML = "";
+    options.forEach((label) => {
+      const opt = document.createElement("option");
+      opt.value = label;
+      datalist.appendChild(opt);
+    });
+  }
+
+  handleReferencePointSelection(event) {
+    const option = event.target?.selectedOptions?.[0];
+    const label = option?.dataset?.label || option?.value || "";
+    if (this.elements.equipmentReferencePoint) {
+      this.elements.equipmentReferencePoint.value = label;
+    }
+    this.updateEquipmentSaveState();
+  }
+
+  rememberReferencePoint(name) {
+    const trimmed = name?.trim();
+    if (!trimmed) return;
+    const project = this.projects[this.currentProjectId];
+    if (!project) return;
+    project.referencePoints = Array.isArray(project.referencePoints)
+      ? project.referencePoints
+      : [];
+    const exists = project.referencePoints.some(
+      (rp) => rp.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (!exists) {
+      project.referencePoints.push(trimmed);
+    }
   }
 
   captureEquipmentLocation() {
@@ -1665,21 +1751,44 @@ this.defaultHeroMapLayer =
   saveEquipmentEntry() {
     if (!this.currentProjectId || !this.projects[this.currentProjectId]) return;
     const project = this.projects[this.currentProjectId];
-    const entry = new EquipmentLog({
-      id: Date.now().toString(),
+    project.equipmentLogs = project.equipmentLogs || [];
+    const referencePoint =
+      this.elements.equipmentReferencePoint?.value.trim() || "";
+    const workNotes = this.elements.equipmentWorkNotes?.value.trim() || "";
+    const payload = {
       setupAt: this.elements.equipmentSetupAt?.value || "",
       tearDownAt: this.elements.equipmentTearDownAt?.value || "",
       baseHeight: this.elements.equipmentBaseHeight?.value.trim() || "",
-      referencePoint:
-        this.elements.equipmentReferencePoint?.value.trim() || "",
+      referencePoint,
       setupBy: this.elements.equipmentSetupBy?.value.trim() || "",
-      location: this.currentEquipmentLocation,
-      recordedAt: new Date().toISOString(),
-    });
+      workNotes,
+    };
 
-    project.equipmentLogs = project.equipmentLogs || [];
-    project.equipmentLogs.push(entry);
+    if (referencePoint) {
+      this.rememberReferencePoint(referencePoint);
+    }
+
+    if (this.editingEquipmentId) {
+      const existingIndex = project.equipmentLogs.findIndex(
+        (log) => log.id === this.editingEquipmentId
+      );
+      if (existingIndex !== -1) {
+        const existing = project.equipmentLogs[existingIndex];
+        const updated = Object.assign(existing, payload);
+        updated.location = this.currentEquipmentLocation || existing.location || null;
+        updated.recordedAt = existing.recordedAt || new Date().toISOString();
+      }
+    } else {
+      const entry = new EquipmentLog({
+        id: Date.now().toString(),
+        ...payload,
+        location: this.currentEquipmentLocation,
+        recordedAt: new Date().toISOString(),
+      });
+      project.equipmentLogs.push(entry);
+    }
     this.saveProjects();
+    this.renderReferencePointOptions();
     this.renderEquipmentList();
     this.navigationController?.onEquipmentLogsChanged();
     this.resetEquipmentForm();
@@ -1739,8 +1848,110 @@ this.defaultHeroMapLayer =
           <div>Set up by: ${this.escapeHtml(log.setupBy || "")}</div>
           <div>Location: ${this.escapeHtml(locationText)}</div>
         `;
+        if (log.workNotes) {
+          const notes = document.createElement("div");
+          notes.style.marginTop = "6px";
+          notes.textContent = `Work / Goal: ${log.workNotes}`;
+          card.appendChild(notes);
+        }
+
+        const actions = document.createElement("div");
+        actions.className = "equipment-actions";
+
+        const teardownBtn = document.createElement("button");
+        teardownBtn.type = "button";
+        teardownBtn.textContent = "Log Tear Down Now";
+        teardownBtn.addEventListener("click", () =>
+          this.logEquipmentTeardown(log.id)
+        );
+        actions.appendChild(teardownBtn);
+
+        const editBtn = document.createElement("button");
+        editBtn.type = "button";
+        editBtn.textContent = "Edit";
+        editBtn.addEventListener("click", () =>
+          this.startEditingEquipmentEntry(log.id)
+        );
+        actions.appendChild(editBtn);
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.textContent = "Delete";
+        deleteBtn.className = "danger";
+        deleteBtn.addEventListener("click", () =>
+          this.deleteEquipmentEntry(log.id)
+        );
+        actions.appendChild(deleteBtn);
+
+        card.appendChild(actions);
         container.appendChild(card);
       });
+  }
+
+  logEquipmentTeardown(id) {
+    const project = this.projects[this.currentProjectId];
+    if (!project?.equipmentLogs) return;
+    const entry = project.equipmentLogs.find((log) => log.id === id);
+    if (!entry) return;
+    entry.tearDownAt = new Date().toISOString();
+    this.saveProjects();
+    this.renderEquipmentList();
+    this.navigationController?.onEquipmentLogsChanged();
+  }
+
+  startEditingEquipmentEntry(id) {
+    const project = this.projects[this.currentProjectId];
+    if (!project?.equipmentLogs) return;
+    const entry = project.equipmentLogs.find((log) => log.id === id);
+    if (!entry) return;
+    this.editingEquipmentId = id;
+    if (this.elements.equipmentSetupAt)
+      this.elements.equipmentSetupAt.value = entry.setupAt || "";
+    if (this.elements.equipmentTearDownAt)
+      this.elements.equipmentTearDownAt.value = entry.tearDownAt || "";
+    if (this.elements.equipmentBaseHeight)
+      this.elements.equipmentBaseHeight.value = entry.baseHeight || "";
+    if (this.elements.equipmentReferencePoint)
+      this.elements.equipmentReferencePoint.value = entry.referencePoint || "";
+    if (this.elements.equipmentSetupBy)
+      this.elements.equipmentSetupBy.value = entry.setupBy || "";
+    if (this.elements.equipmentWorkNotes)
+      this.elements.equipmentWorkNotes.value = entry.workNotes || "";
+    if (this.elements.equipmentFormStatus) {
+      this.elements.equipmentFormStatus.textContent =
+        "Editing existing equipment entry";
+    }
+    if (this.elements.saveEquipmentButton) {
+      this.elements.saveEquipmentButton.textContent = "Update Equipment Entry";
+    }
+    if (this.elements.equipmentReferencePointPicker) {
+      this.elements.equipmentReferencePointPicker.value = entry.referencePoint || "";
+    }
+    this.currentEquipmentLocation = entry.location || null;
+    if (this.elements.equipmentLocationStatus && entry.location) {
+      this.elements.equipmentLocationStatus.textContent = `Lat ${entry.location.lat.toFixed(
+        6
+      )}, Lon ${entry.location.lon.toFixed(6)} (±${entry.location.accuracy.toFixed(
+        1
+      )} m)`;
+    } else if (this.elements.equipmentLocationStatus) {
+      this.elements.equipmentLocationStatus.textContent = "";
+    }
+    this.updateEquipmentSaveState();
+  }
+
+  deleteEquipmentEntry(id) {
+    const project = this.projects[this.currentProjectId];
+    if (!project?.equipmentLogs) return;
+    if (!confirm("Delete this equipment entry?")) return;
+    project.equipmentLogs = project.equipmentLogs.filter((log) => log.id !== id);
+    this.saveProjects();
+    this.renderReferencePointOptions();
+    this.renderEquipmentList();
+    this.navigationController?.onEquipmentLogsChanged();
+    if (this.editingEquipmentId === id) {
+      this.resetEquipmentForm();
+    }
   }
 
   exportCornerFiling(entry) {

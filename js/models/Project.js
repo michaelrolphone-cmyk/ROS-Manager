@@ -17,6 +17,7 @@ export default class Project {
     sections = [],
     records = {},
     equipmentLogs = [],
+    referencePoints = [],
     points = [],
     pointFiles = [],
     activePointFileId = null,
@@ -66,6 +67,9 @@ export default class Project {
     this.equipmentLogs = equipmentLogs.map((entry) =>
       entry instanceof EquipmentLog ? entry : EquipmentLog.fromObject(entry)
     );
+    this.referencePoints = Array.isArray(referencePoints)
+      ? referencePoints
+      : [];
   }
 
   static fromObject(obj = {}) {
@@ -88,6 +92,7 @@ export default class Project {
       sections: this.sections,
       records: Object.fromEntries(entries),
       equipmentLogs: this.equipmentLogs.map((entry) => entry.toObject()),
+      referencePoints: this.referencePoints,
       pointFiles: this.pointFiles.map((pf) =>
         pf instanceof PointFile ? pf.toObject() : PointFile.fromObject(pf).toObject()
       ),
