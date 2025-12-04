@@ -914,61 +914,10 @@
         </div>
 
         <div id="traverseSection" class="tool-section">
+          <h3>Project Overview</h3>
+          <canvas id="projectOverviewCanvas"></canvas>
 
-        <h3>Project Overview</h3>
-        <canvas id="projectOverviewCanvas"></canvas>
-
-        <div class="card">
-          <h3>Point File Manager</h3>
-          <p class="subtitle" style="margin-top: 0">
-            Import CSV point coordinate files to store and edit points with your
-            project. Columns should be: point number, x (or lat), y (or lon),
-            elevation, code (and description if last column), description.
-          </p>
-          <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center">
-            <button type="button" id="pointImportButton">
-              Import Points CSV
-            </button>
-            <button type="button" id="addPointRowButton">Add Point Row</button>
-            <button type="button" id="newPointFileButton">New Point File</button>
-            <button type="button" id="downloadPointsButton" class="success">
-              Download Points TXT
-            </button>
-            <label style="font-weight: 600; color: #1e40af">
-              Active Point File
-              <select id="pointFileSelect" style="margin-left: 8px; padding: 8px">
-                <option>No point files</option>
-              </select>
-            </label>
-            <input
-              type="file"
-              id="pointsFileInput"
-              accept=".csv,text/csv"
-              style="display: none"
-            />
-          </div>
-
-          <table id="pointsTable">
-            <thead>
-              <tr>
-                <th>Point #</th>
-                <th>X / Lat</th>
-                <th>Y / Lon</th>
-                <th>Elevation</th>
-                <th>Code</th>
-                <th>Description</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="pointsTableBody">
-              <tr>
-                <td colspan="7">Create or select a project to manage points.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <hr />
+          <hr />
 
         <h2>Records of Survey</h2>
         <div
