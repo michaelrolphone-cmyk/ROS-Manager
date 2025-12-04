@@ -16,6 +16,7 @@ export default class NavigationController {
     this.targetDistanceFeet = null;
     this.headingSource = "Waiting";
     this.watchId = null;
+    this.mapFailed = false;
 
     this.ctx = this.elements.compassCanvas?.getContext("2d") || null;
 
@@ -31,7 +32,7 @@ export default class NavigationController {
 
     this.elements.targetSelect?.addEventListener("change", (e) => {
       const id = e.target.value;
-      this.applyBookmarkTarget(id);
+      this.handleTargetSelection(id);
     });
 
     this.elements.equipmentSelect?.addEventListener("change", (e) => {
@@ -40,7 +41,7 @@ export default class NavigationController {
     });
 
     this.elements.refreshButton?.addEventListener("click", () => {
-      this.renderBookmarkOptions();
+      this.renderTargetOptions();
       this.renderEquipmentOptions();
       this.updateBookmarksList();
     });
@@ -144,6 +145,7 @@ export default class NavigationController {
 
     this.updateReadouts();
     this.drawCompass();
+    this.updateMapView();
   }
 
   drawCompass() {
@@ -253,6 +255,58 @@ export default class NavigationController {
     }
   }
 
+  updateMapView() {
+    const mapPanel = this.elements.mapPanel;
+    const mapFrame = this.elements.mapFrame;
+    const mapStatus = this.elements.mapStatus;
+    const compassPanel = this.elements.compassCanvas?.closest(
+      ".navigation-panel"
+    );
+    const project = this.getCurrentProject?.();
+    const localization = project?.localization;
+    if (!mapPanel || !mapFrame || !compassPanel) return;
+
+    if (!localization || !localization.points?.length) {
+      mapPanel.classList.add("hidden");
+      compassPanel.classList.remove("hidden");
+      if (mapStatus) mapStatus.textContent = "Apply GPS localization to view the map.";
+      return;
+    }
+
+    const target = this.targetLocation || localization.anchorGeo;
+    if (!target) {
+      mapPanel.classList.add("hidden");
+      compassPanel.classList.remove("hidden");
+      if (mapStatus) mapStatus.textContent = "Waiting for target coordinates.";
+      return;
+    }
+
+    const spanLat = 0.0025;
+    const spanLon = 0.0025;
+    const bbox = `${target.lon - spanLon},${target.lat - spanLat},${target.lon + spanLon},${target.lat + spanLat}`;
+    const src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${target.lat},${target.lon}`;
+
+    mapPanel.classList.remove("hidden");
+    compassPanel.classList.add("hidden");
+    if (mapStatus) mapStatus.textContent = "Loading map preview…";
+
+    mapFrame.onload = () => {
+      this.mapFailed = false;
+      mapPanel.classList.remove("hidden");
+      compassPanel.classList.add("hidden");
+      if (mapStatus)
+        mapStatus.textContent = `Map ready for ${localization.anchorLabel || "anchor"}.`;
+    };
+    mapFrame.onerror = () => {
+      this.mapFailed = true;
+      mapPanel.classList.add("hidden");
+      compassPanel.classList.remove("hidden");
+      if (mapStatus)
+        mapStatus.textContent = "Map unavailable, falling back to compass.";
+    };
+    mapFrame.src = src;
+  }
+
   saveBookmarkFromCurrent() {
     const project = this.getCurrentProject?.();
     if (!project) {
@@ -281,17 +335,17 @@ export default class NavigationController {
     this.saveProjects?.();
     this.setBookmarkStatus(`Saved ${name}.`);
     this.elements.bookmarkName.value = "";
-    this.renderBookmarkOptions();
+    this.renderTargetOptions();
     this.updateBookmarksList();
   }
 
   prepareSelectors() {
-    this.renderBookmarkOptions();
+    this.renderTargetOptions();
     this.renderEquipmentOptions();
     this.updateBookmarksList();
   }
 
-  renderBookmarkOptions() {
+  renderTargetOptions() {
     const select = this.elements.targetSelect;
     const project = this.getCurrentProject?.();
     if (!select) return;
@@ -299,26 +353,42 @@ export default class NavigationController {
     select.innerHTML = "";
     const placeholder = document.createElement("option");
     placeholder.value = "";
-    placeholder.textContent = "Choose a saved location";
+    placeholder.textContent = "Choose a navigation target";
     select.appendChild(placeholder);
 
-    if (!project || !project.navigationBookmarks?.length) {
+    const locPoints = project?.localization?.points || [];
+    if (locPoints.length) {
+      const group = document.createElement("optgroup");
+      group.label = `Localized grid (${project.localization.anchorLabel || "Anchor"})`;
+      locPoints.forEach((pt) => {
+        const option = document.createElement("option");
+        option.value = `loc:${pt.id}`;
+        option.textContent = `${pt.label} (${pt.lat.toFixed(5)}, ${pt.lon.toFixed(5)})`;
+        group.appendChild(option);
+      });
+      select.appendChild(group);
+    }
+
+    const bookmarks = project?.navigationBookmarks || [];
+    const bookmarkGroup = document.createElement("optgroup");
+    bookmarkGroup.label = "Saved GPS bookmarks";
+    if (!bookmarks.length) {
       const opt = document.createElement("option");
       opt.value = "";
       opt.textContent = "No saved locations yet";
-      select.appendChild(opt);
-      return;
+      bookmarkGroup.appendChild(opt);
+    } else {
+      bookmarks
+        .slice()
+        .sort((a, b) => new Date(b.recordedAt) - new Date(a.recordedAt))
+        .forEach((bookmark) => {
+          const option = document.createElement("option");
+          option.value = `bm:${bookmark.id}`;
+          option.textContent = `${bookmark.name} (${bookmark.latitude.toFixed(5)}, ${bookmark.longitude.toFixed(5)})`;
+          bookmarkGroup.appendChild(option);
+        });
     }
-
-    project.navigationBookmarks
-      .slice()
-      .sort((a, b) => new Date(b.recordedAt) - new Date(a.recordedAt))
-      .forEach((bookmark) => {
-        const option = document.createElement("option");
-        option.value = bookmark.id;
-        option.textContent = `${bookmark.name} (${bookmark.latitude.toFixed(5)}, ${bookmark.longitude.toFixed(5)})`;
-        select.appendChild(option);
-      });
+    select.appendChild(bookmarkGroup);
   }
 
   renderEquipmentOptions() {
@@ -382,6 +452,30 @@ export default class NavigationController {
       });
   }
 
+  handleTargetSelection(value) {
+    if (!value) {
+      this.clearTarget();
+      return;
+    }
+    if (value.startsWith("loc:")) {
+      const id = value.slice(4);
+      const project = this.getCurrentProject?.();
+      const loc = project?.localization?.points?.find((pt) => pt.id === id);
+      if (loc) {
+        this.setTarget({ lat: loc.lat, lon: loc.lon }, loc.label);
+      } else {
+        this.setStatus("Localized point missing.");
+        this.clearTarget();
+      }
+      return;
+    }
+    if (value.startsWith("bm:")) {
+      this.applyBookmarkTarget(value.slice(3));
+      return;
+    }
+    this.applyBookmarkTarget(value);
+  }
+
   applyBookmarkTarget(id) {
     const project = this.getCurrentProject?.();
     if (!project || !id) {
@@ -420,6 +514,7 @@ export default class NavigationController {
     this.setStatus("Target cleared.");
     this.updateReadouts();
     this.drawCompass();
+    this.updateMapView();
   }
 
   setStatus(message) {

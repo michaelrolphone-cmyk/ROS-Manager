@@ -68,6 +68,9 @@ export default class AppController {
         bookmarksList: this.elements.navigationBookmarksList,
         refreshButton: this.elements.refreshNavigation,
         clearTargetButton: this.elements.clearNavigationTarget,
+        mapPanel: this.elements.navigationMapPanel,
+        mapFrame: this.elements.navigationMapFrame,
+        mapStatus: this.elements.navigationMapStatus,
       },
       getCurrentProject: () =>
         this.currentProjectId ? this.projects[this.currentProjectId] : null,
@@ -230,6 +233,28 @@ export default class AppController {
       navigationBookmarksList: document.getElementById("navigationBookmarksList"),
       refreshNavigation: document.getElementById("refreshNavigation"),
       clearNavigationTarget: document.getElementById("clearNavigationTarget"),
+      navigationMapPanel: document.getElementById("navigationMapPanel"),
+      navigationMapFrame: document.getElementById("navigationMapFrame"),
+      navigationMapStatus: document.getElementById("navigationMapStatus"),
+      localizationSource: document.getElementById("localizationSource"),
+      localizationRecord: document.getElementById("localizationRecord"),
+      localizationTraversePoint: document.getElementById(
+        "localizationTraversePoint"
+      ),
+      localizationPointFile: document.getElementById("localizationPointFile"),
+      localizationPointNumber: document.getElementById("localizationPointNumber"),
+      localizationLat: document.getElementById("localizationLat"),
+      localizationLon: document.getElementById("localizationLon"),
+      localizationStatus: document.getElementById("localizationStatus"),
+      localizationSummary: document.getElementById("localizationSummary"),
+      localizationTraverseFields: document.getElementById(
+        "localizationTraverseFields"
+      ),
+      localizationPointFileFields: document.getElementById(
+        "localizationPointFileFields"
+      ),
+      applyLocalization: document.getElementById("applyLocalization"),
+      clearLocalization: document.getElementById("clearLocalization"),
     };
   }
 
@@ -264,6 +289,9 @@ export default class AppController {
       e.preventDefault();
       this.saveProjectDetails();
     });
+    this.elements.saveProjectDetailsButton?.addEventListener("click", () =>
+      this.saveProjectDetails()
+    );
 
     this.elements.projectDropdownToggle?.addEventListener("click", () =>
       this.toggleProjectDropdown()
@@ -339,6 +367,8 @@ export default class AppController {
         this.createProject();
       }
     });
+
+    this.bindNavigationLocalizationEvents();
 
     [
       this.elements.startPtNum,
@@ -452,6 +482,24 @@ export default class AppController {
     window.addEventListener("resize", () => this.handleSpringboardScroll());
   }
 
+  bindNavigationLocalizationEvents() {
+    this.elements.localizationSource?.addEventListener("change", () =>
+      this.toggleLocalizationSource()
+    );
+    this.elements.localizationRecord?.addEventListener("change", () =>
+      this.populateLocalizationTraversePoints()
+    );
+    this.elements.localizationPointFile?.addEventListener("change", () =>
+      this.populateLocalizationPointNumbers()
+    );
+    this.elements.applyLocalization?.addEventListener("click", () =>
+      this.applyGpsLocalization()
+    );
+    this.elements.clearLocalization?.addEventListener("click", () =>
+      this.clearGpsLocalization()
+    );
+  }
+
   initialize() {
     this.updateProjectList();
     const projectIds = Object.keys(this.projects);
@@ -463,6 +511,7 @@ export default class AppController {
       this.populateProjectDetailsForm(null);
       this.updateSpringboardHero();
     }
+    this.populateLocalizationSelectors();
     this.refreshEvidenceUI();
     this.renderEvidenceTies();
     this.refreshEquipmentUI();
@@ -472,6 +521,8 @@ export default class AppController {
 
   saveProjects() {
     this.repository.saveProjects(this.projects);
+    this.populateLocalizationSelectors();
+    this.navigationController?.renderTargetOptions();
   }
 
   /* ===================== Export / Import ===================== */
@@ -594,6 +645,7 @@ export default class AppController {
       this.refreshEquipmentUI();
       this.pointController.renderPointsTable();
       this.refreshEvidenceUI();
+      this.populateLocalizationSelectors();
       this.navigationController?.onProjectChanged();
       this.populateProjectDetailsForm(null);
       this.updateSpringboardHero();
@@ -612,6 +664,7 @@ export default class AppController {
     this.refreshEvidenceUI();
     this.resetEquipmentForm();
     this.refreshEquipmentUI();
+    this.populateLocalizationSelectors();
     this.navigationController?.onProjectChanged();
     this.populateProjectDetailsForm(this.projects[id]);
     this.updateSpringboardHero();
@@ -2241,6 +2294,306 @@ export default class AppController {
       return;
     }
     this.drawProjectCompositeOnCanvas(this.currentProjectId, canvas);
+  }
+
+  toggleLocalizationSource() {
+    const source = this.elements.localizationSource?.value || "traverse";
+    if (this.elements.localizationTraverseFields) {
+      this.elements.localizationTraverseFields.style.display =
+        source === "traverse" ? "block" : "none";
+    }
+    if (this.elements.localizationPointFileFields) {
+      this.elements.localizationPointFileFields.style.display =
+        source === "pointFile" ? "block" : "none";
+    }
+    this.updateLocalizationSummary();
+  }
+
+  populateLocalizationSelectors() {
+    this.populateLocalizationTraverseRecords();
+    this.populateLocalizationPointFiles();
+    this.populateLocalizationTraversePoints();
+    this.populateLocalizationPointNumbers();
+    this.toggleLocalizationSource();
+    this.updateLocalizationSummary();
+  }
+
+  populateLocalizationTraverseRecords() {
+    const select = this.elements.localizationRecord;
+    if (!select) return;
+    select.innerHTML = "";
+    const project = this.currentProjectId
+      ? this.projects[this.currentProjectId]
+      : null;
+
+    if (!project || !project.records || Object.keys(project.records).length === 0) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "No traverse records";
+      opt.disabled = true;
+      opt.selected = true;
+      select.appendChild(opt);
+      return;
+    }
+
+    Object.entries(project.records).forEach(([id, record], idx) => {
+      const opt = document.createElement("option");
+      opt.value = id;
+      opt.textContent = record.name || `Record ${idx + 1}`;
+      if (idx === 0) opt.selected = true;
+      select.appendChild(opt);
+    });
+  }
+
+  populateLocalizationTraversePoints() {
+    const select = this.elements.localizationTraversePoint;
+    if (!select) return;
+    select.innerHTML = "";
+    const recordId = this.elements.localizationRecord?.value;
+    const options = this.getTraversePointOptions(recordId);
+    if (!options.length) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "No traverse points";
+      opt.disabled = true;
+      opt.selected = true;
+      select.appendChild(opt);
+      return;
+    }
+    options.forEach((optData, idx) => {
+      const opt = document.createElement("option");
+      opt.value = optData.index.toString();
+      opt.textContent = optData.label;
+      if (idx === 0) opt.selected = true;
+      select.appendChild(opt);
+    });
+  }
+
+  populateLocalizationPointFiles() {
+    const select = this.elements.localizationPointFile;
+    if (!select) return;
+    select.innerHTML = "";
+    const project = this.currentProjectId
+      ? this.projects[this.currentProjectId]
+      : null;
+    const files = project?.pointFiles || [];
+
+    if (!files.length) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "No point files";
+      opt.disabled = true;
+      opt.selected = true;
+      select.appendChild(opt);
+      return;
+    }
+
+    files.forEach((pf, idx) => {
+      const opt = document.createElement("option");
+      opt.value = pf.id;
+      opt.textContent = pf.name || `Point File ${idx + 1}`;
+      if (pf.id === project.activePointFileId || idx === 0) opt.selected = true;
+      select.appendChild(opt);
+    });
+  }
+
+  populateLocalizationPointNumbers() {
+    const select = this.elements.localizationPointNumber;
+    if (!select) return;
+    select.innerHTML = "";
+    const project = this.currentProjectId
+      ? this.projects[this.currentProjectId]
+      : null;
+    const fileId = this.elements.localizationPointFile?.value;
+    const file = project?.pointFiles?.find((pf) => pf.id === fileId);
+
+    if (!file || !file.points?.length) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "No points";
+      opt.disabled = true;
+      opt.selected = true;
+      select.appendChild(opt);
+      return;
+    }
+
+    file.points.forEach((pt, idx) => {
+      const opt = document.createElement("option");
+      opt.value = idx.toString();
+      const label = pt.pointNumber ? `#${pt.pointNumber}` : `Point ${idx + 1}`;
+      opt.textContent = `${label} (${pt.x || "?"}, ${pt.y || "?"})`;
+      if (idx === 0) opt.selected = true;
+      select.appendChild(opt);
+    });
+  }
+
+  applyGpsLocalization() {
+    const project = this.currentProjectId
+      ? this.projects[this.currentProjectId]
+      : null;
+    if (!project) {
+      this.setLocalizationStatus("Select a project first.");
+      return;
+    }
+
+    const lat = parseFloat(this.elements.localizationLat?.value || "");
+    const lon = parseFloat(this.elements.localizationLon?.value || "");
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      this.setLocalizationStatus("Enter a valid latitude and longitude.");
+      return;
+    }
+
+    const source = this.elements.localizationSource?.value || "traverse";
+    const anchorGeo = { lat, lon };
+    let anchorLocal = null;
+    let anchorLabel = "";
+    const localizedPoints = [];
+
+    if (source === "traverse") {
+      const recordId = this.elements.localizationRecord?.value;
+      const record = project.records?.[recordId];
+      const idxStr = this.elements.localizationTraversePoint?.value || "0";
+      const pointIdx = parseInt(idxStr, 10) || 0;
+      const pts = this.computeTraversePointsForRecord(
+        this.currentProjectId,
+        recordId
+      );
+      if (!record || !pts || !pts[pointIdx]) {
+        this.setLocalizationStatus("Choose a valid traverse point to localize.");
+        return;
+      }
+      anchorLocal = pts[pointIdx];
+      const base = parseInt(record.startPtNum, 10) || 1;
+      anchorLabel = `${record.name || "Traverse"} P${base + pointIdx}`;
+
+      Object.entries(project.records || {}).forEach(([rid, rec]) => {
+        const recPts = this.computeTraversePointsForRecord(
+          this.currentProjectId,
+          rid
+        );
+        const startNum = parseInt(rec.startPtNum, 10) || 1;
+        recPts.forEach((pt, idx) => {
+          const offset = this.localOffsetToLatLon(
+            anchorGeo,
+            pt.x - anchorLocal.x,
+            pt.y - anchorLocal.y
+          );
+          localizedPoints.push({
+            id: `tr-${rid}-${idx}`,
+            label: `${rec.name || "Traverse"} P${startNum + idx}`,
+            lat: offset.lat,
+            lon: offset.lon,
+            source: "traverse",
+          });
+        });
+      });
+    } else {
+      const fileId = this.elements.localizationPointFile?.value;
+      const pointIdxStr = this.elements.localizationPointNumber?.value || "0";
+      const pointIdx = parseInt(pointIdxStr, 10) || 0;
+      const file = project.pointFiles?.find((pf) => pf.id === fileId);
+      if (!file || !file.points || !file.points[pointIdx]) {
+        this.setLocalizationStatus("Choose a valid point file and point.");
+        return;
+      }
+      const anchorPt = file.points[pointIdx];
+      const anchorE = parseFloat(anchorPt.x);
+      const anchorN = parseFloat(anchorPt.y);
+      if (!Number.isFinite(anchorE) || !Number.isFinite(anchorN)) {
+        this.setLocalizationStatus("Anchor point is missing numeric coordinates.");
+        return;
+      }
+      anchorLocal = { x: anchorE, y: anchorN };
+      anchorLabel = `${file.name || "Points"} ${anchorPt.pointNumber || "point"}`;
+
+      (project.pointFiles || []).forEach((pf) => {
+        (pf.points || []).forEach((pt, idx) => {
+          const e = parseFloat(pt.x);
+          const n = parseFloat(pt.y);
+          if (!Number.isFinite(e) || !Number.isFinite(n)) return;
+          const offset = this.localOffsetToLatLon(
+            anchorGeo,
+            e - anchorLocal.x,
+            n - anchorLocal.y
+          );
+          localizedPoints.push({
+            id: `pf-${pf.id}-${idx}`,
+            label: `${pf.name || "Points"} ${pt.pointNumber || idx + 1}`,
+            lat: offset.lat,
+            lon: offset.lon,
+            source: "pointFile",
+          });
+        });
+      });
+    }
+
+    project.localization = {
+      source,
+      anchorLabel,
+      anchorLocal,
+      anchorGeo,
+      createdAt: new Date().toISOString(),
+      points: localizedPoints,
+    };
+    this.saveProjects();
+    this.setLocalizationStatus(`Localized ${localizedPoints.length} point(s).`);
+    this.updateLocalizationSummary();
+    this.navigationController?.onProjectChanged();
+    this.navigationController?.updateNavigationState();
+  }
+
+  clearGpsLocalization() {
+    const project = this.currentProjectId
+      ? this.projects[this.currentProjectId]
+      : null;
+    if (!project || !project.localization) {
+      this.setLocalizationStatus("No localization to clear.");
+      return;
+    }
+    project.localization = null;
+    this.saveProjects();
+    this.setLocalizationStatus("Localization cleared.");
+    this.updateLocalizationSummary();
+    this.navigationController?.onProjectChanged();
+    this.navigationController?.updateNavigationState();
+  }
+
+  localOffsetToLatLon(anchorGeo, deltaEastFeet, deltaNorthFeet) {
+    const R = 6378137; // meters
+    const metersPerFoot = 0.3048;
+    const dNorth = deltaNorthFeet * metersPerFoot;
+    const dEast = deltaEastFeet * metersPerFoot;
+    const dLat = (dNorth / R) * (180 / Math.PI);
+    const dLon = (dEast / (R * Math.cos((anchorGeo.lat * Math.PI) / 180))) *
+      (180 / Math.PI);
+    return { lat: anchorGeo.lat + dLat, lon: anchorGeo.lon + dLon };
+  }
+
+  setLocalizationStatus(message) {
+    if (this.elements.localizationStatus) {
+      this.elements.localizationStatus.textContent = message;
+    }
+  }
+
+  updateLocalizationSummary() {
+    const summary = this.elements.localizationSummary;
+    if (!summary) return;
+    const project = this.currentProjectId
+      ? this.projects[this.currentProjectId]
+      : null;
+    const loc = project?.localization;
+    if (!project) {
+      summary.textContent = "Select a project to localize coordinates.";
+      return;
+    }
+    if (!loc) {
+      summary.textContent =
+        "Enter a known GPS coordinate to localize your traverse or point file.";
+      return;
+    }
+    summary.textContent = `Localized to ${loc.anchorLabel} at ${loc.anchorGeo.lat.toFixed(
+      6
+    )}, ${loc.anchorGeo.lon.toFixed(6)} (${loc.points?.length || 0} point targets).`;
   }
 
   updateBearingArrow(input) {
