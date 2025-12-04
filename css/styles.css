@@ -98,7 +98,7 @@ body {
         margin-bottom: 16px;
         box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
         overflow: hidden;
-        margin: 10px -30px;
+        margin: -35px -30px 10px -30px;
       }
 
       .springboard-hero-header {
