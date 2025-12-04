@@ -93,6 +93,154 @@
         margin-top: 14px;
       }
 
+      .springboard-hero {
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        background: #0f172a;
+        color: white;
+        border-radius: 18px;
+        padding: 20px 20px 24px;
+        margin-bottom: 16px;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.28);
+        overflow: hidden;
+        background-image: linear-gradient(120deg, rgba(14, 165, 233, 0.18), rgba(59, 130, 246, 0.25)),
+          url('data:image/svg+xml,%3Csvg width="400" height="240" viewBox="0 0 400 240" fill="none" xmlns="http://www.w3.org/2000/svg"%3E%3Cg opacity="0.35" stroke="%23a5b4fc" stroke-width="1.5"%3E%3Cpath d="M-40 24C40 52 120 52 200 24C280 -4 360 -4 440 24"/%3E%3Cpath d="M-40 84C40 112 120 112 200 84C280 56 360 56 440 84"/%3E%3Cpath d="M-40 144C40 172 120 172 200 144C280 116 360 116 440 144"/%3E%3Cpath d="M-40 204C40 232 120 232 200 204C280 176 360 176 440 204"/%3E%3Cpath d="M120 -20C92 60 92 140 120 220"/%3E%3Cpath d="M200 -20C172 60 172 140 200 220"/%3E%3Cpath d="M280 -20C252 60 252 140 280 220"/%3E%3C/g%3E%3Ccircle cx="200" cy="120" r="60" stroke="%23638cf5" stroke-width="2.5" opacity="0.35"/%3E%3C/svg%3E');
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-position: center calc(50% + var(--parallax-offset, 0px));
+        transition: padding 0.25s ease, border-radius 0.25s ease,
+          box-shadow 0.25s ease;
+      }
+
+      .springboard-hero::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.1), transparent 40%),
+          radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.18), transparent 42%),
+          linear-gradient(180deg, rgba(15, 23, 42, 0.15), rgba(15, 23, 42, 0.65));
+        pointer-events: none;
+      }
+
+      .springboard-hero.collapsed {
+        padding: 12px 18px 14px;
+        border-bottom-left-radius: 12px;
+        border-bottom-right-radius: 12px;
+        box-shadow: 0 10px 26px rgba(15, 23, 42, 0.24);
+      }
+
+      .springboard-hero-header {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .springboard-hero-title {
+        margin: 4px 0;
+        font-size: 1.8rem;
+        letter-spacing: -0.01em;
+      }
+
+      .springboard-hero-subtitle {
+        color: rgba(226, 232, 240, 0.9);
+        margin: 0;
+      }
+
+      .springboard-hero-details {
+        position: relative;
+        z-index: 1;
+        margin-top: 12px;
+        transition: opacity 0.2s ease, max-height 0.2s ease, margin 0.2s ease;
+      }
+
+      .springboard-hero.collapsed .springboard-hero-details {
+        opacity: 0;
+        max-height: 0;
+        margin-top: 0;
+        overflow: hidden;
+      }
+
+      .springboard-hero.collapsed .springboard-hero-title {
+        font-size: 1.35rem;
+      }
+
+      .eyebrow {
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.08em;
+        color: #bfdbfe;
+        margin: 0;
+        font-weight: 700;
+      }
+
+      .meta-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 10px;
+      }
+
+      .meta-card {
+        background: rgba(15, 23, 42, 0.55);
+        border: 1px solid rgba(191, 219, 254, 0.2);
+        padding: 10px 12px;
+        border-radius: 12px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      }
+
+      .meta-card .label {
+        color: #bfdbfe;
+        font-size: 0.85rem;
+        letter-spacing: 0.04em;
+      }
+
+      .meta-card .value {
+        display: block;
+        margin-top: 4px;
+        font-weight: 700;
+      }
+
+      .project-details-card {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 16px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+        margin-bottom: 16px;
+      }
+
+      .project-details-card h3 {
+        margin: 4px 0 10px;
+      }
+
+      .project-details-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+      }
+
+      .project-details-grid .full-row {
+        grid-column: 1 / -1;
+      }
+
+      .project-details-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 12px;
+      }
+
+      .info-chip {
+        background: rgba(59, 130, 246, 0.12);
+        color: #1d4ed8;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-weight: 700;
+        border: 1px solid rgba(59, 130, 246, 0.2);
+      }
+
       .app-tile {
         border: none;
         background: linear-gradient(180deg, #ffffff 0%, #e8efff 100%);
@@ -958,6 +1106,113 @@
         </div>
 
         <div id="springboardSection" class="tool-section springboard active">
+          <div id="springboardHero" class="springboard-hero">
+            <div class="springboard-hero-header">
+              <div>
+                <p class="eyebrow">Active Project</p>
+                <h1 id="springboardProjectTitle" class="springboard-hero-title">
+                  No project selected
+                </h1>
+                <p
+                  id="springboardProjectDescription"
+                  class="springboard-hero-subtitle"
+                >
+                  Create or open a project to see its location context.
+                </p>
+              </div>
+              <span id="springboardStatusChip" class="info-chip">No project</span>
+            </div>
+            <div class="springboard-hero-details">
+              <div class="meta-grid">
+                <div class="meta-card">
+                  <div class="label">Client</div>
+                  <span class="value" id="springboardClientValue">—</span>
+                </div>
+                <div class="meta-card">
+                  <div class="label">Address</div>
+                  <span class="value" id="springboardAddressValue">—</span>
+                </div>
+                <div class="meta-card">
+                  <div class="label">Township(s)</div>
+                  <span class="value" id="springboardTownshipValue">—</span>
+                </div>
+                <div class="meta-card">
+                  <div class="label">Range(s)</div>
+                  <span class="value" id="springboardRangeValue">—</span>
+                </div>
+                <div class="meta-card">
+                  <div class="label">Section(s)</div>
+                  <span class="value" id="springboardSectionValue">—</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="project-details-card">
+            <p class="eyebrow" style="color: #475569">Project Details</p>
+            <h3 style="margin-top: 2px">Describe where and who you're working for</h3>
+            <div class="project-details-grid">
+              <div>
+                <label for="projectDetailName">Project Name</label>
+                <input
+                  type="text"
+                  id="projectDetailName"
+                  placeholder="Subdivision 2024"
+                />
+              </div>
+              <div>
+                <label for="projectClientInput">Client</label>
+                <input
+                  type="text"
+                  id="projectClientInput"
+                  placeholder="City of Exampleville"
+                />
+              </div>
+              <div class="full-row">
+                <label for="projectAddressInput">Address</label>
+                <textarea
+                  id="projectAddressInput"
+                  rows="2"
+                  placeholder="123 Main St, Exampleville, WA"
+                ></textarea>
+              </div>
+              <div>
+                <label for="projectTownshipInput">Township(s)</label>
+                <input
+                  type="text"
+                  id="projectTownshipInput"
+                  placeholder="T12N, T13N"
+                />
+                <small class="app-hint">Separate multiple entries with commas</small>
+              </div>
+              <div>
+                <label for="projectRangeInput">Range(s)</label>
+                <input type="text" id="projectRangeInput" placeholder="R3W" />
+                <small class="app-hint">Separate multiple entries with commas</small>
+              </div>
+              <div>
+                <label for="projectSectionInput">Section(s)</label>
+                <input
+                  type="text"
+                  id="projectSectionInput"
+                  placeholder="12, 13"
+                />
+                <small class="app-hint">Separate multiple entries with commas</small>
+              </div>
+              <div class="full-row">
+                <label for="projectDescriptionInput">Description</label>
+                <textarea
+                  id="projectDescriptionInput"
+                  rows="3"
+                  placeholder="Notes about scope, nearby landmarks, or routing instructions"
+                ></textarea>
+              </div>
+            </div>
+            <div class="project-details-actions">
+              <button id="saveProjectDetailsButton">Save Project Details</button>
+            </div>
+          </div>
+
           <h2>Project Apps</h2>
           <p class="subtitle" style="margin-top: 0">
             Select a mini app to work with your current project.
