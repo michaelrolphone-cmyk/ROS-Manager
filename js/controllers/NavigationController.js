@@ -34,6 +34,8 @@ export default class NavigationController {
 
     this.ctx = this.elements.compassCanvas?.getContext("2d") || null;
 
+    this.normalizeAngle = (angle) => ((angle % 360) + 360) % 360;
+
     this.bindEvents();
     this.prepareSelectors();
     this.startListeners();
@@ -84,16 +86,9 @@ export default class NavigationController {
         const q = this.orientationSensor?.quaternion;
         if (!q || q.length < 4) return;
 
-        const [x, y, z, w] = q;
-        const sinyCosp = 2 * (w * z + x * y);
-        const cosyCosp = 1 - 2 * (y * y + z * z);
-        const headingRad = Math.atan2(sinyCosp, cosyCosp);
-        const heading = ((headingRad * 180) / Math.PI + 360) % 360;
+        const heading = this.calculateHeadingFromQuaternion(q);
 
-        this.deviceHeading = heading;
-        this.headingSource = "Sensor";
-        this.updateReadouts();
-        this.drawCompass();
+        this.applyDeviceHeading(heading, "Sensor");
       });
 
       this.orientationSensor.addEventListener("error", (event) => {
@@ -124,9 +119,7 @@ export default class NavigationController {
           ? 360 - event.alpha
           : null;
       if (heading !== null) {
-        this.deviceHeading = (heading + 360) % 360;
-        this.headingSource = "Compass";
-        this.updateReadouts();
+        this.applyDeviceHeading(heading, "Compass");
       }
     };
 
@@ -223,16 +216,17 @@ export default class NavigationController {
     ctx.stroke();
 
     const heading = this.deviceHeading ?? this.travelHeading;
-    const normalize = (angle) => ((angle % 360) + 360) % 360;
 
     const peers = typeof this.getPeerLocations === "function"
       ? this.getPeerLocations() || []
       : [];
 
-    const northAngle = heading !== null ? normalize(-heading) : 0;
-    const youAngle = heading !== null ? 0 : normalize(this.travelHeading ?? 0);
+    const northAngle = heading !== null ? this.normalizeAngle(-heading) : 0;
+    const youAngle = heading !== null
+      ? 0
+      : this.normalizeAngle(this.travelHeading ?? 0);
     const targetAngle = this.targetBearing !== null
-      ? normalize(
+      ? this.normalizeAngle(
         heading !== null ? this.targetBearing - heading : this.targetBearing
       )
       : null;
@@ -249,8 +243,8 @@ export default class NavigationController {
         const idSuffix = typeof peer.id === "string" ? peer.id.slice(-4) : "";
         const labelName = peer.teamMember || `User ${idSuffix || ""}`.trim();
         const angle = heading !== null
-          ? normalize(bearing - heading)
-          : normalize(bearing);
+          ? this.normalizeAngle(bearing - heading)
+          : this.normalizeAngle(bearing);
         peerAngles.push({
           angle,
           distance,
@@ -359,6 +353,33 @@ export default class NavigationController {
         ? `${offset.toFixed(1)}° from line`
         : "--";
     }
+  }
+
+  applyDeviceHeading(rawHeading, source) {
+    const screenOffset = this.getScreenOrientationOffset();
+    const adjustedHeading = this.normalizeAngle(rawHeading + screenOffset);
+    this.deviceHeading = adjustedHeading;
+    this.headingSource = source;
+    this.updateReadouts();
+    this.drawCompass();
+  }
+
+  getScreenOrientationOffset() {
+    const orientation = window.screen?.orientation;
+    const angle = typeof orientation?.angle === "number"
+      ? orientation.angle
+      : typeof window.orientation === "number"
+        ? window.orientation
+        : 0;
+    return this.normalizeAngle(angle);
+  }
+
+  calculateHeadingFromQuaternion([x, y, z, w]) {
+    const sinyCosp = 2 * (w * z + x * y);
+    const cosyCosp = 1 - 2 * (y * y + z * z);
+    const headingRad = Math.atan2(sinyCosp, cosyCosp);
+    const heading = (headingRad * 180) / Math.PI;
+    return this.normalizeAngle(heading);
   }
 
   updateMapView() {

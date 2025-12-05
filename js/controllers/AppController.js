@@ -57,8 +57,16 @@ export default class AppController {
     this.syncPending = null;
     this.syncInProgress = false;
     this.syncQueued = false;
+    this.userActivityState = {
+      active: false,
+      idleDelay: 800,
+      idleTimer: null,
+      idleResolver: null,
+      idlePromise: null,
+    };
 
     this.cacheDom();
+    this.setupUserActivityGuards();
     this.appLaunchers = document.querySelectorAll(".app-tile");
     this.pointController = new PointController({
       elements: {
@@ -132,6 +140,59 @@ export default class AppController {
     });
     this.bindStaticEvents();
     this.initialize();
+  }
+
+  setupUserActivityGuards() {
+    const markActive = () => this.markUserActivity();
+    [
+      "input",
+      "change",
+      "focusin",
+      "pointerdown",
+      "touchstart",
+      "keydown",
+    ].forEach((eventName) =>
+      document.addEventListener(eventName, markActive, true)
+    );
+  }
+
+  markUserActivity() {
+    const state = this.userActivityState;
+    state.active = true;
+    if (state.idleTimer) {
+      clearTimeout(state.idleTimer);
+    }
+    state.idleTimer = setTimeout(() => this.markUserIdle(), state.idleDelay);
+  }
+
+  markUserIdle() {
+    const state = this.userActivityState;
+    state.active = false;
+    state.idleTimer = null;
+    if (typeof state.idleResolver === "function") {
+      state.idleResolver();
+      state.idleResolver = null;
+      state.idlePromise = null;
+    }
+  }
+
+  waitForUserIdle() {
+    const state = this.userActivityState;
+    if (!state.active) return Promise.resolve();
+    if (!state.idlePromise) {
+      state.idlePromise = new Promise((resolve) => {
+        state.idleResolver = resolve;
+      });
+    }
+    return state.idlePromise;
+  }
+
+  async runUserSafeRefresh(handler) {
+    await this.waitForUserIdle();
+    const focusState = this.captureFocusState();
+    const result = await handler();
+    this.restoreFocusState(focusState);
+    return result;
   }
 
   cacheDom() {
@@ -737,33 +798,35 @@ export default class AppController {
         globalSettings: this.globalSettings,
       });
 
-      if (response?.projects) {
-        this.projects = this.repository.deserializeProjects(response.projects);
-      }
-      if (response?.evidence) {
-        this.cornerEvidenceService.replaceAllEvidence(response.evidence);
-      }
-      if (response?.globalSettings) {
-        this.globalSettings = this.normalizeGlobalSettings(
-          response.globalSettings
-        );
-        this.ensureGlobalSettingsMetadata();
-        this.globalSettingsService.save(this.globalSettings);
-        this.renderGlobalSettings();
-      }
-      this.saveProjects({ skipVersionUpdate: true, skipSync: true });
-      this.stopLiveUpdates();
-      this.startLiveUpdates();
-      this.updateProjectList();
-      const activeId =
-        this.currentProjectId && this.projects[this.currentProjectId]
-          ? this.currentProjectId
-          : Object.keys(this.projects)[0];
-      if (activeId) {
-        this.loadProject(activeId, { preserveRecord: true });
-      } else {
-        this.drawProjectOverview();
-      }
+      await this.runUserSafeRefresh(async () => {
+        if (response?.projects) {
+          this.projects = this.repository.deserializeProjects(
+            response.projects
+          );
+        }
+        if (response?.evidence) {
+          this.cornerEvidenceService.replaceAllEvidence(response.evidence);
+        }
+        if (response?.globalSettings) {
+          this.globalSettings = this.mergeGlobalSettings(response.globalSettings);
+          this.ensureGlobalSettingsMetadata();
+          this.globalSettingsService.save(this.globalSettings);
+          this.renderGlobalSettings();
+        }
+        this.saveProjects({ skipVersionUpdate: true, skipSync: true });
+        this.stopLiveUpdates();
+        this.startLiveUpdates();
+        this.updateProjectList();
+        const activeId =
+          this.currentProjectId && this.projects[this.currentProjectId]
+            ? this.currentProjectId
+            : Object.keys(this.projects)[0];
+        if (activeId) {
+          this.loadProject(activeId, { preserveRecord: true });
+        } else {
+          this.drawProjectOverview();
+        }
+      });
     } catch (err) {
       console.warn("Sync failed", err);
     } finally {
@@ -835,39 +898,41 @@ export default class AppController {
     }, 500);
   }
 
-  applyLiveDataset(rawData) {
+  async applyLiveDataset(rawData) {
     if (!rawData) return;
     try {
       const dataset = JSON.parse(rawData);
       const { projects, evidence, globalSettings } = dataset || {};
-      const activeProjectId = this.currentProjectId;
-      const activeRecordId = this.currentRecordId;
-      if (projects) {
-        this.projects = this.repository.deserializeProjects(projects);
-      }
-      if (evidence) {
-        this.cornerEvidenceService.replaceAllEvidence(evidence);
-      }
-      if (globalSettings) {
-        this.globalSettings = this.normalizeGlobalSettings(globalSettings);
-        this.ensureGlobalSettingsMetadata();
-        this.globalSettingsService.save(this.globalSettings);
-        this.renderGlobalSettings();
-        this.navigationController?.drawCompass();
-      }
-      if (projects || evidence) {
-        this.saveProjects({ skipVersionUpdate: true, skipSync: true });
-        this.updateProjectList();
-        if (activeProjectId && this.projects && this.projects[activeProjectId]) {
-          this.loadProject(activeProjectId, { preserveRecord: true });
-          if (
-            activeRecordId &&
-            this.projects[activeProjectId]?.records?.[activeRecordId]
-          ) {
-            this.loadRecord(activeRecordId);
+      await this.runUserSafeRefresh(async () => {
+        const activeProjectId = this.currentProjectId;
+        const activeRecordId = this.currentRecordId;
+        if (projects) {
+          this.projects = this.repository.deserializeProjects(projects);
+        }
+        if (evidence) {
+          this.cornerEvidenceService.replaceAllEvidence(evidence);
+        }
+        if (globalSettings) {
+          this.globalSettings = this.mergeGlobalSettings(globalSettings);
+          this.ensureGlobalSettingsMetadata();
+          this.globalSettingsService.save(this.globalSettings);
+          this.renderGlobalSettings();
+          this.navigationController?.drawCompass();
+        }
+        if (projects || evidence) {
+          this.saveProjects({ skipVersionUpdate: true, skipSync: true });
+          this.updateProjectList();
+          if (activeProjectId && this.projects && this.projects[activeProjectId]) {
+            this.loadProject(activeProjectId, { preserveRecord: true });
+            if (
+              activeRecordId &&
+              this.projects[activeProjectId]?.records?.[activeRecordId]
+            ) {
+              this.loadRecord(activeRecordId);
+            }
           }
         }
-      }
+      });
     } catch (err) {
       console.warn("Failed to apply live dataset", err);
     }
@@ -4744,6 +4809,139 @@ export default class AppController {
   getCurrentDeviceProfile() {
     const profiles = this.globalSettings.deviceProfiles || {};
     return profiles[this.deviceId] || null;
+  }
+
+  mergeGlobalSettings(incoming = {}) {
+    const current = this.normalizeGlobalSettings(this.globalSettings);
+    const next = this.normalizeGlobalSettings(incoming);
+
+    return {
+      ...current,
+      ...next,
+      deviceProfiles: this.mergeDeviceProfiles(
+        current.deviceProfiles,
+        next.deviceProfiles
+      ),
+      liveLocations: this.mergeLiveLocations(
+        current.liveLocations,
+        next.liveLocations
+      ),
+    };
+  }
+
+  mergeDeviceProfiles(current = {}, incoming = {}) {
+    const merged = { ...incoming };
+
+    Object.entries(current || {}).forEach(([deviceId, profile]) => {
+      const incomingProfile = incoming[deviceId];
+      if (!incomingProfile) {
+        merged[deviceId] = profile;
+        return;
+      }
+
+      const currentAssigned = new Date(profile.assignedAt || 0).getTime();
+      const incomingAssigned = new Date(
+        incomingProfile.assignedAt || 0
+      ).getTime();
+
+      merged[deviceId] =
+        currentAssigned >= incomingAssigned
+          ? { ...incomingProfile, ...profile }
+          : { ...profile, ...incomingProfile };
+    });
+
+    return merged;
+  }
+
+  mergeLiveLocations(current = {}, incoming = {}) {
+    const merged = { ...incoming };
+
+    Object.entries(current || {}).forEach(([deviceId, location]) => {
+      const incomingLocation = incoming[deviceId];
+      if (!incomingLocation) {
+        merged[deviceId] = location;
+        return;
+      }
+
+      const currentUpdated = new Date(location.updatedAt || 0).getTime();
+      const incomingUpdated = new Date(incomingLocation.updatedAt || 0).getTime();
+
+      merged[deviceId] =
+        currentUpdated >= incomingUpdated
+          ? { ...incomingLocation, ...location }
+          : { ...location, ...incomingLocation };
+    });
+
+    return merged;
+  }
+
+  captureFocusState() {
+    const active = document.activeElement;
+    if (!active || !(active instanceof HTMLElement)) return null;
+
+    const selection =
+      typeof active.selectionStart === "number"
+        ? { start: active.selectionStart, end: active.selectionEnd }
+        : null;
+
+    const callRow = active.closest("tr.call-row");
+    if (callRow && active.classList.length) {
+      return {
+        type: "call",
+        callLabel: callRow.dataset.callLabel || "",
+        fieldClass: active.classList[0],
+        selection,
+      };
+    }
+
+    return {
+      type: "generic",
+      id: active.id || "",
+      name: active.name || "",
+      selection,
+    };
+  }
+
+  restoreFocusState(state) {
+    if (!state) return false;
+
+    const escapeValue = (val = "") => {
+      if (window.CSS && typeof window.CSS.escape === "function") {
+        return window.CSS.escape(val);
+      }
+      return val.replace(/"/g, '\\"');
+    };
+
+    let target = null;
+    if (state.type === "call" && state.callLabel && state.fieldClass) {
+      const selector = `tr.call-row[data-call-label="${escapeValue(
+        state.callLabel
+      )}"] .${escapeValue(state.fieldClass)}`;
+      target = document.querySelector(selector);
+    }
+
+    if (!target && state.id) {
+      target = document.getElementById(state.id);
+    }
+    if (!target && state.name) {
+      target = document.querySelector(`[name="${escapeValue(state.name)}"]`);
+    }
+
+    if (target && typeof target.focus === "function") {
+      target.focus({ preventScroll: true });
+      if (
+        state.selection &&
+        typeof target.selectionStart === "number" &&
+        typeof target.setSelectionRange === "function"
+      ) {
+        const start = state.selection.start ?? 0;
+        const end = state.selection.end ?? start;
+        target.setSelectionRange(start, end);
+      }
+      return true;
+    }
+
+    return false;
   }
 
   setDeviceTeamMember(name) {
