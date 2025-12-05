@@ -1,61 +1,48 @@
-export default class TraverseInstruction {
-  constructor(
-    bearing = "",
+export default class EvidenceTie {
+  constructor({
+    id = null,
     distance = "",
-    branches = [],
-    curveRadius = "",
-    curveDirection = "",
-    curveArcLength = "",
-    curveChordLength = "",
-    curveChordBearing = "",
-    curveDeltaAngle = "",
-    curveTangent = ""
-  ) {
-    this.bearing = bearing;
+    bearing = "",
+    description = "",
+    photos = [],
+    createdAt = null,
+    updatedAt = null,
+    version = 1,
+  } = {}) {
+    const stamp = new Date().toISOString();
+    this.id = id || `tie-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     this.distance = distance;
-    this.curveRadius = curveRadius;
-    this.curveDirection = curveDirection;
-    this.curveArcLength = curveArcLength;
-    this.curveChordLength = curveChordLength;
-    this.curveChordBearing = curveChordBearing;
-    this.curveDeltaAngle = curveDeltaAngle;
-    this.curveTangent = curveTangent;
-    this.branches = (branches || []).map((branch) =>
-      Array.isArray(branch)
-        ? branch.map((c) => TraverseInstruction.fromObject(c))
-        : []
-    );
+    this.bearing = bearing;
+    this.description = description;
+    this.photos = photos;
+    this.createdAt = createdAt || stamp;
+    this.updatedAt = updatedAt || this.createdAt;
+    this.version = version ?? 1;
   }
 
   static fromObject(obj = {}) {
-    return new TraverseInstruction(
-      obj.bearing || "",
-      obj.distance || "",
-      obj.branches || [],
-      obj.curveRadius || "",
-      obj.curveDirection || "",
-      obj.curveArcLength || "",
-      obj.curveChordLength || "",
-      obj.curveChordBearing || "",
-      obj.curveDeltaAngle || "",
-      obj.curveTangent || ""
-    );
+    return new EvidenceTie({
+      distance: obj.distance || "",
+      bearing: obj.bearing || "",
+      description: obj.description || "",
+      photos: obj.photos || [],
+      createdAt: obj.createdAt,
+      updatedAt: obj.updatedAt,
+      version: obj.version,
+      id: obj.id,
+    });
   }
 
   toObject() {
     return {
-      bearing: this.bearing,
       distance: this.distance,
-      curveRadius: this.curveRadius,
-      curveDirection: this.curveDirection,
-      curveArcLength: this.curveArcLength,
-      curveChordLength: this.curveChordLength,
-      curveChordBearing: this.curveChordBearing,
-      curveDeltaAngle: this.curveDeltaAngle,
-      curveTangent: this.curveTangent,
-      branches: (this.branches || []).map((branch) =>
-        (branch || []).map((c) => c?.toObject?.() || c)
-      ),
+      bearing: this.bearing,
+      description: this.description,
+      photos: this.photos || [],
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+      version: this.version,
+      id: this.id,
     };
   }
 }

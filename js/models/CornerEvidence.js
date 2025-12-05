@@ -16,6 +16,8 @@ export default class CornerEvidence {
     photo = null,
     location = null,
     createdAt = new Date().toISOString(),
+    updatedAt = null,
+    version = 1,
   } = {}) {
     this.id = id;
     this.projectId = projectId;
@@ -33,6 +35,8 @@ export default class CornerEvidence {
     this.photo = photo;
     this.location = location;
     this.createdAt = createdAt;
+    this.updatedAt = updatedAt || createdAt;
+    this.version = version ?? 1;
   }
 
   static fromObject(obj = {}) {
@@ -55,6 +59,8 @@ export default class CornerEvidence {
       photo: this.photo,
       location: this.location,
       createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+      version: this.version,
     };
   }
 }

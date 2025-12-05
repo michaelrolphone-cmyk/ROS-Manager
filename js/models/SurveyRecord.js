@@ -2,6 +2,7 @@ import TraverseInstruction from "./TraverseInstruction.js";
 
 export default class SurveyRecord {
   constructor({
+    id = null,
     name = "",
     startPtNum = "1",
     northing = "5000",
@@ -12,7 +13,12 @@ export default class SurveyRecord {
     firstDist = "",
     calls = [],
     startFromRecordId = null,
+    createdAt = null,
+    updatedAt = null,
+    version = 1,
   } = {}) {
+    const stamp = new Date().toISOString();
+    this.id = id;
     this.name = name;
     this.startPtNum = startPtNum;
     this.northing = northing;
@@ -27,6 +33,9 @@ export default class SurveyRecord {
         : TraverseInstruction.fromObject(call)
     );
     this.startFromRecordId = startFromRecordId;
+    this.createdAt = createdAt || stamp;
+    this.updatedAt = updatedAt || this.createdAt;
+    this.version = version ?? 1;
   }
 
   static fromObject(obj = {}) {
@@ -50,6 +59,10 @@ export default class SurveyRecord {
       firstDist: this.firstDist,
       calls: this.calls.map((call) => call.toObject()),
       startFromRecordId: this.startFromRecordId,
+      id: this.id,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+      version: this.version,
     };
   }
 }

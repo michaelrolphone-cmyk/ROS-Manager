@@ -8,12 +8,18 @@ export default class NavigationBookmark {
     latitude = 0,
     longitude = 0,
     recordedAt = new Date().toISOString(),
+    createdAt = null,
+    updatedAt = null,
+    version = 1,
   } = {}) {
     this.id = id;
     this.name = name;
     this.latitude = latitude;
     this.longitude = longitude;
     this.recordedAt = recordedAt;
+    this.createdAt = createdAt || recordedAt || new Date().toISOString();
+    this.updatedAt = updatedAt || this.createdAt;
+    this.version = version ?? 1;
   }
 
   static fromObject(obj = {}) {
@@ -27,6 +33,9 @@ export default class NavigationBookmark {
       latitude: this.latitude,
       longitude: this.longitude,
       recordedAt: this.recordedAt,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+      version: this.version,
     };
   }
 }

@@ -14,20 +14,64 @@ An offline, browser-based workspace that keeps traverse drafting, monument evide
 4. **Back up or clear data** – Export the current project, all projects, or the entire app dataset. Delete projects, records, or point files if you need to start fresh.
 
 ## Tool Overview
-- **Springboard** – Shows project name, contact phone/email, address links, TRS, and the survey scope description. Edit project metadata and jump into any mini app from the tiled launcher.【F:index.html†L75-L220】
-- **Traverse Builder** – Create records of survey traverses with starting coordinates, backsight azimuth, bearings, and distances. Generate Carlson commands, reorder calls, preview canvases, and share traverse geometry with other tools.【F:index.html†L306-L520】【F:index.html†L1172-L1218】
-- **Point File Manager** – Import CSVs, generate point files from traverses, add or edit rows by hand, switch between named point files, and download TXT outputs for data collectors.【F:index.html†L486-L571】
-- **Field Level Book** – Track differential leveling runs with backsight/foresight entries, compute running sums and closure error, and export a PDF of the run.【F:index.html†L572-L684】
-- **Evidence Records** – Attach evidence to traverse points with condition, ties, photos, GPS locations, and exportable corner filings while keeping a project-wide summary.【F:index.html†L684-L839】【F:js/controllers/AppController.js†L948-L1083】
-- **Equipment Setup Log** – Record setup/teardown times, base heights, reference points, crews, equipment used, work notes, and optional GPS position with a list of saved sessions per project.【F:index.html†L839-L937】
-- **Navigation** – Compass and heading tools to walk stakeout targets or equipment bases, with distance, bearing, and offset readouts plus optional map preview when GPS localization is applied.【F:index.html†L938-L1127】
-- **Global Settings** – Manage reusable equipment names, team members, and point codes, and download or import a single backup file covering all projects and settings.【F:index.html†L1128-L1216】
-- **Help** – In-app reader that pulls instructions straight from `HELP.md` so the guide matches the version shipped with the app.【F:index.html†L1213-L1233】【F:js/controllers/AppController.js†L1413-L1487】
 
-## Running with Node.js / Deploying to Heroku
-- Install Node.js 18 or later.
-- Start the static server locally with `npm start`, then open `http://localhost:3000`.
-- Deploy to Heroku by creating an app in your Heroku account, pushing this repository, and ensuring the Node buildpack is enabled. The included `Procfile` starts the app with `web: node server.js`, which serves the bundled `index.html` and its assets.
+### Project & Records
+- **Projects and record sets**
+  - Create, load, and delete named projects with dropdown controls for quick switching.【F:index.html†L720-L808】【F:index.html†L1010-L1053】
+  - Add record sets with starting point details and per-record canvases for at-a-glance previews, whether you are drafting a corner perpetuation filing, capturing monument field notes, or running a record of survey traverse.【F:index.html†L809-L970】【F:index.html†L1172-L1218】
+- **Import/Export**
+   - Export the current project or all projects to JSON and import them later; filenames include sanitized project names where appropriate.【F:index.html†L833-L910】
+
+## Optional Sync + Static Server
+The app now ships with a lightweight Node-based server that can both host the static app files and reconcile offline work when a network connection is available.
+
+1. **Start the server**
+   ```bash
+   node server.js
+   ```
+   The server listens on `http://localhost:3000` by default, serves `index.html` and related assets, and stores synchronized data in `data/projects.json`.
+2. **Endpoints**
+   - `GET /api/health` – basic status check.
+   - `GET /api/projects` – returns all stored projects and evidence.
+   - `POST /api/sync` – accepts a payload of `{ projects, evidence }`, merges by per-record `version`, `createdAt`, and `updatedAt` fields, and returns the reconciled dataset.
+3. **Conflict handling**
+   - Every project entity (project, record, call, points, evidence, and equipment logs) now carries `createdAt`, `updatedAt`, and `version` metadata.
+   - When the same item exists on two clients, the server applies changes in version order and prefers the newest `updatedAt` timestamp when versions match.
+   - Non-conflicting edits from different users are merged automatically by item ID.
+
+The browser UI will automatically attempt to sync when it detects an online connection, but it continues to work fully offline.
+
+### Traverse Builder
+- **Traverse authoring**
+  - Define start point coordinates, elevations, backsight azimuths, basis of bearing, and first distance to seed each traverse.【F:index.html†L832-L905】
+  - Add, edit, and reorder calls with live bearing arrows and linked start-from options across records.【F:index.html†L906-L1108】【F:index.html†L1013-L1032】
+- **Visualization and commands**
+  - Render per-record previews plus a project overview canvas that scales and colors each traverse.【F:index.html†L1172-L1218】【F:index.html†L1554-L1699】
+  - Generate Carlson command blocks for creating points, occupying points, drawing points, and drawing lines, with copy-ready text for CAD workflows.【F:index.html†L760-L828】【F:index.html†L1869-L1936】
+
+### Evidence Logger
+- **Linked evidence capture**
+  - Select a record and traverse point to attach evidence directly to generated geometry—useful for monument notes, corner perpetuation narratives, or general field ties.【F:index.html†L958-L985】【F:index.html†L1800-L1817】
+- **Monument details and condition**
+  - Track evidence type and condition with structured dropdowns for consistent reporting.【F:index.html†L986-L1028】
+- **Consistent styling**
+  - Evidence inputs, dropdowns, and record selectors now mirror Traverse Builder styling with thumbnail previews for each record.【F:index.html†L960-L987】【F:index.html†L1010-L1037】
+- **Notes and witness ties**
+  - Record narrative notes plus multiple tie distances, bearings, and descriptions per evidence point.【F:index.html†L1029-L1056】【F:index.html†L1746-L1762】
+- **Media and filings**
+  - Attach multiple photos to each tie and export every corner as a Corner Perpetuation Filing text package alongside JSON backups.【F:index.html†L1038-L1061】【F:js/controllers/AppController.js†L948-L1043】【F:js/controllers/AppController.js†L1045-L1083】
+- **Media and location**
+  - Attach optional photos and capture GPS coordinates when available to enrich field documentation.【F:index.html†L1058-L1084】
+- **Project evidence dashboard**
+  - View a summary of all evidence entries for the active project with quick access to each item.【F:index.html†L1086-L1103】【F:index.html†L1784-L1799】
+
+### Equipment Setup Log
+- **Base station tracking**
+  - Record setup and tear down date/time, base station height, reference point, and crew member for each session.【F:index.html†L1064-L1113】
+- **GPS capture**
+  - Capture the logging device's GPS location with accuracy details to help relocate the base station later.【F:index.html†L1115-L1137】
+- **Per-project log**
+  - Review all saved equipment entries for the active project in a dedicated log view.【F:index.html†L1139-L1146】
 
 ## Tips
 - Use clear project and record names so dropdowns and previews stay readable.

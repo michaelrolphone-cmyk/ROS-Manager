@@ -10,6 +10,9 @@ export default class EquipmentLog {
     workNotes = "",
     location = null,
     recordedAt = new Date().toISOString(),
+    createdAt = null,
+    updatedAt = null,
+    version = 1,
   } = {}) {
     this.id = id;
     this.setupAt = setupAt;
@@ -21,6 +24,9 @@ export default class EquipmentLog {
     this.workNotes = workNotes;
     this.location = location;
     this.recordedAt = recordedAt;
+    this.createdAt = createdAt || recordedAt || new Date().toISOString();
+    this.updatedAt = updatedAt || this.createdAt;
+    this.version = version ?? 1;
   }
 
   static fromObject(obj = {}) {
@@ -39,6 +45,9 @@ export default class EquipmentLog {
       workNotes: this.workNotes,
       location: this.location,
       recordedAt: this.recordedAt,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+      version: this.version,
     };
   }
 }
