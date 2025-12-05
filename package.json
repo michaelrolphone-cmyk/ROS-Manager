@@ -4,7 +4,8 @@
   "description": "An offline, browser-based workspace that keeps traverse drafting, monument evidence, point files, navigation aids, and equipment records together in one HTML file. Data stays in your browser's local storage—no build steps or servers are required.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test"
   },
   "engines": {
     "node": ">=18"
@@ -12,5 +13,5 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs"
+  "type": "module"
 }

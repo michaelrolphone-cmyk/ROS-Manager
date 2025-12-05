@@ -1,11 +1,11 @@
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
+import http from "http";
+import fs from "fs";
+import path from "path";
 
 const PORT = process.env.PORT || 3000;
-const DATA_DIR = path.join(__dirname, "data");
+const ROOT_DIR = path.dirname(new URL(import.meta.url).pathname);
+const DATA_DIR = path.join(ROOT_DIR, "data");
 const DATA_FILE = path.join(DATA_DIR, "projects.json");
-const ROOT_DIR = __dirname;
 const MIME_TYPES = {
   ".html": "text/html",
   ".css": "text/css",
