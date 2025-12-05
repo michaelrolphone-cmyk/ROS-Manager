@@ -1,13 +1,14 @@
 # 📌 Overall Priority Flow
 
-1. Legal/Statutory Compliance & Historical Research
-2. Data Integrity, Audit Trails, and Backups
-3. Quality Control, Tolerances, and Adjustments
-4. Evidence, PLSS Corners, and Chain of Evidence
-5. Core Geometry & Computation (Traverses, Leveling, Points)
-6. Global Settings & Shared Code Tables
-7. Field Workflows (Equipment, Navigation, Stakeout)
-8. Project Overview, Reporting, and UI/UX Polish
+1. Legal/Statutory Compliance & Historical Research  
+2. Data Integrity, Audit Trails, and Backups  
+3. Quality Control, Tolerances, and Adjustments  
+4. Evidence, PLSS Corners, and Chain of Evidence  
+5. Core Geometry & Computation (Traverses, Leveling, Points)  
+6. Global Settings & Shared Code Tables  
+7. Field Workflows (Equipment, Navigation, Stakeout)  
+8. Project Overview, Reporting, and UI/UX Polish  
+9. Marks: Project Integrity Oversight & Training System
 
 ---
 
@@ -460,5 +461,159 @@
     * Evidence entries
     * Research documents
     * Relevant traverses and level loops
+
+---
+
+
+## 9. Marks — Project Integrity Officer AI  
+*(Professional oversight without blocking in-progress field work)*
+
+### 9.1 Validation Engine — **Silent Inspector Phase**
+
+> **Goal:** Allow full field flexibility while tracking deficiencies realistically and transparently.
+
+* Implement a passive “Marks Engine” that evaluates:
+  - PLSS corner classification completeness
+  - Evidence sufficiency (ties, description, photos, status)
+  - Research completeness & linkage to corners/decisions
+  - QC status of geometry used in evidence or stakeout
+  - CP&F-required fields (when applicable)
+  - Export readiness state
+
+* Create a **Marks Report Panel** showing:
+  - Issue severity levels:
+    * **Info**
+    * **Notice**
+    * **Warning**
+    * **Critical (must be resolved before Final export)**
+  - Direct navigation links to fix each issue.
+
+* Compute a **Professional Confidence Score** based on compliance and QC.
+
+* **No blocking in this phase** — fully informational.
+
+---
+
+### 9.2 Controlled Gatekeeping — **Active for Final Deliverables Only**
+
+> **Goal:** Never block field progress, but prevent substandard “Final” deliverables.
+
+#### Export Status Labels (Mandatory)
+* Every export must be labeled:
+  - `Preliminary — In Progress`
+  - `Draft — Partial or Incomplete`
+  - `Final — Professional Declaration Signed`
+
+#### Final Export Requirements
+* Final documents can only be exported when:
+  - Required CP&F fields are completed
+  - Research sources linked for controlling evidence
+  - QC Dashboard shows PASS or has **documented justification**
+  - Immutable Audit Trail export exists
+
+#### Forced Override (When User Chooses to Proceed)
+* If user forces a decision using questionable or failed geometry:
+  - Require **written justification**
+  - Attach justification to:
+    * Evidence
+    * Stakeout
+    * QC Summary
+    * Audit Trail
+  - Marks must display a risk flag for that corner/project.
+
+**Draft exports** are **always allowed**, automatically marked as not for recordation.
+
+---
+
+### 9.3 Competency Coach — **Training-on-Demand**
+
+> **Goal:** Teach the “why” behind requirements instead of blocking work.
+
+* When a user repeatedly commits the same professional deficiency:
+  - Trigger a short **micro-lesson** containing:
+    * Idaho-based legal/standard rule citation
+    * Brief best-practice description (≤2 min)
+    * Quick 2–3 question acknowledgment (not graded)
+
+* All lessons and acknowledgments must be saved in a **Training Log**.
+
+* Training Log must export & integrate with:
+  - Audit Trail
+  - QC Summary (optional appendix)
+  - Final Smart Pack (optional)
+
+This protects surveyors professionally by documenting due diligence.
+
+---
+
+### 9.4 Professional Accountability — **Final-Only Declarations**
+
+> **Goal:** Align the software with real Idaho ethical and legal practices.
+
+* Before final export, require the surveyor to complete a **Digital Professional Declaration**:
+
+  > “I affirm this work is prepared under my direction, complies with applicable surveying standards and Idaho law, and is suitable for filing or reliance.”
+
+* Store the declaration and:
+  - Name
+  - Idaho PLS License #
+  - Firm (if applicable)
+  - Signed date/time
+  - Project revision ID
+  - Audit checksum reference
+
+* Highlight **High-Risk Corners** when:
+  - Evidence is missing photos
+  - CP&F ties are insufficient
+  - Corner relies on lost/proportionate restoration without research linkage
+  - QC failed and was overridden
+
+* Display high-risk flags:
+  - In Evidence list
+  - On Chain of Evidence report
+  - In CP&F preview
+  - In Smart Pack
+
+---
+
+### 9.5 Draft Labeling, Progress Transparency & Watermarks
+
+> **Goal:** Preserve field flexibility and accountability.
+
+* Every evidence, traverse, stakeout, record, and document must track a `status`:
+  - `Draft`
+  - `In Progress`
+  - `Ready for Review`
+  - `Final`
+
+* All draft or incomplete exports must be visually marked:
+  - Watermark: **“PRELIMINARY — NOT FOR RECORDATION”**
+  - Footer note:
+    > “Incomplete — subject to revision.”
+
+* CP&F exports must automatically enforce:
+  - If any required fields are missing → **stamp as Preliminary**
+
+* Smart Pack must include status labels for every included document.
+
+---
+
+### 9.6 Interface Constraints & Professional Tone
+
+> **Goal:** Direct and firm guidance consistent with Marks’ persona.
+
+* Critical warnings must:
+  - Require explicit acknowledgment
+  - Provide statute/standards reference
+  - Provide navigation to resolve issue
+
+* Tone requirements:
+  - Direct, factual, polite, uncompromising
+  - No “AI-cute” language
+  - Always cite the principle behind the rule
+
+Example:
+
+> “This corner lacks required witness ties under Idaho CP&F standards. Add two reference ties or mark justification for exemption.”
 
 ---
