@@ -2137,7 +2137,10 @@ export default class AppController {
       createdAt: new Date().toISOString(),
     });
 
+    this.versioningService.touchEntity(entry, { prefix: "evidence" });
+    entry.ties = this.versioningService.touchArray(entry.ties || [], "tie");
     this.cornerEvidenceService.addEntry(entry);
+    this.scheduleSync();
     this.resetEvidenceForm();
     this.renderEvidenceList();
   }
