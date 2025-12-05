@@ -789,26 +789,39 @@ export default class AppController {
         serializedProjects[id] = project.toObject();
       });
 
+      const serializedEvidence =
+        this.cornerEvidenceService.serializeAllEvidence();
+
       this.versioningService.ensureEvidenceMap(
         this.cornerEvidenceService.evidenceByProject
       );
       const response = await this.syncService.sync({
         projects: serializedProjects,
-        evidence: this.cornerEvidenceService.serializeAllEvidence(),
+        evidence: serializedEvidence,
         globalSettings: this.globalSettings,
       });
 
       await this.runUserSafeRefresh(async () => {
         if (response?.projects) {
-          this.projects = this.repository.deserializeProjects(
+          const mergedProjects = this.versioningService.mergeDataset(
+            serializedProjects,
             response.projects
           );
+          this.projects = this.repository.deserializeProjects(mergedProjects);
         }
         if (response?.evidence) {
-          this.cornerEvidenceService.replaceAllEvidence(response.evidence);
+          const mergedEvidence = this.versioningService.mergeDataset(
+            serializedEvidence,
+            response.evidence
+          );
+          this.cornerEvidenceService.replaceAllEvidence(mergedEvidence);
         }
         if (response?.globalSettings) {
-          this.globalSettings = this.mergeGlobalSettings(response.globalSettings);
+          const mergedSettings = this.versioningService.mergeValues(
+            this.globalSettings,
+            response.globalSettings
+          );
+          this.globalSettings = this.mergeGlobalSettings(mergedSettings);
           this.ensureGlobalSettingsMetadata();
           this.globalSettingsService.save(this.globalSettings);
           this.renderGlobalSettings();
@@ -907,13 +920,31 @@ export default class AppController {
         const activeProjectId = this.currentProjectId;
         const activeRecordId = this.currentRecordId;
         if (projects) {
-          this.projects = this.repository.deserializeProjects(projects);
+          const currentProjects = {};
+          Object.entries(this.projects || {}).forEach(([id, project]) => {
+            currentProjects[id] = project.toObject();
+          });
+          const mergedProjects = this.versioningService.mergeDataset(
+            currentProjects,
+            projects
+          );
+          this.projects = this.repository.deserializeProjects(mergedProjects);
         }
         if (evidence) {
-          this.cornerEvidenceService.replaceAllEvidence(evidence);
+          const currentEvidence =
+            this.cornerEvidenceService.serializeAllEvidence();
+          const mergedEvidence = this.versioningService.mergeDataset(
+            currentEvidence,
+            evidence
+          );
+          this.cornerEvidenceService.replaceAllEvidence(mergedEvidence);
         }
         if (globalSettings) {
-          this.globalSettings = this.mergeGlobalSettings(globalSettings);
+          const mergedSettings = this.versioningService.mergeValues(
+            this.globalSettings,
+            globalSettings
+          );
+          this.globalSettings = this.mergeGlobalSettings(mergedSettings);
           this.ensureGlobalSettingsMetadata();
           this.globalSettingsService.save(this.globalSettings);
           this.renderGlobalSettings();
