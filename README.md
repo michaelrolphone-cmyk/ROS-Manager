@@ -24,6 +24,11 @@ An offline, browser-based workspace that keeps traverse drafting, monument evide
 - **Global Settings** – Manage reusable equipment names, team members, and point codes, and download or import a single backup file covering all projects and settings.【F:index.html†L1128-L1216】
 - **Help** – In-app reader that pulls instructions straight from `HELP.md` so the guide matches the version shipped with the app.【F:index.html†L1213-L1233】【F:js/controllers/AppController.js†L1413-L1487】
 
+## Running with Node.js / Deploying to Heroku
+- Install Node.js 18 or later.
+- Start the static server locally with `npm start`, then open `http://localhost:3000`.
+- Deploy to Heroku by creating an app in your Heroku account, pushing this repository, and ensuring the Node buildpack is enabled. The included `Procfile` starts the app with `web: node server.js`, which serves the bundled `index.html` and its assets.
+
 ## Tips
 - Use clear project and record names so dropdowns and previews stay readable.
 - Traverse Builder, Evidence Records, Point Files, Leveling, and Navigation all share the same project context.
