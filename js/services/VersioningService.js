@@ -68,6 +68,23 @@ export default class VersioningService {
       "bookmark",
       timestamp
     );
+    if (project.navigationTarget) {
+      this.touchEntity(project.navigationTarget, {
+        prefix: "navigation",
+        timestamp,
+      });
+    }
+    if (project.localization) {
+      this.touchEntity(project.localization, {
+        prefix: "localization",
+        timestamp,
+      });
+      project.localization.points = this.touchArray(
+        project.localization.points || [],
+        "localizedPoint",
+        timestamp
+      );
+    }
     return project;
   }
 
@@ -96,6 +113,16 @@ export default class VersioningService {
       project.navigationBookmarks || [],
       "bookmark"
     );
+    if (project.navigationTarget) {
+      this.ensureEntity(project.navigationTarget, { prefix: "navigation" });
+    }
+    if (project.localization) {
+      this.ensureEntity(project.localization, { prefix: "localization" });
+      project.localization.points = this.ensureArray(
+        project.localization.points || [],
+        "localizedPoint"
+      );
+    }
     return project;
   }
 

@@ -101,6 +101,7 @@ export default class AppController {
         this.currentProjectId
           ? this.projects[this.currentProjectId]?.equipmentLogs || []
           : [],
+      onTargetChanged: (state) => this.persistNavigationTarget(state),
     });
     this.levelingController = new LevelingController({
       elements: {
@@ -2728,6 +2729,34 @@ export default class AppController {
     this.navigationController.applyEquipmentTarget(id);
     this.switchTab("navigationSection");
     this.elements.navigationSection?.scrollIntoView({ behavior: "smooth" });
+  }
+
+  persistNavigationTarget(state = {}) {
+    const project = this.currentProjectId
+      ? this.projects[this.currentProjectId]
+      : null;
+    if (!project) return;
+
+    const previous = project.navigationTarget || {};
+    const timestamp = new Date().toISOString();
+    const coords = state.coords;
+    const sanitizedCoords =
+      coords &&
+      typeof coords.lat === "number" &&
+      typeof coords.lon === "number"
+        ? { lat: coords.lat, lon: coords.lon }
+        : null;
+
+    project.navigationTarget = {
+      type: state.type || null,
+      id: state.id || null,
+      label: state.label || "",
+      value: state.value || "",
+      coords: sanitizedCoords,
+      updatedAt: timestamp,
+      version: (previous.version ?? 0) + 1,
+    };
+    this.saveProjects();
   }
 
   startEditingEquipmentEntry(id) {
