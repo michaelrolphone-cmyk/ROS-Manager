@@ -43,6 +43,34 @@ const compareVersioned = (left, right) => {
   return (left.version ?? 0) > (right.version ?? 0) ? left : right;
 };
 
+const mergeVersionedObjects = (base = {}, incoming = {}) => {
+  if (!base) return incoming;
+  if (!incoming) return base;
+
+  const resolvedMeta = compareVersioned(base, incoming);
+  const merged = { ...base };
+  const keys = new Set([
+    ...Object.keys(base || {}),
+    ...Object.keys(incoming || {}),
+  ]);
+
+  keys.forEach((key) => {
+    if (["version", "updatedAt", "createdAt", "id"].includes(key)) {
+      return;
+    }
+    merged[key] = mergeValues(base ? base[key] : undefined, incoming[key]);
+  });
+
+  if (resolvedMeta?.version !== undefined) merged.version = resolvedMeta.version;
+  if (resolvedMeta?.updatedAt !== undefined)
+    merged.updatedAt = resolvedMeta.updatedAt;
+  if (resolvedMeta?.createdAt && !merged.createdAt)
+    merged.createdAt = resolvedMeta.createdAt;
+  if (resolvedMeta?.id && !merged.id) merged.id = resolvedMeta.id;
+
+  return merged;
+};
+
 const mergeArrays = (base = [], incoming = []) => {
   const map = new Map();
   (base || []).forEach((item) => {
@@ -60,6 +88,9 @@ const mergeArrays = (base = [], incoming = []) => {
 };
 
 const mergeValues = (base, incoming) => {
+  if (isVersioned(base) && isVersioned(incoming)) {
+    return mergeVersionedObjects(base, incoming);
+  }
   if (isVersioned(base) || isVersioned(incoming)) {
     return compareVersioned(base, incoming);
   }

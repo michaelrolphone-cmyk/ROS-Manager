@@ -194,6 +194,45 @@ describe("VersioningService", () => {
     assert.ok(touched.records.start.updatedAt);
     assert.ok(touched.pointFiles[0].points[0].version >= 2);
   });
+
+  it("deep merges versioned objects instead of replacing entire project trees", () => {
+    const svc = new VersioningService();
+    const stored = {
+      "project-1": {
+        id: "project-1",
+        version: 5,
+        updatedAt: "2024-06-01T00:00:00.000Z",
+        name: "Stored Name",
+        description: "Kept description",
+        records: {
+          a: {
+            id: "a",
+            version: 3,
+            updatedAt: "2024-06-01T00:00:00.000Z",
+            name: "Fresh record change",
+          },
+        },
+      },
+    };
+
+    const incoming = {
+      "project-1": {
+        id: "project-1",
+        version: 6,
+        updatedAt: "2024-06-02T00:00:00.000Z",
+        name: "Incoming Name",
+        records: {},
+      },
+    };
+
+    const merged = svc.mergeDataset(stored, incoming);
+
+    assert.equal(merged["project-1"].version, 6);
+    assert.equal(merged["project-1"].name, "Incoming Name");
+    assert.equal(merged["project-1"].description, "Kept description");
+    assert.ok(merged["project-1"].records.a);
+    assert.equal(merged["project-1"].records.a.name, "Fresh record change");
+  });
 });
 
 describe("CornerEvidenceService", () => {
