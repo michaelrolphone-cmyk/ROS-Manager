@@ -263,17 +263,43 @@ export default class LevelingController {
         <td><input name="backsight" type="number" step="0.0001" value="${entry.backsight || ""}" /></td>
         <td><input name="foresight" type="number" step="0.0001" value="${entry.foresight || ""}" /></td>
         <td class="notes-cell notes-desktop">${noteInput}</td>
-        <td class="computed">${this.formatLevelNumber(entry.riseFall)}</td>
-        <td class="computed">${this.formatLevelNumber(entry.elevation)}</td>
-        <td class="computed">${this.formatLevelNumber(entry.sumBs)}</td>
-        <td class="computed">${this.formatLevelNumber(entry.sumFs)}</td>
-        <td class="computed">${this.formatLevelNumber(entry.closure)}</td>
+        <td class="computed computed-desktop">${this.formatLevelNumber(entry.riseFall)}</td>
+        <td class="computed computed-desktop">${this.formatLevelNumber(entry.elevation)}</td>
+        <td class="computed computed-desktop">${this.formatLevelNumber(entry.sumBs)}</td>
+        <td class="computed computed-desktop">${this.formatLevelNumber(entry.sumFs)}</td>
+        <td class="computed computed-desktop">${this.formatLevelNumber(entry.closure)}</td>
         <td class="row-actions"><button type="button" data-action="delete-level-entry" class="danger">×</button></td>
       </tr>
       <tr class="level-row note-mobile-row" data-entry-id="${entry.id}">
         <td colspan="10">
           <label class="note-mobile-label">Description / note</label>
           ${noteInput}
+        </td>
+      </tr>
+      <tr class="level-row computed-mobile-row" data-entry-id="${entry.id}">
+        <td colspan="10">
+          <div class="computed-mobile-grid">
+            <div>
+              <span class="computed-mobile-label">Rise / Fall</span>
+              <span class="computed computed-mobile-value" data-field="riseFall">${this.formatLevelNumber(entry.riseFall)}</span>
+            </div>
+            <div>
+              <span class="computed-mobile-label">Elevation</span>
+              <span class="computed computed-mobile-value" data-field="elevation">${this.formatLevelNumber(entry.elevation)}</span>
+            </div>
+            <div>
+              <span class="computed-mobile-label">ΣBS</span>
+              <span class="computed computed-mobile-value" data-field="sumBs">${this.formatLevelNumber(entry.sumBs)}</span>
+            </div>
+            <div>
+              <span class="computed-mobile-label">ΣFS</span>
+              <span class="computed computed-mobile-value" data-field="sumFs">${this.formatLevelNumber(entry.sumFs)}</span>
+            </div>
+            <div>
+              <span class="computed-mobile-label">Closure</span>
+              <span class="computed computed-mobile-value" data-field="closure">${this.formatLevelNumber(entry.closure)}</span>
+            </div>
+          </div>
         </td>
       </tr>`;
     });
@@ -335,6 +361,27 @@ export default class LevelingController {
         if (sumFsEl) sumFsEl.textContent = this.formatLevelNumber(entryStats.sumFs);
         if (closureEl)
           closureEl.textContent = this.formatLevelNumber(entryStats.closure);
+
+        const mobileComputed = rowEl.querySelectorAll(
+          ".computed-mobile-value"
+        );
+        mobileComputed.forEach((el) => {
+          const field = el.dataset.field;
+          const value =
+            field === "riseFall"
+              ? entryStats.riseFall
+              : field === "elevation"
+                ? entryStats.elevation
+                : field === "sumBs"
+                  ? entryStats.sumBs
+                  : field === "sumFs"
+                    ? entryStats.sumFs
+                    : field === "closure"
+                      ? entryStats.closure
+                      : null;
+
+          el.textContent = this.formatLevelNumber(value);
+        });
       });
     });
 
