@@ -3491,11 +3491,9 @@ export default class AppController {
         c instanceof TraverseInstruction
           ? c
           : TraverseInstruction.fromObject(c);
-      if (
-        normalized.bearing ||
-        normalized.distance ||
-        (normalized.branches || []).length
-      ) {
+      const hasBranch = (normalized.branches || []).length > 0;
+      const isCurve = this.callIsCurve(normalized);
+      if (normalized.bearing || normalized.distance || hasBranch || isCurve) {
         calls.push(normalized);
       }
     });
