@@ -2731,6 +2731,103 @@ export default class AppController {
       this.saveCurrentRecord();
       this.generateCommands();
     });
+
+    const curveRow = document.createElement("div");
+    curveRow.className = "curve-row";
+
+    const curveDirectionSelect = document.createElement("select");
+    curveDirectionSelect.className = "curve-direction";
+    [
+      { value: "", label: "Straight segment" },
+      { value: "right", label: "Curve right" },
+      { value: "left", label: "Curve left" },
+    ].forEach(({ value, label }) => {
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = label;
+      if ((callData.curveDirection || "").toLowerCase() === value)
+        opt.selected = true;
+      curveDirectionSelect.appendChild(opt);
+    });
+    curveDirectionSelect.addEventListener("change", () => {
+      this.saveCurrentRecord();
+      this.generateCommands();
+    });
+
+    const curveRadiusInput = document.createElement("input");
+    curveRadiusInput.type = "number";
+    curveRadiusInput.step = "any";
+    curveRadiusInput.className = "curve-radius";
+    curveRadiusInput.placeholder = "Radius";
+    curveRadiusInput.value = callData.curveRadius || "";
+    curveRadiusInput.addEventListener("input", () => {
+      this.saveCurrentRecord();
+      this.generateCommands();
+    });
+
+    const curveArcLengthInput = document.createElement("input");
+    curveArcLengthInput.type = "number";
+    curveArcLengthInput.step = "any";
+    curveArcLengthInput.className = "curve-arc-length";
+    curveArcLengthInput.placeholder = "Arc length";
+    curveArcLengthInput.value = callData.curveArcLength || "";
+    curveArcLengthInput.addEventListener("input", () => {
+      this.saveCurrentRecord();
+      this.generateCommands();
+    });
+
+    const curveChordLengthInput = document.createElement("input");
+    curveChordLengthInput.type = "number";
+    curveChordLengthInput.step = "any";
+    curveChordLengthInput.className = "curve-chord-length";
+    curveChordLengthInput.placeholder = "Chord length";
+    curveChordLengthInput.value = callData.curveChordLength || "";
+    curveChordLengthInput.addEventListener("input", () => {
+      this.saveCurrentRecord();
+      this.generateCommands();
+    });
+
+    const curveChordBearingInput = document.createElement("input");
+    curveChordBearingInput.type = "text";
+    curveChordBearingInput.className = "curve-chord-bearing";
+    curveChordBearingInput.placeholder = "Chord bearing";
+    curveChordBearingInput.value = callData.curveChordBearing || "";
+    curveChordBearingInput.addEventListener("input", () => {
+      this.saveCurrentRecord();
+      this.generateCommands();
+    });
+
+    const curveDeltaAngleInput = document.createElement("input");
+    curveDeltaAngleInput.type = "number";
+    curveDeltaAngleInput.step = "any";
+    curveDeltaAngleInput.className = "curve-delta-angle";
+    curveDeltaAngleInput.placeholder = "Delta angle";
+    curveDeltaAngleInput.value = callData.curveDeltaAngle || "";
+    curveDeltaAngleInput.addEventListener("input", () => {
+      this.saveCurrentRecord();
+      this.generateCommands();
+    });
+
+    const curveTangentInput = document.createElement("input");
+    curveTangentInput.type = "number";
+    curveTangentInput.step = "any";
+    curveTangentInput.className = "curve-tangent";
+    curveTangentInput.placeholder = "Tangent";
+    curveTangentInput.value = callData.curveTangent || "";
+    curveTangentInput.addEventListener("input", () => {
+      this.saveCurrentRecord();
+      this.generateCommands();
+    });
+
+    curveRow.append(
+      curveDirectionSelect,
+      curveRadiusInput,
+      curveArcLengthInput,
+      curveChordLengthInput,
+      curveChordBearingInput,
+      curveDeltaAngleInput,
+      curveTangentInput
+    );
     const rowControls = document.createElement("div");
     rowControls.className = "row-controls";
 
@@ -2770,7 +2867,7 @@ export default class AppController {
 
     const branchContainer = document.createElement("div");
     branchContainer.className = "branch-container";
-    distTd.appendChild(branchContainer);
+    distTd.append(curveRow, branchContainer);
 
     tr.append(numTd, bearingTd, distTd);
     tbody.appendChild(tr);
@@ -2901,6 +2998,20 @@ export default class AppController {
     rows.forEach((tr) => {
       const bearing = tr.querySelector(".bearing")?.value?.trim() || "";
       const distance = tr.querySelector(".distance")?.value?.trim() || "";
+      const curveRadius =
+        tr.querySelector(".curve-radius")?.value?.trim() || "";
+      const curveDirection =
+        tr.querySelector(".curve-direction")?.value?.trim() || "";
+      const curveArcLength =
+        tr.querySelector(".curve-arc-length")?.value?.trim() || "";
+      const curveChordLength =
+        tr.querySelector(".curve-chord-length")?.value?.trim() || "";
+      const curveChordBearing =
+        tr.querySelector(".curve-chord-bearing")?.value?.trim() || "";
+      const curveDeltaAngle =
+        tr.querySelector(".curve-delta-angle")?.value?.trim() || "";
+      const curveTangent =
+        tr.querySelector(".curve-tangent")?.value?.trim() || "";
       const branches = [];
       Array.from(tr.querySelectorAll(":scope .branch-section")).forEach(
         (section) => {
@@ -2909,8 +3020,21 @@ export default class AppController {
             branches.push(this.serializeCallsFromContainer(branchBody));
         }
       );
-      if (bearing || distance || branches.length) {
-        calls.push(new TraverseInstruction(bearing, distance, branches));
+      if (bearing || distance || curveRadius || branches.length) {
+        calls.push(
+          new TraverseInstruction(
+            bearing,
+            distance,
+            branches,
+            curveRadius,
+            curveDirection,
+            curveArcLength,
+            curveChordLength,
+            curveChordBearing,
+            curveDeltaAngle,
+            curveTangent
+          )
+        );
       }
     });
 
@@ -2956,6 +3080,185 @@ export default class AppController {
 
     const angleDegrees = d + m / 60 + sec / 3600;
     return { quadrant, formatted, angleDegrees };
+  }
+
+  callIsCurve(call) {
+    return !!this.computeCurveMetrics(call);
+  }
+
+  computeCurveMetrics(call, startAzimuth = 0) {
+    if (!call) return null;
+    const radius = parseFloat(call.curveRadius);
+    const direction = (call.curveDirection || "").toLowerCase();
+    if (!Number.isFinite(radius) || radius <= 0) return null;
+    const dirSign = direction === "right" ? 1 : direction === "left" ? -1 : 0;
+    if (dirSign === 0) return null;
+
+    const arcLengthInput = parseFloat(call.curveArcLength || call.distance);
+    const chordLengthInput = parseFloat(call.curveChordLength);
+    const deltaAngleInput = parseFloat(call.curveDeltaAngle);
+    const tangentInput = parseFloat(call.curveTangent);
+
+    let deltaDeg = Number.isFinite(deltaAngleInput)
+      ? Math.abs(deltaAngleInput)
+      : NaN;
+    if (!Number.isFinite(deltaDeg)) {
+      if (Number.isFinite(arcLengthInput)) {
+        deltaDeg = Math.abs((arcLengthInput / radius) * (180 / Math.PI));
+      } else if (Number.isFinite(chordLengthInput)) {
+        deltaDeg = Math.abs(
+          (2 * Math.asin(chordLengthInput / (2 * radius)) * 180) / Math.PI
+        );
+      } else if (Number.isFinite(tangentInput)) {
+        deltaDeg = Math.abs((2 * Math.atan(tangentInput / radius) * 180) / Math.PI);
+      }
+    }
+
+    if (!Number.isFinite(deltaDeg) || deltaDeg <= 0) return null;
+    const deltaRad = (deltaDeg * Math.PI) / 180;
+    const arcLength = Number.isFinite(arcLengthInput)
+      ? Math.abs(arcLengthInput)
+      : radius * deltaRad;
+    const chordLength = Number.isFinite(chordLengthInput)
+      ? Math.abs(chordLengthInput)
+      : 2 * radius * Math.sin(deltaRad / 2);
+    const tangentLength = Number.isFinite(tangentInput)
+      ? Math.abs(tangentInput)
+      : radius * Math.tan(deltaRad / 2);
+
+    let chordBearingAzimuth = null;
+    if (call.curveChordBearing) {
+      try {
+        const parsed = this.parseBearing(call.curveChordBearing);
+        if (parsed) chordBearingAzimuth = this.bearingToAzimuth(parsed);
+      } catch (e) {
+        chordBearingAzimuth = null;
+      }
+    }
+    if (!Number.isFinite(chordBearingAzimuth)) {
+      chordBearingAzimuth = this.normalizeAzimuth(
+        (startAzimuth || 0) + dirSign * (deltaDeg / 2)
+      );
+    }
+
+    const endAzimuth = this.normalizeAzimuth((startAzimuth || 0) + dirSign * deltaDeg);
+
+    return {
+      radius,
+      direction,
+      deltaDegrees: deltaDeg,
+      deltaSign: dirSign,
+      deltaRad,
+      arcLength,
+      chordLength,
+      tangentLength,
+      chordBearingAzimuth,
+      endAzimuth,
+    };
+  }
+
+  normalizeAzimuth(azimuth = 0) {
+    let az = azimuth % 360;
+    if (az < 0) az += 360;
+    return az;
+  }
+
+  bearingToAzimuth(parsed) {
+    if (!parsed) return 0;
+    const angle = parsed.angleDegrees || 0;
+    switch (parsed.quadrant) {
+      case 1:
+        return angle;
+      case 2:
+        return 180 - angle;
+      case 3:
+        return 180 + angle;
+      case 4:
+        return 360 - angle;
+      default:
+        return angle;
+    }
+  }
+
+  formatAngleForQuadrant(angleDegrees = 0) {
+    const normalized = Math.max(0, Math.min(90, angleDegrees));
+    let d = Math.floor(normalized);
+    let remainder = (normalized - d) * 60;
+    let m = Math.floor(remainder);
+    let s = Math.round((remainder - m) * 60);
+
+    if (s === 60) {
+      s = 0;
+      m += 1;
+    }
+    if (m === 60) {
+      m = 0;
+      d += 1;
+    }
+
+    const mmss = `${("00" + m).slice(-2)}${("00" + s).slice(-2)}`;
+    return `${d}.${mmss}`;
+  }
+
+  azimuthToQuadrantBearing(azimuth = 0) {
+    const az = this.normalizeAzimuth(azimuth);
+    let quadrant = 1;
+    let angle = az;
+    if (az > 90 && az < 180) {
+      quadrant = 2;
+      angle = 180 - az;
+    } else if (az >= 180 && az < 270) {
+      quadrant = 3;
+      angle = az - 180;
+    } else if (az >= 270) {
+      quadrant = 4;
+      angle = 360 - az;
+    }
+
+    return { quadrant, formatted: this.formatAngleForQuadrant(angle) };
+  }
+
+  buildCallSegments(call, startAzimuth = 0, metrics = null) {
+    const distance = parseFloat(call?.distance) || 0;
+    const curveMetrics = metrics || this.computeCurveMetrics(call, startAzimuth);
+
+    if (!curveMetrics) {
+      return {
+        segments: [
+          {
+            distance,
+            azimuth: this.normalizeAzimuth(startAzimuth),
+            isCurve: false,
+          },
+        ],
+        endAzimuth: this.normalizeAzimuth(startAzimuth),
+      };
+    }
+
+    const segmentCount = Math.max(
+      4,
+      Math.ceil(Math.abs(curveMetrics.deltaDegrees) / 15)
+    );
+    const segmentDeltaDeg =
+      curveMetrics.deltaSign *
+      (Math.abs(curveMetrics.deltaDegrees) / segmentCount);
+
+    const segments = [];
+    let currentAz = this.normalizeAzimuth(startAzimuth);
+    for (let i = 0; i < segmentCount; i++) {
+      const chordAz = this.normalizeAzimuth(currentAz + segmentDeltaDeg / 2);
+      const chordLength =
+        2 * curveMetrics.radius *
+        Math.sin((Math.abs(segmentDeltaDeg) * Math.PI) / 360);
+      segments.push({
+        distance: chordLength,
+        azimuth: chordAz,
+        isCurve: true,
+      });
+      currentAz = this.normalizeAzimuth(currentAz + segmentDeltaDeg);
+    }
+
+    return { segments, endAzimuth: currentAz };
   }
 
   getAllCalls(record) {
@@ -3107,39 +3410,35 @@ export default class AppController {
           parsed = null;
         }
         if (!parsed) return;
-        const dist = parseFloat(call.distance) || 0;
-        const theta = ((parsed.angleDegrees || 0) * Math.PI) / 180;
-        const sinT = Math.sin(theta);
-        const cosT = Math.cos(theta);
 
-        let dE = 0;
-        let dN = 0;
-        switch (parsed.quadrant) {
-          case 1:
-            dE = dist * sinT;
-            dN = dist * cosT;
-            break;
-          case 2:
-            dE = dist * sinT;
-            dN = -dist * cosT;
-            break;
-          case 3:
-            dE = -dist * sinT;
-            dN = -dist * cosT;
-            break;
-          case 4:
-            dE = -dist * sinT;
-            dN = dist * cosT;
-            break;
-        }
+        const startAzimuth = this.bearingToAzimuth(parsed);
+        const curveMetrics = this.computeCurveMetrics(call, startAzimuth);
+        const { segments } = this.buildCallSegments(
+          call,
+          startAzimuth,
+          curveMetrics
+        );
+        if (!segments || segments.length === 0) return;
 
-        const nextPoint = {
-          x: current.x + dE,
-          y: current.y + dN,
-          pointNumber: ++counter.value,
-        };
-        points.push(nextPoint);
-        polyline.push(nextPoint);
+        segments.forEach((segment, idx) => {
+          const azRad = (segment.azimuth * Math.PI) / 180;
+          const dE = segment.distance * Math.sin(azRad);
+          const dN = segment.distance * Math.cos(azRad);
+
+          const intermediate = {
+            x: current.x + dE,
+            y: current.y + dN,
+          };
+          const isLast = idx === segments.length - 1;
+          const pointToStore = isLast
+            ? { ...intermediate, pointNumber: ++counter.value }
+            : intermediate;
+          if (isLast) points.push(pointToStore);
+          polyline.push(pointToStore);
+          current = pointToStore;
+        });
+
+        const nextPoint = current;
         pathCalls.push(call);
 
         (call.branches || []).forEach((branch) => {
@@ -3148,8 +3447,6 @@ export default class AppController {
           polylines.push(branchResult.polyline);
           paths.push(branchResult.path);
         });
-
-        current = nextPoint;
       });
 
       return {
@@ -3772,10 +4069,42 @@ export default class AppController {
               parsed = null;
             }
             if (!parsed) return;
-            drawPointsText += `${parsed.quadrant}\n`;
-            drawPointsText += `${parsed.formatted}\n`;
-            drawPointsText += `${call.distance}\n`;
-            drawPointsText += "0\n";
+
+            const startAzimuth = this.bearingToAzimuth(parsed);
+            const curveMetrics = this.computeCurveMetrics(call, startAzimuth);
+            const { segments } = this.buildCallSegments(
+              call,
+              startAzimuth,
+              curveMetrics
+            );
+            if (!segments || segments.length === 0) return;
+
+            if (curveMetrics) {
+              const chordBearing =
+                this.azimuthToQuadrantBearing(curveMetrics.chordBearingAzimuth) || {};
+              const chordBearingLabel = chordBearing.quadrant
+                ? `${chordBearing.quadrant}-${chordBearing.formatted}`
+                : "";
+              drawPointsText += `; Curve ${
+                call.curveDirection || ""
+              } R=${call.curveRadius || ""} Δ=${curveMetrics.deltaDegrees
+                .toFixed(2)
+                .replace(/\.00$/, "")}° Arc=${curveMetrics.arcLength
+                .toFixed(2)
+                .replace(/\.00$/, "")} Ch=${curveMetrics.chordLength
+                .toFixed(2)
+                .replace(/\.00$/, "")} Tan=${curveMetrics.tangentLength
+                .toFixed(2)
+                .replace(/\.00$/, "")} CB=${chordBearingLabel}\n`;
+            }
+
+            segments.forEach((segment) => {
+              const bearing = this.azimuthToQuadrantBearing(segment.azimuth);
+              drawPointsText += `${bearing.quadrant}\n`;
+              drawPointsText += `${bearing.formatted}\n`;
+              drawPointsText += `${segment.distance.toFixed(2)}\n`;
+              drawPointsText += "0\n";
+            });
           });
           drawPointsText += "E\n\n";
         });
@@ -3801,12 +4130,44 @@ export default class AppController {
               parsed = null;
             }
             if (!parsed) return;
-            drawLinesText += "D\n";
-            drawLinesText += "F\n";
-            drawLinesText += `${call.distance}\n`;
-            drawLinesText += "A\n";
-            drawLinesText += `${parsed.quadrant}\n`;
-            drawLinesText += `${parsed.formatted}\n`;
+
+            const startAzimuth = this.bearingToAzimuth(parsed);
+            const curveMetrics = this.computeCurveMetrics(call, startAzimuth);
+            const { segments } = this.buildCallSegments(
+              call,
+              startAzimuth,
+              curveMetrics
+            );
+            if (!segments || segments.length === 0) return;
+
+            if (curveMetrics) {
+              const chordBearing =
+                this.azimuthToQuadrantBearing(curveMetrics.chordBearingAzimuth) || {};
+              const chordBearingLabel = chordBearing.quadrant
+                ? `${chordBearing.quadrant}-${chordBearing.formatted}`
+                : "";
+              drawLinesText += `; Arc ${
+                call.curveDirection || ""
+              } R=${call.curveRadius || ""} Δ=${curveMetrics.deltaDegrees
+                .toFixed(2)
+                .replace(/\.00$/, "")}° Arc=${curveMetrics.arcLength
+                .toFixed(2)
+                .replace(/\.00$/, "")} Ch=${curveMetrics.chordLength
+                .toFixed(2)
+                .replace(/\.00$/, "")} Tan=${curveMetrics.tangentLength
+                .toFixed(2)
+                .replace(/\.00$/, "")} CB=${chordBearingLabel}\n`;
+            }
+
+            segments.forEach((segment) => {
+              const bearing = this.azimuthToQuadrantBearing(segment.azimuth);
+              drawLinesText += "D\n";
+              drawLinesText += "F\n";
+              drawLinesText += `${segment.distance.toFixed(2)}\n`;
+              drawLinesText += "A\n";
+              drawLinesText += `${bearing.quadrant}\n`;
+              drawLinesText += `${bearing.formatted}\n`;
+            });
           });
           drawLinesText += "Q\n\n";
         });

@@ -646,6 +646,21 @@ body {
         padding: 6px 8px;
       }
 
+      .curve-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 6px;
+        margin-top: 6px;
+      }
+
+      .curve-row input,
+      .curve-row select {
+        width: 100%;
+        box-sizing: border-box;
+        font-size: 0.85rem;
+        padding: 6px 8px;
+      }
+
       .branch-container {
         margin-top: 6px;
         border-left: 2px dashed #cbd5e1;
