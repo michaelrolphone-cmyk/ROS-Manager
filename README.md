@@ -1,60 +1,29 @@
 # Survey Tools Workspace
 
-This offline, browser-based workspace bundles several surveying tools in one place. You can keep corner perpetuation filing drafts, monument field notes, record of survey traversals, and related evidence side by side. Everything runs locally from a single HTML file with data saved in local storage—no servers or build steps required.
+An offline, browser-based workspace that keeps traverse drafting, monument evidence, point files, navigation aids, and equipment records together in one HTML file. Data stays in your browser's local storage—no build steps or servers are required.
+
+## Requirements
+- Modern desktop browser (Chrome, Edge, or Firefox) with local storage enabled.
+- Allow file downloads/uploads for imports, exports, and backups.
+- Optional: grant location access when prompted so GPS features work in Navigation and Equipment Setup.
 
 ## Getting Started
-1. **Open the app**
-   - Launch `index.html` directly in your browser (double-click the file or open it via the browser File > Open dialog). No build step is required.
-2. **Create or load a project**
-   - Use **+ New Project** or the project name input to start a project. Projects and their records are saved automatically in your browser.
-   - To reuse previous work, choose **Import** and select a `.json` file exported from the app.
-3. **Switch between tools**
-   - Use the tab buttons to move between Traverse Builder and Evidence Logger while staying inside the same project and dataset.
-4. **Save, export, or remove data**
-   - Data saves automatically. Use **Export Project** or **Export All** for backups, or **Delete Project/Record** to remove items.
+1. **Open the app** – Double-click `index.html` or open it through your browser's File menu.
+2. **Create or load a project** – Use **Create Project** or the project dropdown to start a project. Projects save automatically. Use **Import** to restore a `.json` export.
+3. **Move between tools** – The springboard tiles open Traverse Builder, Points, Leveling, Evidence, Equipment, Navigation, and Settings while staying on the same dataset.
+4. **Back up or clear data** – Export the current project, all projects, or the entire app dataset. Delete projects, records, or point files if you need to start fresh.
 
 ## Tool Overview
-
-### Project & Records
-- **Projects and record sets**
-  - Create, load, and delete named projects with dropdown controls for quick switching.【F:index.html†L720-L808】【F:index.html†L1010-L1053】
-  - Add record sets with starting point details and per-record canvases for at-a-glance previews, whether you are drafting a corner perpetuation filing, capturing monument field notes, or running a record of survey traverse.【F:index.html†L809-L970】【F:index.html†L1172-L1218】
-- **Import/Export**
-  - Export the current project or all projects to JSON and import them later; filenames include sanitized project names where appropriate.【F:index.html†L833-L910】
-
-### Traverse Builder
-- **Traverse authoring**
-  - Define start point coordinates, elevations, backsight azimuths, basis of bearing, and first distance to seed each traverse.【F:index.html†L832-L905】
-  - Add, edit, and reorder calls with live bearing arrows and linked start-from options across records.【F:index.html†L906-L1108】【F:index.html†L1013-L1032】
-- **Visualization and commands**
-  - Render per-record previews plus a project overview canvas that scales and colors each traverse.【F:index.html†L1172-L1218】【F:index.html†L1554-L1699】
-  - Generate Carlson command blocks for creating points, occupying points, drawing points, and drawing lines, with copy-ready text for CAD workflows.【F:index.html†L760-L828】【F:index.html†L1869-L1936】
-
-### Evidence Logger
-- **Linked evidence capture**
-  - Select a record and traverse point to attach evidence directly to generated geometry—useful for monument notes, corner perpetuation narratives, or general field ties.【F:index.html†L958-L985】【F:index.html†L1800-L1817】
-- **Monument details and condition**
-  - Track evidence type and condition with structured dropdowns for consistent reporting.【F:index.html†L986-L1028】
-- **Consistent styling**
-  - Evidence inputs, dropdowns, and record selectors now mirror Traverse Builder styling with thumbnail previews for each record.【F:index.html†L960-L987】【F:index.html†L1010-L1037】
-- **Notes and witness ties**
-  - Record narrative notes plus multiple tie distances, bearings, and descriptions per evidence point.【F:index.html†L1029-L1056】【F:index.html†L1746-L1762】
-- **Media and filings**
-  - Attach multiple photos to each tie and export every corner as a Corner Perpetuation Filing text package alongside JSON backups.【F:index.html†L1038-L1061】【F:js/controllers/AppController.js†L948-L1043】【F:js/controllers/AppController.js†L1045-L1083】
-- **Media and location**
-  - Attach optional photos and capture GPS coordinates when available to enrich field documentation.【F:index.html†L1058-L1084】
-- **Project evidence dashboard**
-  - View a summary of all evidence entries for the active project with quick access to each item.【F:index.html†L1086-L1103】【F:index.html†L1784-L1799】
-
-### Equipment Setup Log
-- **Base station tracking**
-  - Record setup and tear down date/time, base station height, reference point, and crew member for each session.【F:index.html†L1064-L1113】
-- **GPS capture**
-  - Capture the logging device's GPS location with accuracy details to help relocate the base station later.【F:index.html†L1115-L1137】
-- **Per-project log**
-  - Review all saved equipment entries for the active project in a dedicated log view.【F:index.html†L1139-L1146】
+- **Springboard** – Shows project name, contact phone/email, address links, TRS, and the survey scope description. Edit project metadata and jump into any mini app from the tiled launcher.【F:index.html†L75-L220】
+- **Traverse Builder** – Create records of survey traverses with starting coordinates, backsight azimuth, bearings, and distances. Generate Carlson commands, reorder calls, preview canvases, and share traverse geometry with other tools.【F:index.html†L306-L520】【F:index.html†L1172-L1218】
+- **Point File Manager** – Import CSVs, generate point files from traverses, add or edit rows by hand, switch between named point files, and download TXT outputs for data collectors.【F:index.html†L486-L571】
+- **Field Level Book** – Track differential leveling runs with backsight/foresight entries, compute running sums and closure error, and export a PDF of the run.【F:index.html†L572-L684】
+- **Evidence Records** – Attach evidence to traverse points with condition, ties, photos, GPS locations, and exportable corner filings while keeping a project-wide summary.【F:index.html†L684-L839】【F:js/controllers/AppController.js†L948-L1083】
+- **Equipment Setup Log** – Record setup/teardown times, base heights, reference points, crews, equipment used, work notes, and optional GPS position with a list of saved sessions per project.【F:index.html†L839-L937】
+- **Navigation** – Compass and heading tools to walk stakeout targets or equipment bases, with distance, bearing, and offset readouts plus optional map preview when GPS localization is applied.【F:index.html†L938-L1127】
+- **Global Settings** – Manage reusable equipment names, team members, and point codes, and download or import a single backup file covering all projects and settings.【F:index.html†L1128-L1216】
 
 ## Tips
-- Use meaningful project/record names to keep the project and Start From dropdowns readable.
-- Traverse Builder and Evidence Logger share the same dataset, so you can capture evidence immediately after generating traverse points.
-- Export regularly for portable backups of both traverse data and evidence attachments.
+- Use clear project and record names so dropdowns and previews stay readable.
+- Traverse Builder, Evidence Records, Point Files, Leveling, and Navigation all share the same project context.
+- Export projects or the entire app regularly so you have portable backups of field data, photos, and commands.
