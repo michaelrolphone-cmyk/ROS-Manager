@@ -906,6 +906,7 @@ export default class AppController {
   }
 
   scheduleSync() {
+    return;
     if (!navigator.onLine) return;
     if (this.syncPending) {
       clearTimeout(this.syncPending);
