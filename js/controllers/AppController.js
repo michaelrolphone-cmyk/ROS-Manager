@@ -50,6 +50,9 @@ export default class AppController {
     this.helpLoading = false;
     this.liveUpdatesSource = null;
     this.liveUpdateRetry = null;
+    this.syncPending = null;
+    this.syncInProgress = false;
+    this.syncQueued = false;
 
     this.cacheDom();
     this.appLaunchers = document.querySelectorAll(".app-tile");
@@ -700,6 +703,11 @@ export default class AppController {
 
   async syncProjectsWithServer() {
     if (!navigator.onLine) return;
+    if (this.syncInProgress) {
+      this.syncQueued = true;
+      return;
+    }
+    this.syncInProgress = true;
     try {
       const serializedProjects = {};
       Object.entries(this.projects || {}).forEach(([id, project]) => {
@@ -721,7 +729,7 @@ export default class AppController {
       if (response?.evidence) {
         this.cornerEvidenceService.replaceAllEvidence(response.evidence);
       }
-      this.saveProjects({ skipVersionUpdate: true });
+      this.saveProjects({ skipVersionUpdate: true, skipSync: true });
       this.stopLiveUpdates();
       this.startLiveUpdates();
       this.updateProjectList();
@@ -736,6 +744,12 @@ export default class AppController {
       }
     } catch (err) {
       console.warn("Sync failed", err);
+    } finally {
+      this.syncInProgress = false;
+      if (this.syncQueued) {
+        this.syncQueued = false;
+        this.scheduleSync();
+      }
     }
   }
 
@@ -788,11 +802,24 @@ export default class AppController {
     }, 5000);
   }
 
+  scheduleSync() {
+    if (!navigator.onLine) return;
+    if (this.syncPending) {
+      clearTimeout(this.syncPending);
+    }
+    this.syncPending = setTimeout(() => {
+      this.syncPending = null;
+      this.syncProjectsWithServer();
+    }, 500);
+  }
+
   applyLiveDataset(rawData) {
     if (!rawData) return;
     try {
       const dataset = JSON.parse(rawData);
       const { projects, evidence } = dataset || {};
+      const activeProjectId = this.currentProjectId;
+      const activeRecordId = this.currentRecordId;
       if (projects) {
         this.projects = this.repository.deserializeProjects(projects);
       }
@@ -800,14 +827,16 @@ export default class AppController {
         this.cornerEvidenceService.replaceAllEvidence(evidence);
       }
       if (projects || evidence) {
-        this.saveProjects({ skipVersionUpdate: true });
+        this.saveProjects({ skipVersionUpdate: true, skipSync: true });
         this.updateProjectList();
-        if (
-          this.currentProjectId &&
-          this.projects &&
-          this.projects[this.currentProjectId]
-        ) {
-          this.loadProject(this.currentProjectId);
+        if (activeProjectId && this.projects && this.projects[activeProjectId]) {
+          this.loadProject(activeProjectId, { preserveRecord: true });
+          if (
+            activeRecordId &&
+            this.projects[activeProjectId]?.records?.[activeRecordId]
+          ) {
+            this.loadRecord(activeRecordId);
+          }
         }
       }
     } catch (err) {
@@ -816,7 +845,7 @@ export default class AppController {
   }
 
   saveProjects(options = {}) {
-    const { skipVersionUpdate = false } = options;
+    const { skipVersionUpdate = false, skipSync = false } = options;
     if (skipVersionUpdate) {
       Object.entries(this.projects || {}).forEach(([id, project]) =>
         this.versioningService.ensureProjectTree(id, project)
@@ -835,6 +864,9 @@ export default class AppController {
     this.populateLocalizationSelectors();
     this.navigationController?.renderTargetOptions();
     this.renderReferencePointOptions();
+    if (!skipSync) {
+      this.scheduleSync();
+    }
   }
 
   /* ===================== Export / Import ===================== */
@@ -1001,7 +1033,13 @@ export default class AppController {
   }
 
   /* ===================== Projects & Records ===================== */
-  loadProject(id) {
+  loadProject(id, options = {}) {
+    const { preserveRecord = false } = options;
+    const previousRecordId =
+      preserveRecord && this.currentProjectId === id
+        ? this.currentRecordId
+        : null;
+
     if (!id || !this.projects[id]) {
       this.currentProjectId = null;
       this.currentRecordId = null;
@@ -1025,8 +1063,15 @@ export default class AppController {
     }
 
     this.currentProjectId = id;
-    this.currentRecordId = null;
-    this.elements.editor.style.display = "none";
+    const recordExists = Boolean(
+      previousRecordId &&
+        this.projects[id]?.records &&
+        this.projects[id].records[previousRecordId]
+    );
+    this.currentRecordId = recordExists ? previousRecordId : null;
+    if (!this.currentRecordId && this.elements.editor)
+      this.elements.editor.style.display = "none";
+
     this.renderRecordList();
     this.updateProjectList();
     this.drawProjectOverview();
@@ -1042,6 +1087,10 @@ export default class AppController {
     this.updateSpringboardHero();
     this.handleSpringboardScroll();
     this.levelingController?.onProjectChanged();
+
+    if (this.currentRecordId) {
+      this.loadRecord(this.currentRecordId);
+    }
   }
 
   newProject() {
