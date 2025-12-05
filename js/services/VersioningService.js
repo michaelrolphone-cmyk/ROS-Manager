@@ -177,6 +177,38 @@ export default class VersioningService {
       return (left.version ?? 0) > (right.version ?? 0) ? left : right;
     };
 
+    const mergeVersionedObjects = (left, right) => {
+      if (!left) return right;
+      if (!right) return left;
+
+      const resolvedMeta = compareVersioned(left, right);
+      const merged = { ...left };
+      const keys = new Set([
+        ...Object.keys(left || {}),
+        ...Object.keys(right || {}),
+      ]);
+
+      keys.forEach((key) => {
+        if (["version", "updatedAt", "createdAt", "id"].includes(key)) {
+          return;
+        }
+        merged[key] = this.mergeValues(left ? left[key] : undefined, right[key]);
+      });
+
+      if (resolvedMeta?.version !== undefined) merged.version = resolvedMeta.version;
+      if (resolvedMeta?.updatedAt !== undefined)
+        merged.updatedAt = resolvedMeta.updatedAt;
+      if (resolvedMeta?.createdAt && !merged.createdAt)
+        merged.createdAt = resolvedMeta.createdAt;
+      if (resolvedMeta?.id && !merged.id) merged.id = resolvedMeta.id;
+
+      return merged;
+    };
+
+    if (isVersioned(base) && isVersioned(incoming)) {
+      return mergeVersionedObjects(base, incoming);
+    }
+
     if (isVersioned(base) || isVersioned(incoming)) {
       return compareVersioned(base, incoming);
     }
