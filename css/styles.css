@@ -646,6 +646,37 @@ body {
         padding: 6px 8px;
       }
 
+      .branch-container {
+        margin-top: 6px;
+        border-left: 2px dashed #cbd5e1;
+        padding-left: 10px;
+      }
+
+      .branch-section {
+        margin-top: 8px;
+        padding: 8px;
+        border: 1px dashed #cbd5e1;
+        border-radius: 10px;
+        background: #f8fafc;
+      }
+
+      .branch-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+        font-weight: 600;
+        color: #0f172a;
+      }
+
+      .branch-table {
+        background: #fff;
+      }
+
+      .nested-call-row td {
+        background: #f8fafc;
+      }
+
       .footer {
         text-align: center;
         margin-top: 30px;
