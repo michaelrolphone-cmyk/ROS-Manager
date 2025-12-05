@@ -802,16 +802,20 @@ export default class AppController {
       });
 
       await this.runUserSafeRefresh(async () => {
+        const latestProjects = this.serializeProjects();
+        const latestEvidence =
+          this.cornerEvidenceService.serializeAllEvidence();
+
         if (response?.projects) {
           const mergedProjects = this.versioningService.mergeDataset(
-            serializedProjects,
+            latestProjects,
             response.projects
           );
           this.projects = this.repository.deserializeProjects(mergedProjects);
         }
         if (response?.evidence) {
           const mergedEvidence = this.versioningService.mergeDataset(
-            serializedEvidence,
+            latestEvidence,
             response.evidence
           );
           this.cornerEvidenceService.replaceAllEvidence(mergedEvidence);
