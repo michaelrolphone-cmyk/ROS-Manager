@@ -59,7 +59,7 @@ export default class AppController {
     this.syncQueued = false;
     this.userActivityState = {
       active: false,
-      idleDelay: 800,
+      idleDelay: 1800,
       idleTimer: null,
       idleResolver: null,
       idlePromise: null,
