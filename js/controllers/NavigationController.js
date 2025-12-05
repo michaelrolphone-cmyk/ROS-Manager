@@ -7,12 +7,18 @@ export default class NavigationController {
     saveProjects,
     getEquipmentLogs,
     onTargetChanged,
+    getDeviceId,
+    getPeerLocations,
+    onLocationUpdate,
   }) {
     this.elements = elements;
     this.getCurrentProject = getCurrentProject;
     this.saveProjects = saveProjects;
     this.getEquipmentLogs = getEquipmentLogs;
     this.onTargetChanged = onTargetChanged;
+    this.getDeviceId = getDeviceId;
+    this.getPeerLocations = getPeerLocations;
+    this.onLocationUpdate = onLocationUpdate;
 
     this.deviceHeading = null;
     this.travelHeading = null;
@@ -174,6 +180,9 @@ export default class NavigationController {
 
     this.previousPosition = this.currentPosition;
     this.currentPosition = coords;
+    if (typeof this.onLocationUpdate === "function") {
+      this.onLocationUpdate(coords);
+    }
     this.updateNavigationState();
   }
 
@@ -213,17 +222,65 @@ export default class NavigationController {
     ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
     ctx.stroke();
 
-    const heading = this.deviceHeading ?? this.travelHeading ?? 0;
+    const heading = this.deviceHeading ?? this.travelHeading;
+    const normalize = (angle) => ((angle % 360) + 360) % 360;
 
-    this.drawArrow(centerX, centerY, radius * 0.9, 0, "#dc2626", "N");
-    this.drawArrow(centerX, centerY, radius * 0.7, heading, "#2563eb", "You");
+    const peers = typeof this.getPeerLocations === "function"
+      ? this.getPeerLocations() || []
+      : [];
 
-    if (this.targetBearing !== null) {
+    const northAngle = heading !== null ? normalize(-heading) : 0;
+    const youAngle = heading !== null ? 0 : normalize(this.travelHeading ?? 0);
+    const targetAngle = this.targetBearing !== null
+      ? normalize(
+        heading !== null ? this.targetBearing - heading : this.targetBearing
+      )
+      : null;
+
+    const peerAngles = [];
+    if (this.currentPosition && peers.length) {
+      peers.forEach((peer) => {
+        if (!peer || peer.id === this.getDeviceId?.()) return;
+        if (typeof peer.lat !== "number" || typeof peer.lon !== "number") {
+          return;
+        }
+        const bearing = this.bearingBetween(this.currentPosition, peer);
+        const distance = this.distanceFeet(this.currentPosition, peer);
+        const idSuffix = typeof peer.id === "string" ? peer.id.slice(-4) : "";
+        const labelName = peer.teamMember || `User ${idSuffix || ""}`.trim();
+        const angle = heading !== null
+          ? normalize(bearing - heading)
+          : normalize(bearing);
+        peerAngles.push({
+          angle,
+          distance,
+          label: `${labelName} (${distance.toFixed(0)} ft)`,
+        });
+      });
+    }
+
+    this.drawArrow(centerX, centerY, radius * 0.9, northAngle, "#dc2626", "N");
+    this.drawArrow(centerX, centerY, radius * 0.7, youAngle, "#2563eb", "You");
+
+    const peerColors = ["#f59e0b", "#a855f7", "#0ea5e9", "#f97316", "#14b8a6"];
+    peerAngles.forEach((peer, idx) => {
+      const color = peerColors[idx % peerColors.length];
+      this.drawArrow(
+        centerX,
+        centerY,
+        radius * 0.75,
+        peer.angle,
+        color,
+        peer.label
+      );
+    });
+
+    if (targetAngle !== null) {
       this.drawArrow(
         centerX,
         centerY,
         radius * 0.85,
-        this.targetBearing,
+        targetAngle,
         "#16a34a",
         "Target"
       );
