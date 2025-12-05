@@ -3,7 +3,17 @@
 ## Application Framework
 
 * With application synch features, now it is duplicating the traverse bearing and distance entries over and over again even only one user is connected 
-* I would like the help.md refresh button removed. 
+* I would like the help.md refresh button removed.
+* I would like this text replaced with a copyright notice: All data saved locally in your browser • No server • Works offline
+
+## Global Settings
+
+* I would like to be able to edit names, equipment, and point codes.
+* I would like to be able to delete team members, equipmnent, and point codes
+* I would like team members, equipment, and point codes to have a unique identifier attached to them so they can be referenced by ID in other parts of the application code
+* If a member, equipment, or point code is used any where in any data elsewhere in the app and I delete the entry, it should be flagged as archived rather than deleted so that references to it do not break or corupt data sets
+* I would like to be able to specify additional information about equipment such as make and model, url to manuals, notes.
+* I would like to be able to specify the job role, title, contact information, etc for each team member.
 
 ## Project Overview / Spring Board
 
@@ -36,4 +46,9 @@
 * I would like to be able to offset from Center Line of roads and section lines using the (CL, SEC) line codes in a traversal to generate the interor boundary of a subdivision/parcel/lot/property from center lines 
 * I would like to specify the closure point of a traversal and see a report in the overview of a traversal showing the error in closing the boundary if a closure is set.
 
+## Equipment Setup
 
+* I would like the form elements on the equipment setup page to have padding between them so they don't overflow their containers and overlap other form elements as occurs in desktop landscape views for text input fields.
+* I would like base station geolocation used to grab a map tile for its location and show a marker on the tile where the equipment is set up as a thumbnail icon next to the entry in the list of equipment station setups.
+* I wouild like the equipment setup entry to have nicely formatted text so that it is readable and visually appealing, the equipment used should be the largest text with the date / time of setup being secondarily highlighted and description of the work / goal focused below those headings. It should be easy to quickly see what reference point was used and the equipment setup height should be the second most important piece of visual information after the equipment name subheaded by datetime so I can scroll through quickly and see what, when, and how it was configured.
+* I would like equipment setup date time to be visually represented as a css based calendar icon left aligned to the entry showing the month, day, and subtexted with time.
