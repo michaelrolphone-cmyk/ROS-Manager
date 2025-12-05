@@ -515,9 +515,12 @@ export default class AppController {
       });
     });
 
-    this.elements.addCallButton?.addEventListener("click", () =>
-      this.addCallRow()
-    );
+    this.elements.addCallButton?.addEventListener("click", () => {
+      this.addCallRow();
+      this.reindexRows();
+      this.saveCurrentRecord();
+      this.generateCommands();
+    });
 
     this.elements.generateCommandsButton?.addEventListener("click", () =>
       this.generateCommands()
@@ -1169,9 +1172,8 @@ export default class AppController {
 
     const tbody = this.elements.callsTableBody;
     tbody.innerHTML = "";
-    (record.calls || []).forEach((call, i) =>
-      this.addCallRow(call.bearing, call.distance, i + 2)
-    );
+    this.renderCallList(record.calls || [], tbody, 0);
+    this.reindexRows();
 
     this.updateStartFromDropdownUI();
     this.updateAllBearingArrows();
@@ -1191,10 +1193,11 @@ export default class AppController {
     const record = project.records?.[recordId];
     if (!record) return alert("Choose a record to generate points from.");
 
-    const traversePoints = this.computeTraversePointsForRecord(
+    const traverse = this.computeTraversePointsForRecord(
       this.currentProjectId,
       recordId
     );
+    const traversePoints = traverse?.points || [];
     if (!traversePoints.length) {
       alert("No traverse points available for this record.");
       return;
@@ -1207,10 +1210,15 @@ export default class AppController {
       ? `Generated from ${record.name}`
       : "Generated from traverse";
 
-    const points = traversePoints.map(
+    const sortedPoints = [...traversePoints].sort(
+      (a, b) => (a.pointNumber || 0) - (b.pointNumber || 0)
+    );
+
+    const points = sortedPoints.map(
       (pt, idx) =>
         new Point({
-          pointNumber: (baseNumber + idx).toString(),
+          pointNumber:
+            (pt.pointNumber ?? baseNumber + idx).toString() || "",
           x: pt.x?.toString() || "",
           y: pt.y?.toString() || "",
           elevation,
@@ -1597,17 +1605,24 @@ export default class AppController {
     if (!project) return [];
     const record = project.records?.[recordId];
     if (!record) return [];
-    const pts = this.computeTraversePointsForRecord(
+    const traverse = this.computeTraversePointsForRecord(
       this.currentProjectId,
       recordId
     );
+    const pts = traverse?.points || [];
     const startNum = parseInt(record.startPtNum, 10);
     const base = Number.isFinite(startNum) ? startNum : 1;
-    return (pts || []).map((p, idx) => ({
-      index: idx,
-      label: `P${base + idx} (${p.x.toFixed(2)}, ${p.y.toFixed(2)})`,
-      coords: p,
-    }));
+    const sorted = [...pts].sort(
+      (a, b) => (a.pointNumber || 0) - (b.pointNumber || 0)
+    );
+    return sorted.map((p, idx) => {
+      const number = p.pointNumber ?? base + idx;
+      return {
+        index: idx,
+        label: `P${number} (${p.x.toFixed(2)}, ${p.y.toFixed(2)})`,
+        coords: p,
+      };
+    });
   }
 
   async readFilesAsDataUrls(fileList) {
@@ -2551,14 +2566,7 @@ export default class AppController {
     record.basis = this.elements.basis.value.trim();
     record.firstDist = this.elements.firstDist.value.trim();
 
-    record.calls = [];
-    this.elements.callsTableBody.querySelectorAll("tr").forEach((tr) => {
-      const bearing = tr.querySelector(".bearing").value.trim();
-      const dist = tr.querySelector(".distance").value.trim();
-      if (bearing || dist) {
-        record.calls.push(new TraverseInstruction(bearing, dist));
-      }
-    });
+    record.calls = this.serializeCallsFromContainer(this.elements.callsTableBody);
 
     this.saveProjects();
   }
@@ -2574,13 +2582,27 @@ export default class AppController {
   }
 
   /* ===================== Calls table & bearings ===================== */
-  addCallRow(bearing = "", dist = "", num = null) {
-    const tbody = this.elements.callsTableBody;
+  renderCallList(calls = [], container, depth = 0) {
+    (calls || []).forEach((call) => {
+      const row = this.addCallRow(call, container, null, depth);
+      const branchContainer = row.querySelector(".branch-container");
+      (call.branches || []).forEach((branch) => {
+        this.addBranchSection(branchContainer, row, branch, depth + 1);
+      });
+    });
+  }
+
+  addCallRow(callData = {}, container = this.elements.callsTableBody, label = null, depth = 0) {
+    const { bearing = "", distance = "", branches = [] } = callData || {};
+    const tbody = container || this.elements.callsTableBody;
     const tr = document.createElement("tr");
-    const n = num || tbody.children.length + 2;
+    tr.className = "call-row";
+    tr.dataset.depth = depth;
+    if (depth > 0) tr.classList.add("nested-call-row");
 
     const numTd = document.createElement("td");
-    numTd.textContent = n;
+    numTd.className = "call-label";
+    numTd.textContent = label || "";
 
     const bearingTd = document.createElement("td");
     const bearingCell = document.createElement("div");
@@ -2611,7 +2633,7 @@ export default class AppController {
     distanceInput.type = "text";
     distanceInput.className = "distance";
     distanceInput.placeholder = "120.50";
-    distanceInput.value = dist;
+    distanceInput.value = distance;
     distanceInput.addEventListener("input", () => {
       this.saveCurrentRecord();
       this.generateCommands();
@@ -2629,27 +2651,110 @@ export default class AppController {
     moveDown.textContent = "↓";
     moveDown.addEventListener("click", () => this.moveRow(tr, 1));
 
+    const branchButton = document.createElement("button");
+    branchButton.type = "button";
+    branchButton.textContent = "Branch";
+    branchButton.addEventListener("click", () => {
+      this.addBranchSection(
+        tr.querySelector(".branch-container"),
+        tr,
+        [],
+        depth + 1
+      );
+      this.reindexRows();
+      this.saveCurrentRecord();
+      this.generateCommands();
+    });
+
     const remove = document.createElement("button");
     remove.type = "button";
     remove.textContent = "✕";
     remove.addEventListener("click", () => this.removeRow(tr));
 
-    rowControls.append(moveUp, moveDown, remove);
+    rowControls.append(moveUp, moveDown, branchButton, remove);
     distanceRow.append(distanceInput, rowControls);
     distTd.appendChild(distanceRow);
+
+    const branchContainer = document.createElement("div");
+    branchContainer.className = "branch-container";
+    distTd.appendChild(branchContainer);
 
     tr.append(numTd, bearingTd, distTd);
     tbody.appendChild(tr);
 
+    if ((branches || []).length > 0) {
+      branches.forEach((branch) =>
+        this.addBranchSection(branchContainer, tr, branch, depth + 1)
+      );
+    }
+
     this.updateBearingArrow(bearingInput);
+    return tr;
+  }
+
+  addBranchSection(container, parentRow, branchCalls = [], depth = 1) {
+    if (!container) return;
+    const section = document.createElement("div");
+    section.className = "branch-section";
+
+    const header = document.createElement("div");
+    header.className = "branch-header";
+    const labelText =
+      parentRow?.dataset?.callLabel ||
+      parentRow?.querySelector(".call-label")?.textContent ||
+      "";
+    const title = document.createElement("span");
+    title.textContent = labelText
+      ? `Branch from #${labelText}`
+      : "Branch from point";
+
+    const addCallBtn = document.createElement("button");
+    addCallBtn.type = "button";
+    addCallBtn.textContent = "+ Add Branch Call";
+    addCallBtn.addEventListener("click", () => {
+      this.addCallRow({}, branchBody, null, depth);
+      this.reindexRows();
+      this.saveCurrentRecord();
+      this.generateCommands();
+    });
+
+    const removeBranchBtn = document.createElement("button");
+    removeBranchBtn.type = "button";
+    removeBranchBtn.textContent = "Remove Branch";
+    removeBranchBtn.addEventListener("click", () => {
+      section.remove();
+      this.reindexRows();
+      this.saveCurrentRecord();
+      this.generateCommands();
+    });
+
+    header.append(title, addCallBtn, removeBranchBtn);
+
+    const branchTable = document.createElement("table");
+    branchTable.className = "calls-table branch-table";
+    const branchBody = document.createElement("tbody");
+    branchTable.appendChild(branchBody);
+
+    section.append(header, branchTable);
+    container.appendChild(section);
+
+    (branchCalls || []).forEach((call) => {
+      const row = this.addCallRow(call, branchBody, null, depth);
+      (call.branches || []).forEach((sub) =>
+        this.addBranchSection(row.querySelector(".branch-container"), row, sub, depth + 1)
+      );
+    });
   }
 
   moveRow(row, direction) {
-    const tbody = this.elements.callsTableBody;
-    const index = Array.from(tbody.children).indexOf(row);
+    const container = row.closest("tbody") || this.elements.callsTableBody;
+    const rows = Array.from(container.children).filter(
+      (child) => child.tagName === "TR"
+    );
+    const index = rows.indexOf(row);
     const newIndex = index + direction;
-    if (newIndex < 0 || newIndex >= tbody.children.length) return;
-    const reference = tbody.children[newIndex];
+    if (newIndex < 0 || newIndex >= rows.length) return;
+    const reference = rows[newIndex];
     if (direction > 0) {
       reference.after(row);
     } else {
@@ -2668,10 +2773,55 @@ export default class AppController {
   }
 
   reindexRows() {
-    this.elements.callsTableBody.querySelectorAll("tr").forEach((tr, idx) => {
-      const firstCell = tr.querySelector("td");
-      if (firstCell) firstCell.textContent = idx + 2;
+    const assignLabels = (tbody, base) => {
+      if (!tbody) return;
+      const rows = Array.from(tbody.children).filter(
+        (child) => child.tagName === "TR"
+      );
+      rows.forEach((tr, idx) => {
+        const label = typeof base === "number" ? base + idx : `${base}.${idx + 1}`;
+        tr.dataset.callLabel = label;
+        const labelCell = tr.querySelector(".call-label");
+        if (labelCell) labelCell.textContent = label;
+        const branchTitles = Array.from(
+          tr.querySelectorAll(":scope .branch-header span")
+        );
+        branchTitles.forEach((span) => {
+          span.textContent = label ? `Branch from #${label}` : "Branch from point";
+        });
+        const branchSections = Array.from(tr.querySelectorAll(":scope .branch-section"));
+        branchSections.forEach((section) => {
+          const body = section.querySelector("tbody");
+          assignLabels(body, label);
+        });
+      });
+    };
+
+    assignLabels(this.elements.callsTableBody, 2);
+  }
+
+  serializeCallsFromContainer(container) {
+    const tbody = container || this.elements.callsTableBody;
+    const rows = Array.from(tbody.children).filter((c) => c.tagName === "TR");
+    const calls = [];
+
+    rows.forEach((tr) => {
+      const bearing = tr.querySelector(".bearing")?.value?.trim() || "";
+      const distance = tr.querySelector(".distance")?.value?.trim() || "";
+      const branches = [];
+      Array.from(tr.querySelectorAll(":scope .branch-section")).forEach(
+        (section) => {
+          const branchBody = section.querySelector("tbody");
+          if (branchBody)
+            branches.push(this.serializeCallsFromContainer(branchBody));
+        }
+      );
+      if (bearing || distance || branches.length) {
+        calls.push(new TraverseInstruction(bearing, distance, branches));
+      }
     });
+
+    return calls;
   }
 
   parseBearing(bearing) {
@@ -2716,14 +2866,24 @@ export default class AppController {
   }
 
   getAllCalls(record) {
-    const allCalls = [];
+    const calls = [];
     if (record.basis && record.firstDist) {
-      allCalls.push({ bearing: record.basis, distance: record.firstDist });
+      calls.push(new TraverseInstruction(record.basis, record.firstDist));
     }
     (record.calls || []).forEach((c) => {
-      if (c.bearing && c.distance) allCalls.push(c);
+      const normalized =
+        c instanceof TraverseInstruction
+          ? c
+          : TraverseInstruction.fromObject(c);
+      if (
+        normalized.bearing ||
+        normalized.distance ||
+        (normalized.branches || []).length
+      ) {
+        calls.push(normalized);
+      }
     });
-    return allCalls;
+    return calls;
   }
 
   setCommandText(group, text) {
@@ -2771,18 +2931,24 @@ export default class AppController {
     visiting = {}
   ) {
     const project = this.projects[projectId];
-    if (!project) return [];
+    if (!project) return {};
     const records = project.records || {};
     const record = records[recordId];
-    if (!record) return [];
+    if (!record) return {};
 
     if (memo[recordId]) return memo[recordId];
     if (visiting[recordId]) {
       const startE = parseFloat(record.easting) || 0;
       const startN = parseFloat(record.northing) || 0;
-      const pts = [{ x: startE, y: startN }];
-      memo[recordId] = pts;
-      return pts;
+      const startNum = parseInt(record.startPtNum, 10);
+      const startPointNumber = Number.isFinite(startNum) ? startNum : 1;
+      const geometry = {
+        points: [{ x: startE, y: startN, pointNumber: startPointNumber }],
+        polylines: [[{ x: startE, y: startN, pointNumber: startPointNumber }]],
+        paths: [],
+      };
+      memo[recordId] = geometry;
+      return geometry;
     }
     visiting[recordId] = true;
 
@@ -2790,14 +2956,15 @@ export default class AppController {
     let startY;
     const linkId = record.startFromRecordId;
     if (linkId && records[linkId]) {
-      const prevPts = this.computeTraversePointsForRecord(
+      const prev = this.computeTraversePointsForRecord(
         projectId,
         linkId,
         memo,
         visiting
       );
-      if (prevPts && prevPts.length > 0) {
-        const last = prevPts[prevPts.length - 1];
+      const prevMainLine = prev?.polylines?.[0] || prev?.points || [];
+      if (prevMainLine && prevMainLine.length > 0) {
+        const last = prevMainLine[prevMainLine.length - 1];
         startX = last.x;
         startY = last.y;
       }
@@ -2807,56 +2974,117 @@ export default class AppController {
       startY = parseFloat(record.northing) || 0;
     }
 
-    const pts = [{ x: startX, y: startY }];
-    let currentE = startX;
-    let currentN = startY;
-
+    const startNum = parseInt(record.startPtNum, 10);
+    const startPointNumber = Number.isFinite(startNum) ? startNum : 1;
     const allCalls = this.getAllCalls(record);
-    allCalls.forEach((call) => {
-      const parsed = this.parseBearing(call.bearing);
-      if (!parsed) return;
-      const dist = parseFloat(call.distance) || 0;
-      const theta = ((parsed.angleDegrees || 0) * Math.PI) / 180;
-      const sinT = Math.sin(theta);
-      const cosT = Math.cos(theta);
+    const geometry = this.buildTraverseGeometry(
+      allCalls,
+      startX,
+      startY,
+      startPointNumber
+    );
 
-      let dE = 0;
-      let dN = 0;
-      switch (parsed.quadrant) {
-        case 1:
-          dE = dist * sinT;
-          dN = dist * cosT;
-          break;
-        case 2:
-          dE = dist * sinT;
-          dN = -dist * cosT;
-          break;
-        case 3:
-          dE = -dist * sinT;
-          dN = -dist * cosT;
-          break;
-        case 4:
-          dE = -dist * sinT;
-          dN = dist * cosT;
-          break;
-      }
-
-      currentE += dE;
-      currentN += dN;
-      pts.push({ x: currentE, y: currentN });
-    });
-
-    memo[recordId] = pts;
+    memo[recordId] = geometry;
     delete visiting[recordId];
-    return pts;
+    return geometry;
   }
 
-  drawTraversePreview(canvas, points) {
+  buildTraverseGeometry(calls, startX, startY, startNumber) {
+    const points = [
+      {
+        x: startX,
+        y: startY,
+        pointNumber: startNumber,
+      },
+    ];
+    const polylines = [];
+    const paths = [];
+    const counter = { value: startNumber };
+
+    const walkPath = (callList, startPoint) => {
+      const pathCalls = [];
+      const polyline = [startPoint];
+      let current = startPoint;
+      (callList || []).forEach((call) => {
+        if (!call) return;
+        let parsed = null;
+        try {
+          parsed = this.parseBearing(call.bearing || "");
+        } catch (e) {
+          parsed = null;
+        }
+        if (!parsed) return;
+        const dist = parseFloat(call.distance) || 0;
+        const theta = ((parsed.angleDegrees || 0) * Math.PI) / 180;
+        const sinT = Math.sin(theta);
+        const cosT = Math.cos(theta);
+
+        let dE = 0;
+        let dN = 0;
+        switch (parsed.quadrant) {
+          case 1:
+            dE = dist * sinT;
+            dN = dist * cosT;
+            break;
+          case 2:
+            dE = dist * sinT;
+            dN = -dist * cosT;
+            break;
+          case 3:
+            dE = -dist * sinT;
+            dN = -dist * cosT;
+            break;
+          case 4:
+            dE = -dist * sinT;
+            dN = dist * cosT;
+            break;
+        }
+
+        const nextPoint = {
+          x: current.x + dE,
+          y: current.y + dN,
+          pointNumber: ++counter.value,
+        };
+        points.push(nextPoint);
+        polyline.push(nextPoint);
+        pathCalls.push(call);
+
+        (call.branches || []).forEach((branch) => {
+          if (!branch || branch.length === 0) return;
+          const branchResult = walkPath(branch, nextPoint);
+          polylines.push(branchResult.polyline);
+          paths.push(branchResult.path);
+        });
+
+        current = nextPoint;
+      });
+
+      return {
+        polyline,
+        path: {
+          startPoint,
+          startPointNumber: startPoint.pointNumber,
+          calls: pathCalls,
+        },
+      };
+    };
+
+    const mainResult = walkPath(calls, points[0]);
+    polylines.unshift(mainResult.polyline);
+    paths.unshift(mainResult.path);
+
+    return { points, polylines, paths };
+  }
+
+  drawTraversePreview(canvas, traverse) {
     if (!canvas) return;
     this.fitCanvasToDisplaySize(canvas);
     const ctx = canvas.getContext("2d");
     const { width, height } = canvas;
     ctx.clearRect(0, 0, width, height);
+
+    const polylines = traverse?.polylines || [];
+    const points = traverse?.points || (Array.isArray(traverse) ? traverse : []);
     if (!points || points.length === 0) return;
 
     if (points.length === 1) {
@@ -2896,26 +3124,33 @@ export default class AppController {
 
     ctx.lineWidth = 2;
     ctx.strokeStyle = "#1e40af";
-    ctx.beginPath();
-    const first = toCanvas(points[0]);
-    ctx.moveTo(first.x, first.y);
-    for (let i = 1; i < points.length; i++) {
-      const c = toCanvas(points[i]);
-      ctx.lineTo(c.x, c.y);
-    }
-    ctx.stroke();
+    const lines = polylines?.length ? polylines : [points];
+    lines.forEach((line) => {
+      if (!line || line.length === 0) return;
+      ctx.beginPath();
+      const first = toCanvas(line[0]);
+      ctx.moveTo(first.x, first.y);
+      for (let i = 1; i < line.length; i++) {
+        const c = toCanvas(line[i]);
+        ctx.lineTo(c.x, c.y);
+      }
+      ctx.stroke();
+    });
 
     ctx.fillStyle = "#16a34a";
-    const start = toCanvas(points[0]);
+    const start = toCanvas(lines[0][0]);
     ctx.beginPath();
     ctx.arc(start.x, start.y, 4, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = "#dc2626";
-    const end = toCanvas(points[points.length - 1]);
-    ctx.beginPath();
-    ctx.arc(end.x, end.y, 4, 0, Math.PI * 2);
-    ctx.fill();
+    lines.forEach((line) => {
+      if (!line || line.length === 0) return;
+      const end = toCanvas(line[line.length - 1]);
+      ctx.beginPath();
+      ctx.arc(end.x, end.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    });
   }
 
   drawProjectCompositeOnCanvas(projectId, canvas, small = false) {
@@ -2936,14 +3171,16 @@ export default class AppController {
     const visiting = {};
 
     recordIds.forEach((rid) => {
-      const pts = this.computeTraversePointsForRecord(
+      const geometry = this.computeTraversePointsForRecord(
         projectId,
         rid,
         memo,
         visiting
       );
+      const pts = geometry?.points || [];
+      const lines = geometry?.polylines || [];
       if (pts && pts.length > 0) {
-        polylines.push({ id: rid, points: pts });
+        polylines.push({ id: rid, lines });
         allPts = allPts.concat(pts);
       }
     });
@@ -2987,24 +3224,29 @@ export default class AppController {
     ];
 
     polylines.forEach((poly, idx) => {
-      const pts = poly.points;
-      if (pts.length === 0) return;
+      const lines = poly.lines && poly.lines.length ? poly.lines : [];
+      if (!lines.length) return;
 
       const color = colors[idx % colors.length];
       ctx.lineWidth = small ? 1 : 2;
       ctx.strokeStyle = color;
 
-      ctx.beginPath();
-      const first = toCanvas(pts[0]);
-      ctx.moveTo(first.x, first.y);
-      for (let i = 1; i < pts.length; i++) {
-        const c = toCanvas(pts[i]);
-        ctx.lineTo(c.x, c.y);
-      }
-      ctx.stroke();
+      lines.forEach((line) => {
+        if (!line || line.length === 0) return;
+        ctx.beginPath();
+        const first = toCanvas(line[0]);
+        ctx.moveTo(first.x, first.y);
+        for (let i = 1; i < line.length; i++) {
+          const c = toCanvas(line[i]);
+          ctx.lineTo(c.x, c.y);
+        }
+        ctx.stroke();
+      });
 
-      const start = toCanvas(pts[0]);
-      const end = toCanvas(pts[pts.length - 1]);
+      const firstLine = lines[0];
+      const lastLine = lines[lines.length - 1];
+      const start = toCanvas(firstLine[0]);
+      const end = toCanvas(lastLine[lastLine.length - 1]);
       ctx.fillStyle = color;
 
       ctx.beginPath();
@@ -3191,35 +3433,45 @@ export default class AppController {
       const record = project.records?.[recordId];
       const idxStr = this.elements.localizationTraversePoint?.value || "0";
       const pointIdx = parseInt(idxStr, 10) || 0;
-      const pts = this.computeTraversePointsForRecord(
+      const traverse = this.computeTraversePointsForRecord(
         this.currentProjectId,
         recordId
       );
-      if (!record || !pts || !pts[pointIdx]) {
+      const pts = traverse?.points || [];
+      const sortedPts = [...pts].sort(
+        (a, b) => (a.pointNumber || 0) - (b.pointNumber || 0)
+      );
+      if (!record || !sortedPts || !sortedPts[pointIdx]) {
         this.setLocalizationStatus(
           "Choose a valid traverse point to localize."
         );
         return;
       }
-      anchorLocal = pts[pointIdx];
+      anchorLocal = sortedPts[pointIdx];
       const base = parseInt(record.startPtNum, 10) || 1;
-      anchorLabel = `${record.name || "Traverse"} P${base + pointIdx}`;
+      const anchorNumber = anchorLocal.pointNumber ?? base + pointIdx;
+      anchorLabel = `${record.name || "Traverse"} P${anchorNumber}`;
 
       Object.entries(project.records || {}).forEach(([rid, rec]) => {
-        const recPts = this.computeTraversePointsForRecord(
+        const recTraverse = this.computeTraversePointsForRecord(
           this.currentProjectId,
           rid
         );
+        const recPts = recTraverse?.points || [];
+        const sortedRec = [...recPts].sort(
+          (a, b) => (a.pointNumber || 0) - (b.pointNumber || 0)
+        );
         const startNum = parseInt(rec.startPtNum, 10) || 1;
-        recPts.forEach((pt, idx) => {
+        sortedRec.forEach((pt, idx) => {
           const offset = this.localOffsetToLatLon(
             anchorGeo,
             pt.x - anchorLocal.x,
             pt.y - anchorLocal.y
           );
+          const labelNumber = pt.pointNumber ?? startNum + idx;
           localizedPoints.push({
             id: `tr-${rid}-${idx}`,
-            label: `${rec.name || "Traverse"} P${startNum + idx}`,
+            label: `${rec.name || "Traverse"} P${labelNumber}`,
             lat: offset.lat,
             lon: offset.lon,
             source: "traverse",
@@ -3403,49 +3655,72 @@ export default class AppController {
       occupyPointText += "N\n\n\n\n";
       this.setCommandText("occupyPoint", occupyPointText);
 
-      const allCalls = this.getAllCalls(record);
-
-      let drawPointsText = "";
-      if (allCalls.length === 0) {
-        drawPointsText = "(No traverse calls entered)\n";
-      } else {
-        drawPointsText += "T\n";
-        allCalls.forEach((call) => {
-          const parsed = this.parseBearing(call.bearing);
-          drawPointsText += `${parsed.quadrant}\n`;
-          drawPointsText += `${parsed.formatted}\n`;
-          drawPointsText += `${call.distance}\n`;
-          drawPointsText += "0\n";
-        });
-        drawPointsText += "E\n";
-      }
-      this.setCommandText("drawPoints", drawPointsText);
-
-      let drawLinesText = "";
-      if (allCalls.length === 0) {
-        drawLinesText = "(No traverse calls entered)\n";
-      } else {
-        drawLinesText += "L\n";
-        drawLinesText += "P\n";
-        drawLinesText += "1\n";
-        allCalls.forEach((call) => {
-          const parsed = this.parseBearing(call.bearing);
-          drawLinesText += "D\n";
-          drawLinesText += "F\n";
-          drawLinesText += `${call.distance}\n`;
-          drawLinesText += "A\n";
-          drawLinesText += `${parsed.quadrant}\n`;
-          drawLinesText += `${parsed.formatted}\n`;
-        });
-        drawLinesText += "Q\n";
-      }
-      this.setCommandText("drawLines", drawLinesText);
-
-      const pts = this.computeTraversePointsForRecord(
+      const geometry = this.computeTraversePointsForRecord(
         this.currentProjectId,
         this.currentRecordId
       );
-      this.drawTraversePreview(this.elements.traverseCanvas, pts);
+      const paths = geometry?.paths || [];
+      const hasCalls = paths.some((p) => (p.calls || []).length > 0);
+
+      let drawPointsText = "";
+      if (!hasCalls) {
+        drawPointsText = "(No traverse calls entered)\n";
+      } else {
+        paths.forEach((path, idx) => {
+          if (!path.calls || path.calls.length === 0) return;
+          const startLabel = path.startPointNumber ?? record.startPtNum ?? "";
+          drawPointsText += `; Path ${idx + 1} from P${startLabel}\n`;
+          drawPointsText += "T\n";
+          path.calls.forEach((call) => {
+            let parsed = null;
+            try {
+              parsed = this.parseBearing(call.bearing);
+            } catch (e) {
+              parsed = null;
+            }
+            if (!parsed) return;
+            drawPointsText += `${parsed.quadrant}\n`;
+            drawPointsText += `${parsed.formatted}\n`;
+            drawPointsText += `${call.distance}\n`;
+            drawPointsText += "0\n";
+          });
+          drawPointsText += "E\n\n";
+        });
+      }
+      this.setCommandText("drawPoints", drawPointsText.trimEnd() + "\n");
+
+      let drawLinesText = "";
+      if (!hasCalls) {
+        drawLinesText = "(No traverse calls entered)\n";
+      } else {
+        paths.forEach((path, idx) => {
+          if (!path.calls || path.calls.length === 0) return;
+          const startLabel = path.startPointNumber ?? record.startPtNum ?? "";
+          drawLinesText += `; Path ${idx + 1} from P${startLabel}\n`;
+          drawLinesText += "L\n";
+          drawLinesText += "P\n";
+          drawLinesText += `${startLabel}\n`;
+          path.calls.forEach((call) => {
+            let parsed = null;
+            try {
+              parsed = this.parseBearing(call.bearing);
+            } catch (e) {
+              parsed = null;
+            }
+            if (!parsed) return;
+            drawLinesText += "D\n";
+            drawLinesText += "F\n";
+            drawLinesText += `${call.distance}\n`;
+            drawLinesText += "A\n";
+            drawLinesText += `${parsed.quadrant}\n`;
+            drawLinesText += `${parsed.formatted}\n`;
+          });
+          drawLinesText += "Q\n\n";
+        });
+      }
+      this.setCommandText("drawLines", drawLinesText.trimEnd() + "\n");
+
+      this.drawTraversePreview(this.elements.traverseCanvas, geometry);
 
       this.updateAllBearingArrows();
       this.renderRecordList();
@@ -3467,11 +3742,11 @@ export default class AppController {
   handleResize() {
     this.drawProjectOverview();
     if (this.currentProjectId && this.currentRecordId) {
-      const pts = this.computeTraversePointsForRecord(
+      const geometry = this.computeTraversePointsForRecord(
         this.currentProjectId,
         this.currentRecordId
       );
-      this.drawTraversePreview(this.elements.traverseCanvas, pts);
+      this.drawTraversePreview(this.elements.traverseCanvas, geometry);
     }
   }
 
