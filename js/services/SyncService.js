@@ -3,6 +3,10 @@ export default class SyncService {
     this.baseUrl = baseUrl.replace(/\/$/, "");
   }
 
+  getStreamUrl() {
+    return `${this.baseUrl}/stream`;
+  }
+
   async sync(payload = {}) {
     const response = await fetch(`${this.baseUrl}/sync`, {
       method: "POST",

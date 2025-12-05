@@ -6,6 +6,7 @@ const PORT = process.env.PORT || 3000;
 const ROOT_DIR = path.dirname(new URL(import.meta.url).pathname);
 const DATA_DIR = path.join(ROOT_DIR, "data");
 const DATA_FILE = path.join(DATA_DIR, "projects.json");
+const sseClients = new Set();
 const MIME_TYPES = {
   ".html": "text/html",
   ".css": "text/css",
@@ -153,6 +154,17 @@ const serveStatic = (req, res) => {
   fs.createReadStream(filePath).pipe(res);
 };
 
+const sendEvent = (res, event, data) => {
+  res.write(`event: ${event}\n`);
+  res.write(`data: ${JSON.stringify(data)}\n\n`);
+};
+
+const broadcastDataset = (data) => {
+  sseClients.forEach((client) => {
+    sendEvent(client, "dataset", data);
+  });
+};
+
 const parseBody = async (req) =>
   new Promise((resolve, reject) => {
     let data = "";
@@ -179,12 +191,38 @@ const server = http.createServer(async (req, res) => {
     return respond(res, 200, data);
   }
 
+  if (req.url.startsWith("/api/stream") && req.method === "GET") {
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+      "Access-Control-Allow-Origin": "*",
+    });
+
+    const data = readData();
+    sendEvent(res, "dataset", data);
+
+    const keepAlive = setInterval(() => {
+      res.write(`event: ping\n`);
+      res.write("data: {}\n\n");
+    }, 30000);
+
+    res.on("close", () => {
+      clearInterval(keepAlive);
+      sseClients.delete(res);
+    });
+
+    sseClients.add(res);
+    return;
+  }
+
   if (req.url.startsWith("/api/sync") && req.method === "POST") {
     try {
       const incoming = await parseBody(req);
       const stored = readData();
       const merged = mergeDataset(stored, incoming || {});
       writeData(merged);
+      broadcastDataset(merged);
       return respond(res, 200, merged);
     } catch (err) {
       console.error("Sync error", err);

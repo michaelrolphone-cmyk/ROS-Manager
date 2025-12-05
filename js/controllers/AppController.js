@@ -48,6 +48,8 @@ export default class AppController {
     this.pendingMapRequestId = 0;
     this.helpLoaded = false;
     this.helpLoading = false;
+    this.liveUpdatesSource = null;
+    this.liveUpdateRetry = null;
 
     this.cacheDom();
     this.appLaunchers = document.querySelectorAll(".app-tile");
@@ -688,8 +690,11 @@ export default class AppController {
 
   setupSyncHandlers() {
     window.addEventListener("online", () => this.syncProjectsWithServer());
+    window.addEventListener("online", () => this.startLiveUpdates());
+    window.addEventListener("offline", () => this.stopLiveUpdates());
     if (navigator.onLine) {
       this.syncProjectsWithServer();
+      this.startLiveUpdates();
     }
   }
 
@@ -717,6 +722,8 @@ export default class AppController {
         this.cornerEvidenceService.replaceAllEvidence(response.evidence);
       }
       this.saveProjects({ skipVersionUpdate: true });
+      this.stopLiveUpdates();
+      this.startLiveUpdates();
       this.updateProjectList();
       const activeId =
         this.currentProjectId && this.projects[this.currentProjectId]
@@ -729,6 +736,82 @@ export default class AppController {
       }
     } catch (err) {
       console.warn("Sync failed", err);
+    }
+  }
+
+  canUseLiveUpdates() {
+    return (
+      typeof EventSource !== "undefined" &&
+      ["http:", "https:"].includes(window.location.protocol)
+    );
+  }
+
+  startLiveUpdates() {
+    if (!navigator.onLine || this.liveUpdatesSource || !this.canUseLiveUpdates()) {
+      return;
+    }
+
+    try {
+      const streamUrl = this.syncService.getStreamUrl();
+      this.liveUpdatesSource = new EventSource(streamUrl);
+      this.liveUpdatesSource.addEventListener("dataset", (event) =>
+        this.applyLiveDataset(event.data)
+      );
+      this.liveUpdatesSource.onmessage = (event) =>
+        this.applyLiveDataset(event.data);
+      this.liveUpdatesSource.onerror = () => {
+        this.stopLiveUpdates();
+        this.scheduleLiveUpdateRetry();
+      };
+    } catch (err) {
+      console.warn("Live updates unavailable", err);
+      this.scheduleLiveUpdateRetry();
+    }
+  }
+
+  stopLiveUpdates() {
+    if (this.liveUpdatesSource) {
+      this.liveUpdatesSource.close();
+      this.liveUpdatesSource = null;
+    }
+    if (this.liveUpdateRetry) {
+      clearTimeout(this.liveUpdateRetry);
+      this.liveUpdateRetry = null;
+    }
+  }
+
+  scheduleLiveUpdateRetry() {
+    if (this.liveUpdateRetry || !navigator.onLine) return;
+    this.liveUpdateRetry = setTimeout(() => {
+      this.liveUpdateRetry = null;
+      this.startLiveUpdates();
+    }, 5000);
+  }
+
+  applyLiveDataset(rawData) {
+    if (!rawData) return;
+    try {
+      const dataset = JSON.parse(rawData);
+      const { projects, evidence } = dataset || {};
+      if (projects) {
+        this.projects = this.repository.deserializeProjects(projects);
+      }
+      if (evidence) {
+        this.cornerEvidenceService.replaceAllEvidence(evidence);
+      }
+      if (projects || evidence) {
+        this.saveProjects({ skipVersionUpdate: true });
+        this.updateProjectList();
+        if (
+          this.currentProjectId &&
+          this.projects &&
+          this.projects[this.currentProjectId]
+        ) {
+          this.loadProject(this.currentProjectId);
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to apply live dataset", err);
     }
   }
 
