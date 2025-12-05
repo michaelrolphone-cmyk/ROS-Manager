@@ -291,6 +291,7 @@ body {
           gap: 8px;
           background: #ffffff;
           box-shadow: none;
+                border:none;
         }
 
         .app-icon {
