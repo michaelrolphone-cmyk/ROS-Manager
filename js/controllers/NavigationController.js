@@ -15,6 +15,7 @@ export default class NavigationController {
     this.targetBearing = null;
     this.targetDistanceFeet = null;
     this.headingSource = "Waiting";
+    this.orientationSensor = null;
     this.watchId = null;
     this.mapFailed = false;
 
@@ -52,8 +53,48 @@ export default class NavigationController {
   }
 
   startListeners() {
+    this.startSensorHeading();
     this.requestOrientation();
     this.beginGeolocationWatch();
+  }
+
+  startSensorHeading() {
+    if (typeof window.AbsoluteOrientationSensor === "undefined") return;
+
+    try {
+      this.orientationSensor = new AbsoluteOrientationSensor({
+        frequency: 30,
+        referenceFrame: "device",
+      });
+
+      this.orientationSensor.addEventListener("reading", () => {
+        const q = this.orientationSensor?.quaternion;
+        if (!q || q.length < 4) return;
+
+        const [x, y, z, w] = q;
+        const sinyCosp = 2 * (w * z + x * y);
+        const cosyCosp = 1 - 2 * (y * y + z * z);
+        const headingRad = Math.atan2(sinyCosp, cosyCosp);
+        const heading = ((headingRad * 180) / Math.PI + 360) % 360;
+
+        this.deviceHeading = heading;
+        this.headingSource = "Sensor";
+        this.updateReadouts();
+        this.drawCompass();
+      });
+
+      this.orientationSensor.addEventListener("error", (event) => {
+        if (event.error?.name === "NotAllowedError") {
+          this.setStatus("Sensor permission denied; falling back to compass.");
+        } else {
+          this.setStatus("Sensor error; falling back to compass readings.");
+        }
+      });
+
+      this.orientationSensor.start();
+    } catch (err) {
+      this.setStatus("Unable to start device sensors; using compass/travel heading.");
+    }
   }
 
   requestOrientation() {
@@ -63,6 +104,7 @@ export default class NavigationController {
     }
 
     const handler = (event) => {
+      if (this.headingSource === "Sensor") return;
       const heading = typeof event.webkitCompassHeading === "number"
         ? event.webkitCompassHeading
         : typeof event.alpha === "number"
