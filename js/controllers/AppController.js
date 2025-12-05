@@ -24,7 +24,10 @@ export default class AppController {
     this.versioningService = new VersioningService();
     this.syncService = new SyncService();
     this.projects = this.repository.loadProjects();
-    this.globalSettings = this.globalSettingsService.load();
+    this.globalSettings = this.normalizeGlobalSettings(
+      this.globalSettingsService.load()
+    );
+    this.ensureGlobalSettingsMetadata();
     this.currentProjectId = null;
     this.currentRecordId = null;
     this.commandTexts = {
@@ -721,6 +724,7 @@ export default class AppController {
       const response = await this.syncService.sync({
         projects: serializedProjects,
         evidence: this.cornerEvidenceService.serializeAllEvidence(),
+        globalSettings: this.globalSettings,
       });
 
       if (response?.projects) {
@@ -728,6 +732,14 @@ export default class AppController {
       }
       if (response?.evidence) {
         this.cornerEvidenceService.replaceAllEvidence(response.evidence);
+      }
+      if (response?.globalSettings) {
+        this.globalSettings = this.normalizeGlobalSettings(
+          response.globalSettings
+        );
+        this.ensureGlobalSettingsMetadata();
+        this.globalSettingsService.save(this.globalSettings);
+        this.renderGlobalSettings();
       }
       this.saveProjects({ skipVersionUpdate: true, skipSync: true });
       this.stopLiveUpdates();
@@ -817,7 +829,7 @@ export default class AppController {
     if (!rawData) return;
     try {
       const dataset = JSON.parse(rawData);
-      const { projects, evidence } = dataset || {};
+      const { projects, evidence, globalSettings } = dataset || {};
       const activeProjectId = this.currentProjectId;
       const activeRecordId = this.currentRecordId;
       if (projects) {
@@ -825,6 +837,12 @@ export default class AppController {
       }
       if (evidence) {
         this.cornerEvidenceService.replaceAllEvidence(evidence);
+      }
+      if (globalSettings) {
+        this.globalSettings = this.normalizeGlobalSettings(globalSettings);
+        this.ensureGlobalSettingsMetadata();
+        this.globalSettingsService.save(this.globalSettings);
+        this.renderGlobalSettings();
       }
       if (projects || evidence) {
         this.saveProjects({ skipVersionUpdate: true, skipSync: true });
@@ -867,6 +885,27 @@ export default class AppController {
     if (!skipSync) {
       this.scheduleSync();
     }
+  }
+
+  ensureGlobalSettingsMetadata() {
+    this.versioningService.ensureEntity(this.globalSettings, {
+      prefix: "settings",
+    });
+  }
+
+  normalizeGlobalSettings(settings = {}) {
+    const sanitized = {
+      equipment: Array.isArray(settings.equipment)
+        ? settings.equipment.filter(Boolean)
+        : [],
+      teamMembers: Array.isArray(settings.teamMembers)
+        ? settings.teamMembers.filter(Boolean)
+        : [],
+      pointCodes: Array.isArray(settings.pointCodes)
+        ? settings.pointCodes.filter(Boolean)
+        : [],
+    };
+    return { ...settings, ...sanitized };
   }
 
   /* ===================== Export / Import ===================== */
@@ -978,12 +1017,13 @@ export default class AppController {
             : {};
         this.cornerEvidenceService.replaceAllEvidence(evidenceMap);
         if (data.globalSettings) {
-          this.globalSettings = this.globalSettingsService.defaultSettings();
-          this.globalSettings.equipment = data.globalSettings.equipment || [];
-          this.globalSettings.teamMembers =
-            data.globalSettings.teamMembers || [];
-          this.globalSettings.pointCodes = data.globalSettings.pointCodes || [];
-          this.saveGlobalSettings();
+          this.globalSettings = this.normalizeGlobalSettings(
+            data.globalSettings
+          );
+          this.ensureGlobalSettingsMetadata();
+          this.globalSettingsService.save(this.globalSettings);
+          this.renderGlobalSettings();
+          this.scheduleSync();
         }
         this.saveProjects();
         this.updateProjectList();
@@ -4603,7 +4643,12 @@ export default class AppController {
 
   /* ===================== Global settings ===================== */
   saveGlobalSettings() {
+    this.globalSettings = this.normalizeGlobalSettings(this.globalSettings);
+    this.versioningService.touchEntity(this.globalSettings, {
+      prefix: "settings",
+    });
     this.globalSettingsService.save(this.globalSettings);
+    this.scheduleSync();
   }
 
   addEquipmentName() {
