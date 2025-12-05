@@ -24,7 +24,10 @@ export default class AppController {
     this.versioningService = new VersioningService();
     this.syncService = new SyncService();
     this.projects = this.repository.loadProjects();
-    this.globalSettings = this.globalSettingsService.load();
+    this.globalSettings = this.normalizeGlobalSettings(
+      this.globalSettingsService.load()
+    );
+    this.ensureGlobalSettingsMetadata();
     this.currentProjectId = null;
     this.currentRecordId = null;
     this.commandTexts = {
@@ -98,6 +101,7 @@ export default class AppController {
         this.currentProjectId
           ? this.projects[this.currentProjectId]?.equipmentLogs || []
           : [],
+      onTargetChanged: (state) => this.persistNavigationTarget(state),
     });
     this.levelingController = new LevelingController({
       elements: {
@@ -721,6 +725,7 @@ export default class AppController {
       const response = await this.syncService.sync({
         projects: serializedProjects,
         evidence: this.cornerEvidenceService.serializeAllEvidence(),
+        globalSettings: this.globalSettings,
       });
 
       if (response?.projects) {
@@ -728,6 +733,14 @@ export default class AppController {
       }
       if (response?.evidence) {
         this.cornerEvidenceService.replaceAllEvidence(response.evidence);
+      }
+      if (response?.globalSettings) {
+        this.globalSettings = this.normalizeGlobalSettings(
+          response.globalSettings
+        );
+        this.ensureGlobalSettingsMetadata();
+        this.globalSettingsService.save(this.globalSettings);
+        this.renderGlobalSettings();
       }
       this.saveProjects({ skipVersionUpdate: true, skipSync: true });
       this.stopLiveUpdates();
@@ -738,7 +751,7 @@ export default class AppController {
           ? this.currentProjectId
           : Object.keys(this.projects)[0];
       if (activeId) {
-        this.loadProject(activeId);
+        this.loadProject(activeId, { preserveRecord: true });
       } else {
         this.drawProjectOverview();
       }
@@ -817,7 +830,7 @@ export default class AppController {
     if (!rawData) return;
     try {
       const dataset = JSON.parse(rawData);
-      const { projects, evidence } = dataset || {};
+      const { projects, evidence, globalSettings } = dataset || {};
       const activeProjectId = this.currentProjectId;
       const activeRecordId = this.currentRecordId;
       if (projects) {
@@ -825,6 +838,12 @@ export default class AppController {
       }
       if (evidence) {
         this.cornerEvidenceService.replaceAllEvidence(evidence);
+      }
+      if (globalSettings) {
+        this.globalSettings = this.normalizeGlobalSettings(globalSettings);
+        this.ensureGlobalSettingsMetadata();
+        this.globalSettingsService.save(this.globalSettings);
+        this.renderGlobalSettings();
       }
       if (projects || evidence) {
         this.saveProjects({ skipVersionUpdate: true, skipSync: true });
@@ -867,6 +886,27 @@ export default class AppController {
     if (!skipSync) {
       this.scheduleSync();
     }
+  }
+
+  ensureGlobalSettingsMetadata() {
+    this.versioningService.ensureEntity(this.globalSettings, {
+      prefix: "settings",
+    });
+  }
+
+  normalizeGlobalSettings(settings = {}) {
+    const sanitized = {
+      equipment: Array.isArray(settings.equipment)
+        ? settings.equipment.filter(Boolean)
+        : [],
+      teamMembers: Array.isArray(settings.teamMembers)
+        ? settings.teamMembers.filter(Boolean)
+        : [],
+      pointCodes: Array.isArray(settings.pointCodes)
+        ? settings.pointCodes.filter(Boolean)
+        : [],
+    };
+    return { ...settings, ...sanitized };
   }
 
   /* ===================== Export / Import ===================== */
@@ -978,12 +1018,13 @@ export default class AppController {
             : {};
         this.cornerEvidenceService.replaceAllEvidence(evidenceMap);
         if (data.globalSettings) {
-          this.globalSettings = this.globalSettingsService.defaultSettings();
-          this.globalSettings.equipment = data.globalSettings.equipment || [];
-          this.globalSettings.teamMembers =
-            data.globalSettings.teamMembers || [];
-          this.globalSettings.pointCodes = data.globalSettings.pointCodes || [];
-          this.saveGlobalSettings();
+          this.globalSettings = this.normalizeGlobalSettings(
+            data.globalSettings
+          );
+          this.ensureGlobalSettingsMetadata();
+          this.globalSettingsService.save(this.globalSettings);
+          this.renderGlobalSettings();
+          this.scheduleSync();
         }
         this.saveProjects();
         this.updateProjectList();
@@ -2096,7 +2137,10 @@ export default class AppController {
       createdAt: new Date().toISOString(),
     });
 
+    this.versioningService.touchEntity(entry, { prefix: "evidence" });
+    entry.ties = this.versioningService.touchArray(entry.ties || [], "tie");
     this.cornerEvidenceService.addEntry(entry);
+    this.scheduleSync();
     this.resetEvidenceForm();
     this.renderEvidenceList();
   }
@@ -2688,6 +2732,34 @@ export default class AppController {
     this.navigationController.applyEquipmentTarget(id);
     this.switchTab("navigationSection");
     this.elements.navigationSection?.scrollIntoView({ behavior: "smooth" });
+  }
+
+  persistNavigationTarget(state = {}) {
+    const project = this.currentProjectId
+      ? this.projects[this.currentProjectId]
+      : null;
+    if (!project) return;
+
+    const previous = project.navigationTarget || {};
+    const timestamp = new Date().toISOString();
+    const coords = state.coords;
+    const sanitizedCoords =
+      coords &&
+      typeof coords.lat === "number" &&
+      typeof coords.lon === "number"
+        ? { lat: coords.lat, lon: coords.lon }
+        : null;
+
+    project.navigationTarget = {
+      type: state.type || null,
+      id: state.id || null,
+      label: state.label || "",
+      value: state.value || "",
+      coords: sanitizedCoords,
+      updatedAt: timestamp,
+      version: (previous.version ?? 0) + 1,
+    };
+    this.saveProjects();
   }
 
   startEditingEquipmentEntry(id) {
@@ -3491,11 +3563,9 @@ export default class AppController {
         c instanceof TraverseInstruction
           ? c
           : TraverseInstruction.fromObject(c);
-      if (
-        normalized.bearing ||
-        normalized.distance ||
-        (normalized.branches || []).length
-      ) {
+      const hasBranch = (normalized.branches || []).length > 0;
+      const isCurve = this.callIsCurve(normalized);
+      if (normalized.bearing || normalized.distance || hasBranch || isCurve) {
         calls.push(normalized);
       }
     });
@@ -4605,7 +4675,12 @@ export default class AppController {
 
   /* ===================== Global settings ===================== */
   saveGlobalSettings() {
+    this.globalSettings = this.normalizeGlobalSettings(this.globalSettings);
+    this.versioningService.touchEntity(this.globalSettings, {
+      prefix: "settings",
+    });
     this.globalSettingsService.save(this.globalSettings);
+    this.scheduleSync();
   }
 
   addEquipmentName() {

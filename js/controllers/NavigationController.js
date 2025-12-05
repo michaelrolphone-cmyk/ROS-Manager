@@ -1,11 +1,18 @@
 import NavigationBookmark from "../models/NavigationBookmark.js";
 
 export default class NavigationController {
-  constructor({ elements = {}, getCurrentProject, saveProjects, getEquipmentLogs }) {
+  constructor({
+    elements = {},
+    getCurrentProject,
+    saveProjects,
+    getEquipmentLogs,
+    onTargetChanged,
+  }) {
     this.elements = elements;
     this.getCurrentProject = getCurrentProject;
     this.saveProjects = saveProjects;
     this.getEquipmentLogs = getEquipmentLogs;
+    this.onTargetChanged = onTargetChanged;
 
     this.deviceHeading = null;
     this.travelHeading = null;
@@ -504,7 +511,11 @@ export default class NavigationController {
       const project = this.getCurrentProject?.();
       const loc = project?.localization?.points?.find((pt) => pt.id === id);
       if (loc) {
-        this.setTarget({ lat: loc.lat, lon: loc.lon }, loc.label);
+        this.setTarget(
+          { lat: loc.lat, lon: loc.lon },
+          loc.label,
+          { type: "localization", id, value }
+        );
       } else {
         this.setStatus("Localized point missing.");
         this.clearTarget();
@@ -529,7 +540,11 @@ export default class NavigationController {
       this.clearTarget();
       return;
     }
-    this.setTarget({ lat: target.latitude, lon: target.longitude }, target.name);
+    this.setTarget(
+      { lat: target.latitude, lon: target.longitude },
+      target.name,
+      { type: "bookmark", id, value: `bm:${id}` }
+    );
   }
 
   applyEquipmentTarget(id) {
@@ -538,16 +553,29 @@ export default class NavigationController {
     if (!log || !log.location) {
       return;
     }
-    this.setTarget({ lat: log.location.lat, lon: log.location.lon }, "Base station");
+    this.setTarget(
+      { lat: log.location.lat, lon: log.location.lon },
+      "Base station",
+      { type: "equipment", id, value: id }
+    );
   }
 
-  setTarget(coords, label = "Target") {
+  setTarget(coords, label = "Target", meta = {}) {
     this.targetLocation = coords;
     this.setStatus(`Target set to ${label}.`);
+    if (typeof this.onTargetChanged === "function") {
+      this.onTargetChanged({
+        ...meta,
+        coords,
+        label,
+        value: this.elements.targetSelect?.value || meta.value || "",
+      });
+    }
     this.updateNavigationState();
   }
 
-  clearTarget() {
+  clearTarget(options = {}) {
+    const { skipPersist = false } = options;
     this.targetLocation = null;
     this.targetBearing = null;
     this.targetDistanceFeet = null;
@@ -557,6 +585,9 @@ export default class NavigationController {
     this.updateReadouts();
     this.drawCompass();
     this.updateMapView();
+    if (!skipPersist && typeof this.onTargetChanged === "function") {
+      this.onTargetChanged({ value: "", coords: null, label: "" });
+    }
   }
 
   setStatus(message) {
@@ -573,7 +604,49 @@ export default class NavigationController {
 
   onProjectChanged() {
     this.prepareSelectors();
-    this.clearTarget();
+    this.applySavedTarget();
+  }
+
+  applySavedTarget() {
+    const project = this.getCurrentProject?.();
+    if (!project) {
+      this.clearTarget({ skipPersist: true });
+      return;
+    }
+
+    const saved = project.navigationTarget;
+    const savedCoords = saved?.coords;
+    if (
+      !saved ||
+      !savedCoords ||
+      typeof savedCoords.lat !== "number" ||
+      typeof savedCoords.lon !== "number"
+    ) {
+      this.clearTarget({ skipPersist: true });
+      return;
+    }
+
+    const selectValue = saved.value ||
+      (saved.type === "localization" && saved.id
+        ? `loc:${saved.id}`
+        : saved.type === "bookmark" && saved.id
+          ? `bm:${saved.id}`
+          : saved.type === "equipment"
+            ? saved.id
+            : "");
+
+    this.targetLocation = savedCoords;
+    this.targetBearing = null;
+    this.targetDistanceFeet = null;
+    if (this.elements.targetSelect && selectValue) {
+      this.elements.targetSelect.value = selectValue;
+    }
+    if (this.elements.equipmentSelect) {
+      this.elements.equipmentSelect.value =
+        saved.type === "equipment" ? saved.id || "" : "";
+    }
+    this.setStatus(`Target set to ${saved.label || "Target"}.`);
+    this.updateNavigationState();
   }
 
   onEquipmentLogsChanged() {
