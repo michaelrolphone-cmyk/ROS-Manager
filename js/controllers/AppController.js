@@ -2816,11 +2816,6 @@ export default class AppController {
         opt.selected = true;
       curveDirectionSelect.appendChild(opt);
     });
-    curveDirectionSelect.addEventListener("change", () => {
-      this.saveCurrentRecord();
-      this.generateCommands();
-    });
-
     const curveRadiusInput = document.createElement("input");
     curveRadiusInput.type = "number";
     curveRadiusInput.step = "any";
@@ -2886,6 +2881,30 @@ export default class AppController {
       this.generateCommands();
     });
 
+    const curveFields = [
+      curveRadiusInput,
+      curveArcLengthInput,
+      curveChordLengthInput,
+      curveChordBearingInput,
+      curveDeltaAngleInput,
+      curveTangentInput,
+    ];
+
+    const updateCallInputVisibility = () => {
+      const isCurve = !!curveDirectionSelect.value;
+      bearingTd.style.display = isCurve ? "none" : "";
+      distanceRow.style.display = isCurve ? "none" : "";
+      curveFields.forEach((field) => {
+        field.style.display = isCurve ? "" : "none";
+      });
+    };
+
+    curveDirectionSelect.addEventListener("change", () => {
+      updateCallInputVisibility();
+      this.saveCurrentRecord();
+      this.generateCommands();
+    });
+
     curveRow.append(
       curveDirectionSelect,
       curveRadiusInput,
@@ -2938,6 +2957,8 @@ export default class AppController {
 
     tr.append(numTd, bearingTd, distTd);
     tbody.appendChild(tr);
+
+    updateCallInputVisibility();
 
     if ((branches || []).length > 0) {
       branches.forEach((branch) =>
