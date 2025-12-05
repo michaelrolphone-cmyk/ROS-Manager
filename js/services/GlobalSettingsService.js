@@ -12,6 +12,14 @@ export default class GlobalSettingsService {
         equipment: Array.isArray(parsed.equipment) ? parsed.equipment : [],
         teamMembers: Array.isArray(parsed.teamMembers) ? parsed.teamMembers : [],
         pointCodes: Array.isArray(parsed.pointCodes) ? parsed.pointCodes : [],
+        deviceProfiles:
+          parsed.deviceProfiles && typeof parsed.deviceProfiles === "object"
+            ? parsed.deviceProfiles
+            : {},
+        liveLocations:
+          parsed.liveLocations && typeof parsed.liveLocations === "object"
+            ? parsed.liveLocations
+            : {},
       };
     } catch (err) {
       console.warn("Failed to parse global settings", err);
@@ -24,6 +32,12 @@ export default class GlobalSettingsService {
   }
 
   defaultSettings() {
-    return { equipment: [], teamMembers: [], pointCodes: [] };
+    return {
+      equipment: [],
+      teamMembers: [],
+      pointCodes: [],
+      deviceProfiles: {},
+      liveLocations: {},
+    };
   }
 }

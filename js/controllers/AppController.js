@@ -28,6 +28,7 @@ export default class AppController {
       this.globalSettingsService.load()
     );
     this.ensureGlobalSettingsMetadata();
+    this.deviceId = this.ensureDeviceId();
     this.currentProjectId = null;
     this.currentRecordId = null;
     this.commandTexts = {
@@ -102,6 +103,9 @@ export default class AppController {
           ? this.projects[this.currentProjectId]?.equipmentLogs || []
           : [],
       onTargetChanged: (state) => this.persistNavigationTarget(state),
+      getDeviceId: () => this.deviceId,
+      getPeerLocations: () => this.getPeerLocations(),
+      onLocationUpdate: (coords) => this.recordLiveLocation(coords),
     });
     this.levelingController = new LevelingController({
       elements: {
@@ -360,6 +364,8 @@ export default class AppController {
       teamMemberInput: document.getElementById("teamMemberInput"),
       addTeamMemberButton: document.getElementById("addTeamMemberButton"),
       teamMemberList: document.getElementById("teamMemberList"),
+      deviceTeamMemberSelect: document.getElementById("deviceTeamMemberSelect"),
+      deviceIdentifierHint: document.getElementById("deviceIdentifierHint"),
       pointCodeInput: document.getElementById("pointCodeInput"),
       pointCodeDescriptionInput: document.getElementById(
         "pointCodeDescriptionInput"
@@ -494,6 +500,9 @@ export default class AppController {
     );
     this.elements.addTeamMemberButton?.addEventListener("click", () =>
       this.addTeamMember()
+    );
+    this.elements.deviceTeamMemberSelect?.addEventListener("change", (e) =>
+      this.setDeviceTeamMember(e.target.value)
     );
     this.elements.addPointCodeButton?.addEventListener("click", () =>
       this.addPointCode()
@@ -844,6 +853,7 @@ export default class AppController {
         this.ensureGlobalSettingsMetadata();
         this.globalSettingsService.save(this.globalSettings);
         this.renderGlobalSettings();
+        this.navigationController?.drawCompass();
       }
       if (projects || evidence) {
         this.saveProjects({ skipVersionUpdate: true, skipSync: true });
@@ -905,6 +915,14 @@ export default class AppController {
       pointCodes: Array.isArray(settings.pointCodes)
         ? settings.pointCodes.filter(Boolean)
         : [],
+      deviceProfiles:
+        settings.deviceProfiles && typeof settings.deviceProfiles === "object"
+          ? settings.deviceProfiles
+          : {},
+      liveLocations:
+        settings.liveLocations && typeof settings.liveLocations === "object"
+          ? settings.liveLocations
+          : {},
     };
     return { ...settings, ...sanitized };
   }
@@ -4683,6 +4701,161 @@ export default class AppController {
     this.scheduleSync();
   }
 
+  ensureDeviceId() {
+    const cookieName = "ros-device-id";
+    const existing = this.readCookie(cookieName);
+    if (existing) return existing;
+    const uuid =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `dev-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const tenYearsInSeconds = 60 * 60 * 24 * 365 * 10;
+    this.setCookie(cookieName, uuid, { "max-age": tenYearsInSeconds });
+    return uuid;
+  }
+
+  readCookie(name) {
+    const cookies = document.cookie.split(";").map((c) => c.trim());
+    for (const cookie of cookies) {
+      if (cookie.startsWith(`${name}=`)) {
+        return decodeURIComponent(cookie.split("=")[1] || "");
+      }
+    }
+    return "";
+  }
+
+  setCookie(name, value, options = {}) {
+    const pairs = [`${name}=${encodeURIComponent(value)}`];
+    const opts = { path: "/", SameSite: "Lax", ...options };
+    Object.entries(opts).forEach(([key, val]) => {
+      if (val === undefined || val === null) return;
+      if (val === true) {
+        pairs.push(key);
+      } else {
+        pairs.push(`${key}=${val}`);
+      }
+    });
+    document.cookie = pairs.join("; ");
+  }
+
+  getCurrentDeviceProfile() {
+    const profiles = this.globalSettings.deviceProfiles || {};
+    return profiles[this.deviceId] || null;
+  }
+
+  setDeviceTeamMember(name) {
+    if (!this.deviceId) return;
+    const trimmed = (name || "").trim();
+    const profiles = this.globalSettings.deviceProfiles || {};
+
+    if (!trimmed) {
+      delete profiles[this.deviceId];
+    } else {
+      profiles[this.deviceId] = {
+        ...(profiles[this.deviceId] || {}),
+        teamMember: trimmed,
+        assignedAt: new Date().toISOString(),
+      };
+    }
+
+    this.globalSettings.deviceProfiles = profiles;
+    if (this.globalSettings.liveLocations?.[this.deviceId]) {
+      this.globalSettings.liveLocations[this.deviceId].teamMember =
+        trimmed || undefined;
+    }
+    this.saveGlobalSettings();
+    this.renderDeviceIdentityOptions();
+    this.navigationController?.drawCompass();
+  }
+
+  renderDeviceIdentityOptions() {
+    const select = this.elements.deviceTeamMemberSelect;
+    const hint = this.elements.deviceIdentifierHint;
+    const members = (this.globalSettings.teamMembers || []).filter(Boolean);
+    const currentProfile = this.getCurrentDeviceProfile();
+    const selectedMember = currentProfile?.teamMember || "";
+
+    if (hint) {
+      hint.textContent = this.deviceId
+        ? `Device ID: ${this.deviceId}`
+        : "Device ID unavailable";
+    }
+
+    if (!select) return;
+
+    const previousValue = select.value;
+    select.innerHTML = "";
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent =
+      members.length > 0
+        ? "Select team member"
+        : "Add team members to assign";
+    select.appendChild(placeholder);
+
+    members
+      .slice()
+      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
+      .forEach((member) => {
+        const opt = document.createElement("option");
+        opt.value = member;
+        opt.textContent = member;
+        select.appendChild(opt);
+      });
+
+    const fallbackValue = selectedMember || previousValue;
+    if (fallbackValue) {
+      select.value = fallbackValue;
+      if (select.value !== fallbackValue) {
+        const fallback = document.createElement("option");
+        fallback.value = fallbackValue;
+        fallback.textContent = fallbackValue;
+        select.appendChild(fallback);
+        select.value = fallbackValue;
+      }
+    }
+  }
+
+  recordLiveLocation(coords) {
+    if (!coords || typeof coords.lat !== "number" || typeof coords.lon !== "number") {
+      return;
+    }
+
+    const liveLocations = this.globalSettings.liveLocations || {};
+    const profile = this.getCurrentDeviceProfile();
+    const timestamp = new Date(coords.timestamp || Date.now()).toISOString();
+
+    liveLocations[this.deviceId] = {
+      ...liveLocations[this.deviceId],
+      lat: coords.lat,
+      lon: coords.lon,
+      accuracy: coords.accuracy,
+      updatedAt: timestamp,
+      deviceId: this.deviceId,
+      teamMember: profile?.teamMember,
+    };
+
+    this.globalSettings.liveLocations = liveLocations;
+    this.saveGlobalSettings();
+    this.navigationController?.drawCompass();
+  }
+
+  getPeerLocations() {
+    const locations = this.globalSettings.liveLocations || {};
+    const profiles = this.globalSettings.deviceProfiles || {};
+
+    return Object.entries(locations)
+      .filter(([, loc]) => loc && typeof loc.lat === "number" && typeof loc.lon === "number")
+      .map(([deviceId, loc]) => ({
+        id: deviceId,
+        lat: loc.lat,
+        lon: loc.lon,
+        accuracy: loc.accuracy,
+        updatedAt: loc.updatedAt,
+        teamMember: loc.teamMember || profiles[deviceId]?.teamMember,
+      }));
+  }
+
   addEquipmentName() {
     const input = this.elements.equipmentNameInput;
     const name = (input?.value || "").trim();
@@ -4724,6 +4897,7 @@ export default class AppController {
       this.elements.teamMemberList,
       this.globalSettings.teamMembers
     );
+    this.renderDeviceIdentityOptions();
     this.renderPointCodes();
     this.renderEquipmentSetupByOptions();
     this.renderEquipmentPickerOptions();
