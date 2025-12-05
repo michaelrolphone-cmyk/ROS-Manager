@@ -1,18 +1,27 @@
 export default class Point {
   constructor({
+    id = null,
     pointNumber = "",
     x = "",
     y = "",
     elevation = "",
     code = "",
     description = "",
+    createdAt = null,
+    updatedAt = null,
+    version = 1,
   } = {}) {
+    const stamp = new Date().toISOString();
+    this.id = id || `pt-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     this.pointNumber = pointNumber;
     this.x = x;
     this.y = y;
     this.elevation = elevation;
     this.code = code;
     this.description = description;
+    this.createdAt = createdAt || stamp;
+    this.updatedAt = updatedAt || this.createdAt;
+    this.version = version ?? 1;
   }
 
   static fromObject(obj = {}) {
@@ -23,6 +32,10 @@ export default class Point {
       elevation: obj.elevation,
       code: obj.code,
       description: obj.description,
+      createdAt: obj.createdAt,
+      updatedAt: obj.updatedAt,
+      version: obj.version,
+      id: obj.id,
     });
   }
 
@@ -34,6 +47,10 @@ export default class Point {
       elevation: this.elevation,
       code: this.code,
       description: this.description,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+      version: this.version,
+      id: this.id,
     };
   }
 

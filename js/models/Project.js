@@ -7,6 +7,7 @@ import PointFile from "./PointFile.js";
 
 export default class Project {
   constructor({
+    id = null,
     name = "",
     description = "",
     address = "",
@@ -24,7 +25,12 @@ export default class Project {
     activePointFileId = null,
     navigationBookmarks = [],
     localization = null,
+    createdAt = null,
+    updatedAt = null,
+    version = 1,
   } = {}) {
+    const stamp = new Date().toISOString();
+    this.id = id;
     this.name = name;
     this.description = description;
     this.address = address;
@@ -60,11 +66,14 @@ export default class Project {
     );
 
     this.localization = localization || null;
+    this.createdAt = createdAt || stamp;
+    this.updatedAt = updatedAt || this.createdAt;
+    this.version = version ?? 1;
 
     Object.entries(records).forEach(([id, record]) => {
       this.records[id] = record instanceof SurveyRecord
         ? record
-        : SurveyRecord.fromObject(record);
+        : SurveyRecord.fromObject({ id, ...record });
     });
     this.equipmentLogs = equipmentLogs.map((entry) =>
       entry instanceof EquipmentLog ? entry : EquipmentLog.fromObject(entry)
@@ -84,6 +93,7 @@ export default class Project {
       record.toObject(),
     ]);
     return {
+      id: this.id,
       name: this.name,
       description: this.description,
       address: this.address,
@@ -106,6 +116,9 @@ export default class Project {
           : NavigationBookmark.fromObject(entry).toObject()
       ),
       localization: this.localization,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+      version: this.version,
     };
   }
 }

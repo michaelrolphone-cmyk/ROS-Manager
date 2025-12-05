@@ -20,7 +20,26 @@ This offline, browser-based workspace bundles several surveying tools in one pla
   - Create, load, and delete named projects with dropdown controls for quick switching.【F:index.html†L720-L808】【F:index.html†L1010-L1053】
   - Add record sets with starting point details and per-record canvases for at-a-glance previews, whether you are drafting a corner perpetuation filing, capturing monument field notes, or running a record of survey traverse.【F:index.html†L809-L970】【F:index.html†L1172-L1218】
 - **Import/Export**
-  - Export the current project or all projects to JSON and import them later; filenames include sanitized project names where appropriate.【F:index.html†L833-L910】
+   - Export the current project or all projects to JSON and import them later; filenames include sanitized project names where appropriate.【F:index.html†L833-L910】
+
+## Optional Sync + Static Server
+The app now ships with a lightweight Node-based server that can both host the static app files and reconcile offline work when a network connection is available.
+
+1. **Start the server**
+   ```bash
+   node server.js
+   ```
+   The server listens on `http://localhost:3000` by default, serves `index.html` and related assets, and stores synchronized data in `data/projects.json`.
+2. **Endpoints**
+   - `GET /api/health` – basic status check.
+   - `GET /api/projects` – returns all stored projects and evidence.
+   - `POST /api/sync` – accepts a payload of `{ projects, evidence }`, merges by per-record `version`, `createdAt`, and `updatedAt` fields, and returns the reconciled dataset.
+3. **Conflict handling**
+   - Every project entity (project, record, call, points, evidence, and equipment logs) now carries `createdAt`, `updatedAt`, and `version` metadata.
+   - When the same item exists on two clients, the server applies changes in version order and prefers the newest `updatedAt` timestamp when versions match.
+   - Non-conflicting edits from different users are merged automatically by item ID.
+
+The browser UI will automatically attempt to sync when it detects an online connection, but it continues to work fully offline.
 
 ### Traverse Builder
 - **Traverse authoring**

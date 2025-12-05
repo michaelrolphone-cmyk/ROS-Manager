@@ -10,6 +10,8 @@ import Point from "../models/Point.js";
 import PointController from "./PointController.js";
 import NavigationController from "./NavigationController.js";
 import GlobalSettingsService from "../services/GlobalSettingsService.js";
+import VersioningService from "../services/VersioningService.js";
+import SyncService from "../services/SyncService.js";
 
 export default class AppController {
   constructor() {
@@ -18,6 +20,8 @@ export default class AppController {
     this.globalSettingsService = new GlobalSettingsService(
       "carlsonGlobalSettings"
     );
+    this.versioningService = new VersioningService();
+    this.syncService = new SyncService();
     this.projects = this.repository.loadProjects();
     this.globalSettings = this.globalSettingsService.load();
     this.currentProjectId = null;
@@ -623,10 +627,72 @@ export default class AppController {
     this.renderGlobalSettings();
     this.switchTab("springboardSection");
     this.handleSpringboardScroll();
+    this.setupSyncHandlers();
   }
 
-  saveProjects() {
+  setupSyncHandlers() {
+    window.addEventListener("online", () => this.syncProjectsWithServer());
+    if (navigator.onLine) {
+      this.syncProjectsWithServer();
+    }
+  }
+
+  async syncProjectsWithServer() {
+    if (!navigator.onLine) return;
+    try {
+      const serializedProjects = {};
+      Object.entries(this.projects || {}).forEach(([id, project]) => {
+        this.versioningService.ensureProjectTree(id, project);
+        serializedProjects[id] = project.toObject();
+      });
+
+      this.versioningService.ensureEvidenceMap(
+        this.cornerEvidenceService.evidenceByProject
+      );
+      const response = await this.syncService.sync({
+        projects: serializedProjects,
+        evidence: this.cornerEvidenceService.serializeAllEvidence(),
+      });
+
+      if (response?.projects) {
+        this.projects = this.repository.deserializeProjects(response.projects);
+      }
+      if (response?.evidence) {
+        this.cornerEvidenceService.replaceAllEvidence(response.evidence);
+      }
+      this.saveProjects({ skipVersionUpdate: true });
+      this.updateProjectList();
+      const activeId =
+        this.currentProjectId && this.projects[this.currentProjectId]
+          ? this.currentProjectId
+          : Object.keys(this.projects)[0];
+      if (activeId) {
+        this.loadProject(activeId);
+      } else {
+        this.drawProjectOverview();
+      }
+    } catch (err) {
+      console.warn("Sync failed", err);
+    }
+  }
+
+  saveProjects(options = {}) {
+    const { skipVersionUpdate = false } = options;
+    if (skipVersionUpdate) {
+      Object.entries(this.projects || {}).forEach(([id, project]) =>
+        this.versioningService.ensureProjectTree(id, project)
+      );
+      this.versioningService.ensureEvidenceMap(
+        this.cornerEvidenceService.evidenceByProject
+      );
+    } else {
+      this.versioningService.touchAll(
+        this.projects,
+        this.cornerEvidenceService.evidenceByProject
+      );
+    }
     this.repository.saveProjects(this.projects);
+    this.cornerEvidenceService.saveEvidence();
     this.populateLocalizationSelectors();
     this.navigationController?.renderTargetOptions();
     this.renderReferencePointOptions();
@@ -1103,6 +1169,7 @@ export default class AppController {
     if (!name) return alert("Enter a record name");
     const id = Date.now().toString();
     const newRecord = new SurveyRecord({
+      id,
       name,
       calls: [],
       startFromRecordId: null,

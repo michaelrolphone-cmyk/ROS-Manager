@@ -9,16 +9,19 @@ export default class ProjectRepository {
     const raw = localStorage.getItem(this.storageKey);
     if (!raw) return {};
     try {
-      const parsed = JSON.parse(raw);
-      const projects = {};
-      Object.entries(parsed || {}).forEach(([id, proj]) => {
-        projects[id] = Project.fromObject(proj);
-      });
-      return projects;
+      return this.deserializeProjects(JSON.parse(raw));
     } catch (e) {
       console.warn("Failed to parse projects", e);
       return {};
     }
+  }
+
+  deserializeProjects(parsed = {}) {
+    const projects = {};
+    Object.entries(parsed || {}).forEach(([id, proj]) => {
+      projects[id] = Project.fromObject({ id, ...proj });
+    });
+    return projects;
   }
 
   saveProjects(projects) {

@@ -1,7 +1,16 @@
 import Point from "./Point.js";
 
 export default class PointFile {
-  constructor({ id = null, name = "", points = [], originalPoints = [] } = {}) {
+  constructor({
+    id = null,
+    name = "",
+    points = [],
+    originalPoints = [],
+    createdAt = null,
+    updatedAt = null,
+    version = 1,
+  } = {}) {
+    const stamp = new Date().toISOString();
     this.id = id || `pf-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     this.name = name || "Points";
     this.points = Array.isArray(points)
@@ -12,6 +21,9 @@ export default class PointFile {
           pt instanceof Point ? pt : Point.fromObject(pt)
         )
       : this.points.map((pt) => Point.fromObject(pt));
+    this.createdAt = createdAt || stamp;
+    this.updatedAt = updatedAt || this.createdAt;
+    this.version = version ?? 1;
   }
 
   static fromObject(obj = {}) {
@@ -28,6 +40,9 @@ export default class PointFile {
       originalPoints: this.originalPoints.map((pt) =>
         pt instanceof Point ? pt.toObject() : Point.fromObject(pt).toObject()
       ),
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+      version: this.version,
     };
   }
 

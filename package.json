@@ -1,0 +1,11 @@
+{
+  "name": "ros-manager",
+  "version": "1.0.0",
+  "description": "Offline survey workspace with optional API sync server",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "start:server": "node server.js"
+  }
+}
