@@ -738,7 +738,7 @@ export default class AppController {
           ? this.currentProjectId
           : Object.keys(this.projects)[0];
       if (activeId) {
-        this.loadProject(activeId);
+        this.loadProject(activeId, { preserveRecord: true });
       } else {
         this.drawProjectOverview();
       }
