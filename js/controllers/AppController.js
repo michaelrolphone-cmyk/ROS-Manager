@@ -1804,13 +1804,18 @@ export default class AppController {
       );
     });
 
+    const onSpringboard = resolvedTarget === "springboardSection";
+
+    if (!onSpringboard) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
     this.appLaunchers?.forEach((launcher) => {
       if (launcher.dataset.target === targetId)
         launcher.classList.add("active");
       else launcher.classList.remove("active");
     });
 
-    const onSpringboard = resolvedTarget === "springboardSection";
     if (this.elements.homeButton) {
       this.elements.homeButton.classList.toggle("visible", !onSpringboard);
     }
@@ -3330,22 +3335,20 @@ export default class AppController {
             branches.push(this.serializeCallsFromContainer(branchBody));
         }
       );
-      if (bearing || distance || curveRadius || branches.length) {
-        calls.push(
-          new TraverseInstruction(
-            bearing,
-            distance,
-            branches,
-            curveRadius,
-            curveDirection,
-            curveArcLength,
-            curveChordLength,
-            curveChordBearing,
-            curveDeltaAngle,
-            curveTangent
-          )
-        );
-      }
+      calls.push(
+        new TraverseInstruction(
+          bearing,
+          distance,
+          branches,
+          curveRadius,
+          curveDirection,
+          curveArcLength,
+          curveChordLength,
+          curveChordBearing,
+          curveDeltaAngle,
+          curveTangent
+        )
+      );
     });
 
     return calls;
@@ -4784,26 +4787,47 @@ export default class AppController {
     if (!select) return;
 
     const previousValue = select.value;
-    select.innerHTML = "";
-    const placeholder = document.createElement("option");
-    placeholder.value = "";
-    placeholder.textContent =
+    const placeholderText =
       members.length > 0
         ? "Select team member"
         : "Add team members to assign";
-    select.appendChild(placeholder);
 
-    members
-      .slice()
-      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
-      .forEach((member) => {
-        const opt = document.createElement("option");
-        opt.value = member;
-        opt.textContent = member;
-        select.appendChild(opt);
-      });
+    const desiredOptions = [
+      "",
+      ...members
+        .slice()
+        .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" })),
+    ];
 
     const fallbackValue = selectedMember || previousValue;
+    if (fallbackValue && !desiredOptions.includes(fallbackValue)) {
+      desiredOptions.push(fallbackValue);
+    }
+
+    const currentOptions = Array.from(select.options).map((opt) => opt.value);
+    const placeholderMatches =
+      select.options[0]?.textContent === placeholderText || !select.options.length;
+    const optionsMatch =
+      currentOptions.length === desiredOptions.length &&
+      currentOptions.every((val, idx) => val === desiredOptions[idx]);
+
+    if (optionsMatch && placeholderMatches && select.value === fallbackValue) {
+      return;
+    }
+
+    select.innerHTML = "";
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = placeholderText;
+    select.appendChild(placeholder);
+
+    desiredOptions.slice(1).forEach((member) => {
+      const opt = document.createElement("option");
+      opt.value = member;
+      opt.textContent = member;
+      select.appendChild(opt);
+    });
+
     if (fallbackValue) {
       select.value = fallbackValue;
       if (select.value !== fallbackValue) {

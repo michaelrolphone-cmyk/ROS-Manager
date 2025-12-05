@@ -456,45 +456,129 @@ export default class NavigationController {
     const project = this.getCurrentProject?.();
     if (!select) return;
 
+    const previousValue = select.value;
+    const desiredStructure = this.buildTargetOptionStructure(project);
+    const currentStructure = this.collectTargetOptionStructure(select);
+
+    const structuresMatch = this.targetOptionsEqual(
+      currentStructure,
+      desiredStructure
+    );
+
+    if (structuresMatch) {
+      return;
+    }
+
     select.innerHTML = "";
-    const placeholder = document.createElement("option");
-    placeholder.value = "";
-    placeholder.textContent = "Choose a navigation target";
-    select.appendChild(placeholder);
+    desiredStructure.forEach((entry) => {
+      if (entry.type === "option") {
+        const opt = document.createElement("option");
+        opt.value = entry.value;
+        opt.textContent = entry.text;
+        select.appendChild(opt);
+        return;
+      }
+
+      if (entry.type === "optgroup") {
+        const group = document.createElement("optgroup");
+        group.label = entry.label;
+        entry.options.forEach((option) => {
+          const opt = document.createElement("option");
+          opt.value = option.value;
+          opt.textContent = option.text;
+          group.appendChild(opt);
+        });
+        select.appendChild(group);
+      }
+    });
+
+    if (previousValue) {
+      select.value = previousValue;
+    }
+  }
+
+  buildTargetOptionStructure(project) {
+    const structure = [
+      { type: "option", value: "", text: "Choose a navigation target" },
+    ];
 
     const locPoints = project?.localization?.points || [];
     if (locPoints.length) {
-      const group = document.createElement("optgroup");
-      group.label = `Localized grid (${project.localization.anchorLabel || "Anchor"})`;
-      locPoints.forEach((pt) => {
-        const option = document.createElement("option");
-        option.value = `loc:${pt.id}`;
-        option.textContent = `${pt.label} (${pt.lat.toFixed(5)}, ${pt.lon.toFixed(5)})`;
-        group.appendChild(option);
+      structure.push({
+        type: "optgroup",
+        label: `Localized grid (${project.localization.anchorLabel || "Anchor"})`,
+        options: locPoints.map((pt) => ({
+          value: `loc:${pt.id}`,
+          text: `${pt.label} (${pt.lat.toFixed(5)}, ${pt.lon.toFixed(5)})`,
+        })),
       });
-      select.appendChild(group);
     }
 
     const bookmarks = project?.navigationBookmarks || [];
-    const bookmarkGroup = document.createElement("optgroup");
-    bookmarkGroup.label = "Saved GPS bookmarks";
-    if (!bookmarks.length) {
-      const opt = document.createElement("option");
-      opt.value = "";
-      opt.textContent = "No saved locations yet";
-      bookmarkGroup.appendChild(opt);
-    } else {
-      bookmarks
-        .slice()
-        .sort((a, b) => new Date(b.recordedAt) - new Date(a.recordedAt))
-        .forEach((bookmark) => {
-          const option = document.createElement("option");
-          option.value = `bm:${bookmark.id}`;
-          option.textContent = `${bookmark.name} (${bookmark.latitude.toFixed(5)}, ${bookmark.longitude.toFixed(5)})`;
-          bookmarkGroup.appendChild(option);
-        });
-    }
-    select.appendChild(bookmarkGroup);
+    const bookmarkOptions = bookmarks
+      .slice()
+      .sort((a, b) => new Date(b.recordedAt) - new Date(a.recordedAt))
+      .map((bookmark) => ({
+        value: `bm:${bookmark.id}`,
+        text: `${bookmark.name} (${bookmark.latitude.toFixed(5)}, ${bookmark.longitude.toFixed(5)})`,
+      }));
+
+    structure.push({
+      type: "optgroup",
+      label: "Saved GPS bookmarks",
+      options: bookmarkOptions.length
+        ? bookmarkOptions
+        : [{ value: "", text: "No saved locations yet" }],
+    });
+
+    return structure;
+  }
+
+  collectTargetOptionStructure(select) {
+    return Array.from(select.children).map((child) => {
+      if (child.tagName === "OPTION") {
+        return { type: "option", value: child.value, text: child.textContent };
+      }
+
+      if (child.tagName === "OPTGROUP") {
+        return {
+          type: "optgroup",
+          label: child.label,
+          options: Array.from(child.children)
+            .filter((node) => node.tagName === "OPTION")
+            .map((opt) => ({
+              value: opt.value,
+              text: opt.textContent,
+            })),
+        };
+      }
+      return null;
+    }).filter(Boolean);
+  }
+
+  targetOptionsEqual(current, desired) {
+    if (current.length !== desired.length) return false;
+
+    return current.every((entry, index) => {
+      const target = desired[index];
+      if (!target || entry.type !== target.type) return false;
+
+      if (entry.type === "option") {
+        return entry.value === target.value && entry.text === target.text;
+      }
+
+      if (entry.type === "optgroup") {
+        if (entry.label !== target.label) return false;
+        if (entry.options.length !== target.options.length) return false;
+
+        return entry.options.every(
+          (opt, optIndex) =>
+            opt.value === target.options[optIndex]?.value &&
+            opt.text === target.options[optIndex]?.text
+        );
+      }
+      return false;
+    });
   }
 
   renderEquipmentOptions() {
