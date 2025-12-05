@@ -9,10 +9,13 @@
   <body>
     <div class="container">
       <div class="header">
-        <h1>Survey Field Tools</h1>
-        <div
-          style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap"
-        >
+        <div class="header-left">
+          <button type="button" id="homeButton" class="home-button">
+            く <span>Home</span>
+          </button>
+          <h1>Survey Field Tools</h1>
+        </div>
+        <div class="header-actions">
           <!-- hidden select (internal) -->
           <select id="projectSelect" style="display: none"></select>
 
@@ -56,15 +59,6 @@
       </div>
 
       <div class="content">
-        <div class="app-toolbar">
-          <button type="button" id="homeButton" class="home-button">
-            🏠 <span>Home</span>
-          </button>
-          <div class="project-pill">
-            <span class="label">Project</span>
-            <span id="currentProjectName">No project selected</span>
-          </div>
-        </div>
 
         <div class="project-controls" id="projectControls">
           <input
@@ -277,6 +271,13 @@
                 >Manage survey control and stakeout points</span
               >
             </button>
+            <button class="app-tile" data-target="levelingSection">
+              <span class="app-icon">🎚️</span>
+              <span class="app-title">Differential Levels</span>
+              <span class="app-hint"
+                >Record BS/FS shots and running closures</span
+              >
+            </button>
             <button class="app-tile" data-target="evidenceSection">
               <span class="app-icon">🧾</span>
               <span class="app-title">Evidence Records</span>
@@ -298,6 +299,11 @@
               <span class="app-hint"
                 >Manage equipment, crews, codes &amp; backups</span
               >
+            </button>
+            <button class="app-tile" data-target="helpSection">
+              <span class="app-icon">❔</span>
+              <span class="app-title">Help</span>
+              <span class="app-hint">Read the HELP.md guide in the app</span>
             </button>
           </div>
         </div>
@@ -568,6 +574,118 @@
           </div>
         </div>
 
+        <div id="levelingSection" class="tool-section">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <p class="eyebrow" style="color: #475569">Differential Levels</p>
+                <h3 style="margin-top: 2px">Field Level Book</h3>
+                <p class="subtitle" style="margin-top: 4px">
+                  Capture backsight/foresight readings, check running sums, and
+                  review closure error as you work.
+                </p>
+              </div>
+              <div class="leveling-actions">
+                <button id="exportLevelRunButton" class="secondary">
+                  Export as PDF
+                </button>
+              </div>
+            </div>
+
+            <div class="leveling-toolbar">
+              <div class="input-group">
+                <label for="levelRunSelect">Level run</label>
+                <select id="levelRunSelect"></select>
+              </div>
+              <button id="newLevelRunButton">+ New Run</button>
+            </div>
+
+            <div class="leveling-grid">
+              <div>
+                <label for="levelRunName">Run name</label>
+                <input
+                  type="text"
+                  id="levelRunName"
+                  placeholder="Benchmark loop, north ditch, etc."
+                />
+              </div>
+              <div>
+                <label for="levelStartPoint">Start point</label>
+                <input
+                  type="text"
+                  id="levelStartPoint"
+                  placeholder="BM-1"
+                />
+              </div>
+              <div>
+                <label for="levelStartElevation">Start elevation</label>
+                <input
+                  type="number"
+                  step="0.0001"
+                  id="levelStartElevation"
+                  placeholder="100.00"
+                />
+              </div>
+              <div>
+                <label for="levelClosingPoint">Closing point</label>
+                <input
+                  type="text"
+                  id="levelClosingPoint"
+                  placeholder="BM-1 (return)"
+                />
+              </div>
+              <div>
+                <label for="levelClosingElevation">Closing elevation</label>
+                <input
+                  type="number"
+                  step="0.0001"
+                  id="levelClosingElevation"
+                  placeholder="100.00"
+                />
+              </div>
+              <div class="leveling-summary">
+                <div>
+                  <p class="label">Total BS</p>
+                  <p id="levelTotalBs" class="value">0.000</p>
+                </div>
+                <div>
+                  <p class="label">Total FS</p>
+                  <p id="levelTotalFs" class="value">0.000</p>
+                </div>
+                <div>
+                  <p class="label">Misclosure</p>
+                  <p id="levelMisclosure" class="value">—</p>
+                  <span id="levelClosureNote" class="mini-note"></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="leveling-table-header">
+              <h4 style="margin: 0">Shots</h4>
+              <button id="addLevelEntryButton">+ Add entry</button>
+            </div>
+            <div class="table-wrapper">
+              <table class="calls-table leveling-table">
+                <thead>
+                  <tr>
+                    <th>Point</th>
+                    <th>BS</th>
+                    <th>FS</th>
+                    <th>Notes</th>
+                    <th>Rise / Fall</th>
+                    <th>Elevation</th>
+                    <th>ΣBS</th>
+                    <th>ΣFS</th>
+                    <th>Closure</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="levelEntriesTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <div id="evidenceSection" class="tool-section">
           <div class="card">
             <h3>Evidence Capture</h3>
@@ -769,11 +887,15 @@
             <div class="form-grid">
               <div>
                 <label for="equipmentSetupBy">Set Up By</label>
-                <input
-                  id="equipmentSetupBy"
-                  type="text"
-                  placeholder="Crew or person responsible"
-                />
+                <select id="equipmentSetupBy"></select>
+              </div>
+              <div>
+                <label for="equipmentUsed">Equipment Used</label>
+                <select id="equipmentUsed" multiple></select>
+                <small class="app-hint">
+                  Hold Ctrl (Windows) or Command (Mac) to select multiple
+                  items.
+                </small>
               </div>
               <div>
                 <label for="captureEquipmentLocation">GPS Location</label>
@@ -1085,6 +1207,29 @@
               © Michael Byrns. No liability is incurred by the use of this app
               or any data loss.
             </p>
+          </div>
+        </div>
+
+        <div id="helpSection" class="tool-section">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h3 style="margin-top: 0">Help &amp; Guidance</h3>
+                <p class="subtitle" style="margin-top: 0">
+                  This view reads from HELP.md so the in-app help always matches
+                  your documentation file.
+                </p>
+              </div>
+              <div class="help-actions">
+                <button type="button" id="helpRefreshButton">
+                  Refresh from HELP.md
+                </button>
+                <span id="helpStatus" class="mini-note"></span>
+              </div>
+            </div>
+            <div id="helpContent" class="help-content">
+              <p class="subtitle">Loading help content…</p>
+            </div>
           </div>
         </div>
       </div>

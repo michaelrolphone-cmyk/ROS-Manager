@@ -5,6 +5,7 @@ export default class EquipmentLog {
     tearDownAt = "",
     baseHeight = "",
     referencePoint = "",
+    equipmentUsed = [],
     setupBy = "",
     workNotes = "",
     location = null,
@@ -18,6 +19,7 @@ export default class EquipmentLog {
     this.tearDownAt = tearDownAt;
     this.baseHeight = baseHeight;
     this.referencePoint = referencePoint;
+    this.equipmentUsed = Array.isArray(equipmentUsed) ? equipmentUsed : [];
     this.setupBy = setupBy;
     this.workNotes = workNotes;
     this.location = location;
@@ -38,6 +40,7 @@ export default class EquipmentLog {
       tearDownAt: this.tearDownAt,
       baseHeight: this.baseHeight,
       referencePoint: this.referencePoint,
+      equipmentUsed: this.equipmentUsed,
       setupBy: this.setupBy,
       workNotes: this.workNotes,
       location: this.location,

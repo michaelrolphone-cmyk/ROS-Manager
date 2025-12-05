@@ -1,11 +1,16 @@
 {
   "name": "ros-manager",
   "version": "1.0.0",
-  "description": "Offline survey workspace with optional API sync server",
+  "description": "An offline, browser-based workspace that keeps traverse drafting, monument evidence, point files, navigation aids, and equipment records together in one HTML file. Data stays in your browser's local storage—no build steps or servers are required.",
   "main": "server.js",
-  "type": "commonjs",
   "scripts": {
-    "start": "node server.js",
-    "start:server": "node server.js"
-  }
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
 }

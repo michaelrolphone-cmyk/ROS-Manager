@@ -1,17 +1,17 @@
 # Survey Tools Workspace
 
-This offline, browser-based workspace bundles several surveying tools in one place. You can keep corner perpetuation filing drafts, monument field notes, record of survey traversals, and related evidence side by side. Everything runs locally from a single HTML file with data saved in local storage—no servers or build steps required.
+An offline, browser-based workspace that keeps traverse drafting, monument evidence, point files, navigation aids, and equipment records together in one HTML file. Data stays in your browser's local storage—no build steps or servers are required.
+
+## Requirements
+- Modern desktop browser (Chrome, Edge, or Firefox) with local storage enabled.
+- Allow file downloads/uploads for imports, exports, and backups.
+- Optional: grant location access when prompted so GPS features work in Navigation and Equipment Setup.
 
 ## Getting Started
-1. **Open the app**
-   - Launch `index.html` directly in your browser (double-click the file or open it via the browser File > Open dialog). No build step is required.
-2. **Create or load a project**
-   - Use **+ New Project** or the project name input to start a project. Projects and their records are saved automatically in your browser.
-   - To reuse previous work, choose **Import** and select a `.json` file exported from the app.
-3. **Switch between tools**
-   - Use the tab buttons to move between Traverse Builder and Evidence Logger while staying inside the same project and dataset.
-4. **Save, export, or remove data**
-   - Data saves automatically. Use **Export Project** or **Export All** for backups, or **Delete Project/Record** to remove items.
+1. **Open the app** – Double-click `index.html` or open it through your browser's File menu.
+2. **Create or load a project** – Use **Create Project** or the project dropdown to start a project. Projects save automatically. Use **Import** to restore a `.json` export.
+3. **Move between tools** – The springboard tiles open Traverse Builder, Points, Leveling, Evidence, Equipment, Navigation, and Settings while staying on the same dataset.
+4. **Back up or clear data** – Export the current project, all projects, or the entire app dataset. Delete projects, records, or point files if you need to start fresh.
 
 ## Tool Overview
 
@@ -74,6 +74,6 @@ The browser UI will automatically attempt to sync when it detects an online conn
   - Review all saved equipment entries for the active project in a dedicated log view.【F:index.html†L1139-L1146】
 
 ## Tips
-- Use meaningful project/record names to keep the project and Start From dropdowns readable.
-- Traverse Builder and Evidence Logger share the same dataset, so you can capture evidence immediately after generating traverse points.
-- Export regularly for portable backups of both traverse data and evidence attachments.
+- Use clear project and record names so dropdowns and previews stay readable.
+- Traverse Builder, Evidence Records, Point Files, Leveling, and Navigation all share the same project context.
+- Export projects or the entire app regularly so you have portable backups of field data, photos, and commands.
