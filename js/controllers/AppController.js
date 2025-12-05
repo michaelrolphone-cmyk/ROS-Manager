@@ -767,6 +767,7 @@ export default class AppController {
 
   setupSyncHandlers() {
     window.addEventListener("online", () => this.syncProjectsWithServer());
+    return; // Disabled until bugs fixed
     window.addEventListener("online", () => this.startLiveUpdates());
     window.addEventListener("offline", () => this.stopLiveUpdates());
     if (navigator.onLine) {
