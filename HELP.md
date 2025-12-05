@@ -1,47 +1,61 @@
 # Survey Tools Help
 
-This guide explains each mini app in simple steps. Everything runs inside `index.html` and saves in your browser. No internet or extra software is needed.
+This guide explains each mini app in plain language and why it matters during a typical day in the field. Everything runs inside
+`index.html` and saves in your browser—no internet or extra software is needed.
 
 ## Springboard (Home)
-- Shows the active project's name, client contact info, address, and TRS. Use **Edit Details** to fill these fields.
-- Click **Call**, **Email**, or **Map** to use your default phone/email/map apps.
-- Use the large tiles to open Traverse Builder, Points, Leveling, Evidence, Equipment, Navigation, or Settings.
+- **What it does:** Shows the active project's name, client contact info, address, and TRS. Tiles open each mini app.
+- **Why it helps:** Keeps the whole crew on the same page about the job location and scope before entering data.
+- **How to use:** Click **Edit Details** to fill in client and location info. Tap **Call**, **Email**, or **Map** to contact the
+client or pull up navigation. Use the large tiles to jump into Traverse Builder, Points, Leveling, Evidence, Equipment,
+Navigation, Settings, or Help.
 
 ## Traverse Builder
-- Create a record name and click **+ New Record**.
-- Enter the starting point number, coordinates, elevation, backsight azimuth, basis of bearing, and first distance.
-- Add each bearing and distance with **+ Add Subsequent Call**. Reorder calls if needed.
-- Review the **Traverse Preview** canvas. When ready, click **Generate Carlson Commands** and copy the blocks for your CAD/collector.
+- **What it does:** Stores traverse calls with starting coordinates, bearings, and distances, then draws a preview and produces
+Carlson-ready commands.
+- **Why it helps:** Keeps the legal description, sketch, and export in one spot so you can stake or draft without retyping.
+- **How to use:** Enter a record name and click **+ New Record**. Fill in starting point, coordinates, elevation, backsight
+azimuth, basis of bearing, and first distance. Add each bearing and distance with **+ Add Subsequent Call** and reorder if
+needed. Review the **Traverse Preview**, then click **Generate Carlson Commands** to copy blocks into CAD or your collector.
 
 ## Point File Manager
-- Click **Import Points CSV** to load a point file (columns: point number, X/lat, Y/lon, elevation, code, description).
-- Use **Add Point Row** for quick manual entries or **New Point File** to start a blank list.
-- Choose **Generate Point File** to convert a traverse into points, then **Download Points TXT** to save for your data collector.
-- Switch between stored point files using the **Active Point File** dropdown and **Rename Point File** as needed.
+- **What it does:** Manages point files per project, including imports, quick manual edits, traverse-to-point conversion, and
+downloads.
+- **Why it helps:** Avoids juggling loose CSV/TXT files and keeps the same point numbers synced with traverses and navigation.
+- **How to use:** Click **Import Points CSV** (columns: point number, X/lat, Y/lon, elevation, code, description) or start fresh
+with **New Point File**. Add quick rows with **Add Point Row**. Convert a traverse to points with **Generate Point File**, then
+**Download Points TXT** for your collector. Switch or rename files using **Active Point File** and **Rename Point File**.
 
 ## Field Level Book
-- Pick or create a **Level run** and name it (for example, "North ditch loop").
-- Enter starting point and elevation, then add backsight/foresight shots in order.
-- Watch running sums and closure error update automatically. Adjust entries until the closure looks correct.
-- Export a PDF summary with **Export as PDF** for your field notes.
+- **What it does:** Tracks backsight/foresight shots, running sums, and misclosure for a level loop with exportable notes.
+- **Why it helps:** Replaces handwritten books, reduces arithmetic mistakes, and provides a clean PDF for the office.
+- **How to use:** Create or pick a **Level run** and name it (e.g., "North ditch loop"). Set the starting point/elevation, then
+add BS/FS shots in order. Watch the totals and closure update. Adjust until the closure matches expectations, then **Export as
+PDF** for your field packet.
 
 ## Evidence Records
-- Select a record and traverse point to attach evidence to that location.
-- Choose the evidence type and condition, then describe the monument in plain language.
-- Add tie distances/bearings and upload photos for each tie. Optional: click **Get GPS Location** to stamp coordinates.
-- Save the evidence entry to add it to the project-wide list. Use exports when you need corner filing text and backups.
+- **What it does:** Attaches monument evidence to traverse points with condition, ties, photos, and optional GPS stamps.
+- **Why it helps:** Keeps corner evidence tied to the geometry so later filings and stakeouts reference the same location data.
+- **How to use:** Pick a record and traverse point. Choose the evidence type and condition, then describe the monument in plain
+language. Add tie distances/bearings, upload photos, and optionally use **Get GPS Location** for coordinates. Save to add the
+entry to the project-wide list, then export when you need corner filing text or backups.
 
 ## Equipment Setup Log
-- Record setup and teardown date/time, base station height, reference point, and the crew member.
-- Pick one or more equipment items used. Optionally grab the GPS position with **Get GPS Location**.
-- Describe the day's work goals in **Work / Daily Goal** and save. Each entry appears in **Equipment Records** for review.
+- **What it does:** Logs setup/teardown times, base heights, reference points, crews, equipment used, and optional GPS position.
+- **Why it helps:** Provides a daybook of control setups so you can repeat or audit work without digging through separate notes.
+- **How to use:** Enter setup/teardown date/time, base station height, reference point, crew member, and equipment list. Capture
+GPS with **Get GPS Location** if available. Describe the day's goals in **Work / Daily Goal** and save to list it under
+**Equipment Records**.
 
 ## Navigation
-- Use **Start Compass** to draw a live compass. Turn your device until the heading matches the target bearing.
-- Choose a **Navigate to** target (stakeout point or traverse/equipment source) to see distance, target bearing, and left/right offset.
-- If GPS is available, apply localization to show your position and the target on the map preview.
-- Clear or refresh sources anytime with the buttons under the selectors.
+- **What it does:** Provides a live compass, target bearings, left/right offsets, and optional map preview for stakeout targets.
+- **Why it helps:** Lets you walk to traverse points, equipment bases, or bookmarked targets without rekeying directions.
+- **How to use:** Click **Start Compass** and rotate until the heading matches your target. Choose a **Navigate to** target
+(point file entry, traverse point, or equipment source) to see distance, bearing, and offset. If GPS is available, apply
+localization to show your location and the target on the map. Use the refresh/clear buttons to update sources.
 
 ## Global Settings
-- Add reusable **Equipment Names**, **Team Members**, and **Point Codes** so dropdowns stay consistent across projects.
-- Use **Download All App Data** to back up every project and setting in one file. Use **Import App Data** to restore from a backup.
+- **What it does:** Stores reusable **Equipment Names**, **Team Members**, and **Point Codes** plus a full-app import/export.
+- **Why it helps:** Keeps dropdown choices consistent across every project and provides a single backup file for the entire app.
+- **How to use:** Add or remove values in each list so they appear in other tools. Use **Download All App Data** for a full
+backup and **Import App Data** to restore.

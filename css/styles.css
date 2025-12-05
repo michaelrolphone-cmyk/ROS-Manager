@@ -1250,3 +1250,37 @@ body {
         display: flex;
         gap: 8px;
       }
+
+      .help-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .help-content {
+        padding: 6px 4px 2px;
+      }
+
+      .help-content h1,
+      .help-content h2,
+      .help-content h3 {
+        margin: 12px 0 6px;
+        color: #0f172a;
+      }
+
+      .help-content p {
+        margin: 6px 0;
+        color: #0f172a;
+      }
+
+      .help-content ul {
+        margin: 4px 0 12px 18px;
+        padding: 0 0 0 6px;
+        color: #0f172a;
+      }
+
+      .help-content li {
+        margin: 4px 0;
+        line-height: 1.4;
+      }

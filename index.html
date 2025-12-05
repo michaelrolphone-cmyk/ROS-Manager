@@ -300,6 +300,11 @@
                 >Manage equipment, crews, codes &amp; backups</span
               >
             </button>
+            <button class="app-tile" data-target="helpSection">
+              <span class="app-icon">❔</span>
+              <span class="app-title">Help</span>
+              <span class="app-hint">Read the HELP.md guide in the app</span>
+            </button>
           </div>
         </div>
 
@@ -1202,6 +1207,29 @@
               © Michael Byrns. No liability is incurred by the use of this app
               or any data loss.
             </p>
+          </div>
+        </div>
+
+        <div id="helpSection" class="tool-section">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h3 style="margin-top: 0">Help &amp; Guidance</h3>
+                <p class="subtitle" style="margin-top: 0">
+                  This view reads from HELP.md so the in-app help always matches
+                  your documentation file.
+                </p>
+              </div>
+              <div class="help-actions">
+                <button type="button" id="helpRefreshButton">
+                  Refresh from HELP.md
+                </button>
+                <span id="helpStatus" class="mini-note"></span>
+              </div>
+            </div>
+            <div id="helpContent" class="help-content">
+              <p class="subtitle">Loading help content…</p>
+            </div>
           </div>
         </div>
       </div>

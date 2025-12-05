@@ -22,6 +22,7 @@ An offline, browser-based workspace that keeps traverse drafting, monument evide
 - **Equipment Setup Log** – Record setup/teardown times, base heights, reference points, crews, equipment used, work notes, and optional GPS position with a list of saved sessions per project.【F:index.html†L839-L937】
 - **Navigation** – Compass and heading tools to walk stakeout targets or equipment bases, with distance, bearing, and offset readouts plus optional map preview when GPS localization is applied.【F:index.html†L938-L1127】
 - **Global Settings** – Manage reusable equipment names, team members, and point codes, and download or import a single backup file covering all projects and settings.【F:index.html†L1128-L1216】
+- **Help** – In-app reader that pulls instructions straight from `HELP.md` so the guide matches the version shipped with the app.【F:index.html†L1213-L1233】【F:js/controllers/AppController.js†L1413-L1487】
 
 ## Tips
 - Use clear project and record names so dropdowns and previews stay readable.
