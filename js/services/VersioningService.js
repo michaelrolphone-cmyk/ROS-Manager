@@ -8,6 +8,13 @@ const nowIso = () => new Date().toISOString();
 const isPlainObject = (val) =>
   val && typeof val === "object" && !Array.isArray(val);
 
+const getArrayKey = (item) => {
+  if (item && typeof item === "object") {
+    return item.id || item.pointNumber || JSON.stringify(item);
+  }
+  return item;
+};
+
 export default class VersioningService {
   ensureEntity(entity = {}, { prefix = DEFAULT_PREFIX } = {}) {
     const stamp = nowIso();
@@ -153,5 +160,65 @@ export default class VersioningService {
     });
     this.touchEvidenceMap(evidenceByProject);
     return { projects, evidenceByProject };
+  }
+
+  mergeValues(base, incoming) {
+    const isVersioned = (val) =>
+      isPlainObject(val) && "version" in val && "updatedAt" in val;
+
+    const compareVersioned = (left, right) => {
+      if (!left) return right;
+      if (!right) return left;
+      if ((left.version ?? 0) === (right.version ?? 0)) {
+        return new Date(left.updatedAt || 0) >= new Date(right.updatedAt || 0)
+          ? left
+          : right;
+      }
+      return (left.version ?? 0) > (right.version ?? 0) ? left : right;
+    };
+
+    if (isVersioned(base) || isVersioned(incoming)) {
+      return compareVersioned(base, incoming);
+    }
+
+    if (Array.isArray(base) && Array.isArray(incoming)) {
+      const map = new Map();
+      (base || []).forEach((item) => {
+        map.set(getArrayKey(item), item);
+      });
+      (incoming || []).forEach((item) => {
+        const key = getArrayKey(item);
+        if (map.has(key)) {
+          map.set(key, this.mergeValues(map.get(key), item));
+        } else {
+          map.set(key, item);
+        }
+      });
+      return Array.from(map.values());
+    }
+
+    if (isPlainObject(base) && isPlainObject(incoming)) {
+      const result = { ...base };
+      Object.keys(incoming || {}).forEach((key) => {
+        result[key] = this.mergeValues(base ? base[key] : undefined, incoming[key]);
+      });
+      return result;
+    }
+
+    return incoming !== undefined ? incoming : base;
+  }
+
+  mergeDataset(stored = {}, incoming = {}) {
+    const merged = {};
+    const keys = new Set([
+      ...Object.keys(stored || {}),
+      ...Object.keys(incoming || {}),
+    ]);
+
+    keys.forEach((key) => {
+      merged[key] = this.mergeValues(stored[key], incoming[key]);
+    });
+
+    return merged;
   }
 }
