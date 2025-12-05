@@ -1,3 +1,4 @@
+* now it is duplicating the traverse bearing and distance entries over and over again even only one user is connected 
 * I would like a list of the nearest 5 points to my current location shown on the navigation app so I can see what is near me. 
 * I would like the help.md refresh button removed. 
 * Evidence capture shouldn't pre select a record and traverse point. It won't always tie directly to a point in the projects traverses or even the point files. 
