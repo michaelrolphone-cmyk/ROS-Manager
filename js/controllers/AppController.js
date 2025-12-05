@@ -42,6 +42,8 @@ export default class AppController {
     this.currentMapAddressKey = "";
     this.currentMapUrl = null;
     this.pendingMapRequestId = 0;
+    this.helpLoaded = false;
+    this.helpLoading = false;
 
     this.cacheDom();
     this.appLaunchers = document.querySelectorAll(".app-tile");
@@ -230,6 +232,10 @@ export default class AppController {
       settingsSection: document.getElementById("settingsSection"),
       evidenceSection: document.getElementById("evidenceSection"),
       equipmentSection: document.getElementById("equipmentSection"),
+      helpSection: document.getElementById("helpSection"),
+      helpContent: document.getElementById("helpContent"),
+      helpStatus: document.getElementById("helpStatus"),
+      helpRefreshButton: document.getElementById("helpRefreshButton"),
       evidenceRecordDropdownContainer: document.getElementById(
         "evidenceRecordDropdownContainer"
       ),
@@ -466,6 +472,10 @@ export default class AppController {
       this.handleAllDataImport(e.target);
     });
 
+    this.elements.helpRefreshButton?.addEventListener("click", () =>
+      this.loadHelpDocument(true)
+    );
+
     this.elements.addEquipmentNameButton?.addEventListener("click", () =>
       this.addEquipmentName()
     );
@@ -663,6 +673,7 @@ export default class AppController {
     this.renderEvidenceTies();
     this.refreshEquipmentUI();
     this.renderGlobalSettings();
+    this.loadHelpDocument();
     this.switchTab("springboardSection");
     this.handleSpringboardScroll();
   }
@@ -1399,6 +1410,83 @@ export default class AppController {
     return null;
   }
 
+  escapeHtml(str = "") {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  renderMarkdown(md = "") {
+    const lines = md.replace(/\r\n/g, "\n").split("\n");
+    let html = "";
+    let inList = false;
+
+    const closeList = () => {
+      if (inList) {
+        html += "</ul>";
+        inList = false;
+      }
+    };
+
+    lines.forEach((line) => {
+      const heading = line.match(/^(#{1,3})\s+(.*)/);
+      if (heading) {
+        closeList();
+        const level = heading[1].length;
+        const tag = level === 1 ? "h1" : level === 2 ? "h2" : "h3";
+        html += `<${tag}>${this.escapeHtml(heading[2].trim())}</${tag}>`;
+        return;
+      }
+
+      const listItem = line.match(/^-[\s]+(.*)/);
+      if (listItem) {
+        if (!inList) html += "<ul>";
+        inList = true;
+        html += `<li>${this.escapeHtml(listItem[1].trim())}</li>`;
+        return;
+      }
+
+      if (!line.trim()) {
+        closeList();
+        return;
+      }
+
+      closeList();
+      html += `<p>${this.escapeHtml(line.trim())}</p>`;
+    });
+
+    closeList();
+    return html || "<p>No help content found.</p>";
+  }
+
+  async loadHelpDocument(force = false) {
+    if (this.helpLoading || (this.helpLoaded && !force)) return;
+    const container = this.elements.helpContent;
+    if (!container) return;
+    const status = this.elements.helpStatus;
+    this.helpLoading = true;
+    if (status) status.textContent = "Loading help from HELP.md…";
+
+    try {
+      const res = await fetch("HELP.md");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      container.innerHTML = this.renderMarkdown(text);
+      if (status)
+        status.textContent =
+          "Loaded from HELP.md. Click refresh after editing the file.";
+      this.helpLoaded = true;
+    } catch (err) {
+      console.error("Failed to load help content", err);
+      if (status)
+        status.textContent = "Couldn't load HELP.md. Confirm it sits by index.html.";
+      container.innerHTML =
+        "<p>Help content could not be loaded. Make sure HELP.md is next to index.html.</p>";
+    } finally {
+      this.helpLoading = false;
+    }
+  }
+
   handleSpringboardScroll() {
     const header = this.elements.pageHeader;
     if (!header) return;
@@ -1418,6 +1506,7 @@ export default class AppController {
       this.elements.levelingSection,
       this.elements.equipmentSection,
       this.elements.navigationSection,
+      this.elements.helpSection,
     ];
     const validSection = sections.find((sec) => sec?.id === targetId);
     const resolvedTarget = validSection ? targetId : "springboardSection";
@@ -1469,6 +1558,10 @@ export default class AppController {
     }
     if (resolvedTarget === "pointsSection") {
       this.pointController.renderPointsTable();
+    }
+
+    if (resolvedTarget === "helpSection") {
+      this.loadHelpDocument();
     }
   }
 
