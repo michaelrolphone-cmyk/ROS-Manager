@@ -25,6 +25,7 @@ export default class Project {
     pointFiles = [],
     activePointFileId = null,
     navigationBookmarks = [],
+    navigationTarget = null,
     localization = null,
     createdAt = null,
     updatedAt = null,
@@ -67,6 +68,7 @@ export default class Project {
         : NavigationBookmark.fromObject(entry)
     );
 
+    this.navigationTarget = navigationTarget || null;
     this.localization = localization || null;
     this.createdAt = createdAt || stamp;
     this.updatedAt = updatedAt || this.createdAt;
@@ -122,6 +124,7 @@ export default class Project {
           ? entry.toObject()
           : NavigationBookmark.fromObject(entry).toObject()
       ),
+      navigationTarget: this.navigationTarget,
       localization: this.localization,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,

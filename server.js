@@ -95,17 +95,28 @@ const ensureDataFile = () => {
     fs.mkdirSync(DATA_DIR, { recursive: true });
   }
   if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify({ projects: {}, evidence: {} }, null, 2));
+    fs.writeFileSync(
+      DATA_FILE,
+      JSON.stringify(
+        { projects: {}, evidence: {}, globalSettings: {} },
+        null,
+        2
+      )
+    );
   }
 };
 
 const readData = () => {
   ensureDataFile();
   try {
-    return JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
+    const data = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
+    return {
+      globalSettings: {},
+      ...data,
+    };
   } catch (err) {
     console.warn("Failed to read data file", err);
-    return { projects: {}, evidence: {} };
+    return { projects: {}, evidence: {}, globalSettings: {} };
   }
 };
 
