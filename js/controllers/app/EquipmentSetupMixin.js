@@ -418,6 +418,127 @@ const EquipmentSetupMixin = (Base) =>
       return "";
     }
 
+    getCpfFieldDefinitions() {
+      return [
+        { key: "recordId", label: "Record", prop: "recordId", element: "evidenceRecordSelect" },
+        { key: "pointLabel", label: "Corner label", prop: "pointLabel", element: "evidencePointSelect" },
+        { key: "township", label: "Township", prop: "township", element: "evidenceTownship" },
+        { key: "range", label: "Range", prop: "range", element: "evidenceRange" },
+        { key: "section", label: "Section", prop: "section", element: "evidenceSection" },
+        {
+          key: "sectionBreakdown",
+          label: "Section breakdown",
+          prop: "sectionBreakdown",
+          element: "evidenceSectionBreakdown",
+        },
+        { key: "cornerType", label: "Corner type", prop: "cornerType", element: "evidenceCornerType" },
+        {
+          key: "cornerStatus",
+          label: "Corner status",
+          prop: "cornerStatus",
+          element: "evidenceCornerStatus",
+        },
+        { key: "monumentType", label: "Monument type", prop: "monumentType", element: "evidenceMonumentType" },
+        {
+          key: "monumentMaterial",
+          label: "Monument material",
+          prop: "monumentMaterial",
+          element: "evidenceMonumentMaterial",
+        },
+        { key: "monumentSize", label: "Monument size", prop: "monumentSize", element: "evidenceMonumentSize" },
+        { key: "basisOfBearing", label: "Basis of bearing", prop: "basisOfBearing", element: "evidenceBasisOfBearing" },
+        { key: "condition", label: "Corner condition", prop: "condition", element: "evidenceCondition" },
+        { key: "surveyorName", label: "Surveyor name", prop: "surveyorName", element: "evidenceSurveyorName" },
+        {
+          key: "surveyorLicense",
+          label: "Surveyor license",
+          prop: "surveyorLicense",
+          element: "evidenceSurveyorLicense",
+        },
+        { key: "surveyorFirm", label: "Surveyor firm", prop: "surveyorFirm", element: "evidenceSurveyorFirm" },
+        { key: "surveyorDates", label: "Survey dates", prop: "surveyorDates", element: "evidenceSurveyDates" },
+        { key: "surveyorCounty", label: "County", prop: "surveyCounty", element: "evidenceSurveyCounty" },
+        { key: "recordingInfo", label: "Recording info", prop: "recordingInfo", element: "evidenceRecordingInfo" },
+      ];
+    }
+
+    getCpfCompleteness(entry) {
+      if (!entry) return { complete: false, missing: [] };
+      const missing = this.getCpfFieldDefinitions()
+        .filter((field) => {
+          const value = entry[field.prop];
+          if (value === 0) return false;
+          if (value === null || value === undefined) return true;
+          return `${value}`.trim() === "";
+        })
+        .map((field) => field.key);
+
+      return { complete: missing.length === 0, missing };
+    }
+
+    renderCpfValidationCallout(missingKeys = []) {
+      const callout = this.elements?.cpfValidationStatus;
+      if (!callout) return;
+
+      const chipRow = callout.querySelector(".cpf-chip-row");
+      if (chipRow) {
+        chipRow.innerHTML = "";
+        const defs = this.getCpfFieldDefinitions();
+        missingKeys.forEach((key) => {
+          const def = defs.find((field) => field.key === key);
+          const chip = document.createElement("button");
+          chip.type = "button";
+          chip.className = "cpf-chip";
+          chip.dataset.cpfField = key;
+          chip.textContent = def?.label || key;
+          chipRow.appendChild(chip);
+        });
+      }
+
+      callout.classList.toggle("hidden", missingKeys.length === 0);
+    }
+
+    clearCpfValidationState() {
+      const defs = this.getCpfFieldDefinitions();
+      defs.forEach((field) => {
+        const el = this.elements?.[field.element];
+        el?.classList.remove("field-missing");
+      });
+
+      if (this.elements?.cpfValidationStatus) {
+        this.elements.cpfValidationStatus.classList.add("hidden");
+        const chipRow = this.elements.cpfValidationStatus.querySelector(
+          ".cpf-chip-row"
+        );
+        if (chipRow) chipRow.innerHTML = "";
+      }
+    }
+
+    highlightMissingCpfFields(missingKeys = []) {
+      const defs = this.getCpfFieldDefinitions();
+      defs.forEach((field) => {
+        const el = this.elements?.[field.element];
+        el?.classList.remove("field-missing");
+      });
+
+      missingKeys.forEach((key) => {
+        const def = defs.find((field) => field.key === key);
+        const el = def ? this.elements?.[def.element] : null;
+        el?.classList.add("field-missing");
+      });
+
+      const firstMissing = missingKeys[0];
+      if (firstMissing) this.focusCpfField(firstMissing);
+    }
+
+    focusCpfField(key) {
+      const def = this.getCpfFieldDefinitions().find((field) => field.key === key);
+      if (!def) return;
+      const el = this.elements?.[def.element];
+      if (el?.focus) el.focus();
+      el?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+    }
+
     buildStatusChip(statusLabel = "Draft") {
       const chip = document.createElement("span");
       chip.className = `status-chip ${this.getStatusClass(statusLabel)}`;
