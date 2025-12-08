@@ -10,6 +10,11 @@ export default class TraverseInstruction {
     curveChordBearing = "",
     curveDeltaAngle = "",
     curveTangent = "",
+    lineCodeId = "",
+    pointCodeId = "",
+    offsetReference = "",
+    offsetDistance = "",
+    offsetDirection = "",
     id = null,
     createdAt = null,
     updatedAt = null,
@@ -36,6 +41,11 @@ export default class TraverseInstruction {
       this.curveChordBearing = obj.curveChordBearing || "";
       this.curveDeltaAngle = obj.curveDeltaAngle || "";
       this.curveTangent = obj.curveTangent || "";
+      this.lineCodeId = obj.lineCodeId || "";
+      this.pointCodeId = obj.pointCodeId || "";
+      this.offsetReference = obj.offsetReference || "";
+      this.offsetDistance = obj.offsetDistance || "";
+      this.offsetDirection = obj.offsetDirection || "";
       this.createdAt = obj.createdAt || stamp;
       this.updatedAt = obj.updatedAt || this.createdAt;
       this.version = obj.version ?? 1;
@@ -60,6 +70,11 @@ export default class TraverseInstruction {
     this.curveChordBearing = curveChordBearing || "";
     this.curveDeltaAngle = curveDeltaAngle || "";
     this.curveTangent = curveTangent || "";
+    this.lineCodeId = lineCodeId || "";
+    this.pointCodeId = pointCodeId || "";
+    this.offsetReference = offsetReference || "";
+    this.offsetDistance = offsetDistance || "";
+    this.offsetDirection = offsetDirection || "";
     this.createdAt = createdAt || stamp;
     this.updatedAt = updatedAt || this.createdAt;
     this.version = version ?? 1;
@@ -86,6 +101,11 @@ export default class TraverseInstruction {
       curveChordBearing: this.curveChordBearing,
       curveDeltaAngle: this.curveDeltaAngle,
       curveTangent: this.curveTangent,
+      lineCodeId: this.lineCodeId,
+      pointCodeId: this.pointCodeId,
+      offsetReference: this.offsetReference,
+      offsetDistance: this.offsetDistance,
+      offsetDirection: this.offsetDirection,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
       version: this.version,

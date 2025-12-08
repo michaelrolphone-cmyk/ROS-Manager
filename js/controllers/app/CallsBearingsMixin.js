@@ -13,6 +13,45 @@ const CallsBearingsMixin = (Base) =>
     });
   }
 
+  getActiveCodesByKind(kind = "") {
+    return (this.globalSettings.pointCodes || []).filter(
+      (entry) => !entry.archived && (!kind || entry.kind === kind)
+    );
+  }
+
+  populateTraverseCodeOptions(select, kind = "", selectedId = "") {
+    if (!select) return;
+    const previous = select.value || selectedId || "";
+    select.innerHTML = "";
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = kind === "line" ? "Line code" : "Point/symbol";
+    select.appendChild(placeholder);
+
+    const codes = this.getActiveCodesByKind(kind);
+    codes
+      .slice()
+      .sort((a, b) => a.code.localeCompare(b.code))
+      .forEach((code) => {
+        const opt = document.createElement("option");
+        opt.value = code.id;
+        opt.textContent = `${code.code}${code.description ? ` — ${code.description}` : ""}`;
+        if (code.id === previous) opt.selected = true;
+        select.appendChild(opt);
+      });
+  }
+
+  refreshCallCodeOptions() {
+    const lineSelects = document.querySelectorAll("select.line-code");
+    lineSelects.forEach((sel) =>
+      this.populateTraverseCodeOptions(sel, "line", sel.value)
+    );
+    const pointSelects = document.querySelectorAll("select.point-code");
+    pointSelects.forEach((sel) =>
+      this.populateTraverseCodeOptions(sel, "point", sel.value)
+    );
+  }
+
   addCallRow(callData = {}, container = this.elements.callsTableBody, label = null, depth = 0) {
     const { bearing = "", distance = "", branches = [] } = callData || {};
     const tbody = container || this.elements.callsTableBody;
@@ -59,6 +98,30 @@ const CallsBearingsMixin = (Base) =>
       this.saveCurrentRecord();
       this.generateCommands();
     });
+
+    const codeRow = document.createElement("div");
+    codeRow.className = "code-row";
+    const lineCodeSelect = document.createElement("select");
+    lineCodeSelect.className = "line-code";
+    this.populateTraverseCodeOptions(
+      lineCodeSelect,
+      "line",
+      callData.lineCodeId || ""
+    );
+
+    const pointCodeSelect = document.createElement("select");
+    pointCodeSelect.className = "point-code";
+    this.populateTraverseCodeOptions(
+      pointCodeSelect,
+      "point",
+      callData.pointCodeId || ""
+    );
+    pointCodeSelect.addEventListener("change", () => {
+      this.saveCurrentRecord();
+      this.generateCommands();
+    });
+
+    codeRow.append(lineCodeSelect, pointCodeSelect);
 
     const curveRow = document.createElement("div");
     curveRow.className = "curve-row";
@@ -166,6 +229,70 @@ const CallsBearingsMixin = (Base) =>
       this.generateCommands();
     });
 
+    const offsetRow = document.createElement("div");
+    offsetRow.className = "offset-row";
+    const offsetDirection = document.createElement("select");
+    offsetDirection.className = "offset-direction";
+    [
+      { value: "", label: "Offset side" },
+      { value: "left", label: "Left" },
+      { value: "right", label: "Right" },
+    ].forEach(({ value, label }) => {
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = label;
+      if (value === (callData.offsetDirection || "")) opt.selected = true;
+      offsetDirection.appendChild(opt);
+    });
+    offsetDirection.addEventListener("change", () => {
+      this.saveCurrentRecord();
+      this.generateCommands();
+    });
+
+    const offsetDistance = document.createElement("input");
+    offsetDistance.type = "number";
+    offsetDistance.step = "any";
+    offsetDistance.placeholder = "Offset (ft)";
+    offsetDistance.className = "offset-distance";
+    offsetDistance.value = callData.offsetDistance || "";
+    offsetDistance.addEventListener("input", () => {
+      this.saveCurrentRecord();
+      this.generateCommands();
+    });
+
+    const offsetReference = document.createElement("select");
+    offsetReference.className = "offset-reference";
+    [
+      { value: "", label: "Reference" },
+      { value: "cl", label: "Center line (CL)" },
+      { value: "sec", label: "Section line (SEC)" },
+    ].forEach(({ value, label }) => {
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = label;
+      if (value === (callData.offsetReference || "")) opt.selected = true;
+      offsetReference.appendChild(opt);
+    });
+    offsetReference.addEventListener("change", () => {
+      this.saveCurrentRecord();
+      this.generateCommands();
+    });
+
+    offsetRow.append(offsetReference, offsetDistance, offsetDirection);
+
+    const updateOffsetVisibility = () => {
+      const hasLineCode = Boolean(lineCodeSelect.value);
+      offsetRow.style.display = hasLineCode ? "" : "none";
+    };
+
+    lineCodeSelect.addEventListener("change", () => {
+      updateOffsetVisibility();
+      this.saveCurrentRecord();
+      this.generateCommands();
+    });
+
+    updateOffsetVisibility();
+
     curveRow.append(
       curveDirectionSelect,
       curveRadiusInput,
@@ -210,6 +337,7 @@ const CallsBearingsMixin = (Base) =>
 
     rowControls.append(moveUp, moveDown, branchButton, remove);
     distanceRow.append(distanceInput, rowControls);
+    distanceRow.append(codeRow, offsetRow);
     distTd.appendChild(distanceRow);
 
     const branchContainer = document.createElement("div");
@@ -361,6 +489,14 @@ const CallsBearingsMixin = (Base) =>
         tr.querySelector(".curve-delta-angle")?.value?.trim() || "";
       const curveTangent =
         tr.querySelector(".curve-tangent")?.value?.trim() || "";
+      const lineCodeId = tr.querySelector(".line-code")?.value?.trim() || "";
+      const pointCodeId = tr.querySelector(".point-code")?.value?.trim() || "";
+      const offsetReference =
+        tr.querySelector(".offset-reference")?.value?.trim() || "";
+      const offsetDistance =
+        tr.querySelector(".offset-distance")?.value?.trim() || "";
+      const offsetDirection =
+        tr.querySelector(".offset-direction")?.value?.trim() || "";
       const branches = [];
       Array.from(tr.querySelectorAll(":scope .branch-section")).forEach(
         (section) => {
@@ -380,7 +516,12 @@ const CallsBearingsMixin = (Base) =>
           curveChordLength,
           curveChordBearing,
           curveDeltaAngle,
-          curveTangent
+          curveTangent,
+          lineCodeId,
+          pointCodeId,
+          offsetReference,
+          offsetDistance,
+          offsetDirection
         )
       );
     });

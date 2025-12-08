@@ -11,7 +11,12 @@ export default class GlobalSettingsService {
       return {
         equipment: Array.isArray(parsed.equipment) ? parsed.equipment : [],
         teamMembers: Array.isArray(parsed.teamMembers) ? parsed.teamMembers : [],
-        pointCodes: Array.isArray(parsed.pointCodes) ? parsed.pointCodes : [],
+        pointCodes: Array.isArray(parsed.pointCodes)
+          ? parsed.pointCodes.map((code) => ({
+              ...code,
+              kind: code?.kind || "point",
+            }))
+          : [],
         deviceProfiles:
           parsed.deviceProfiles && typeof parsed.deviceProfiles === "object"
             ? parsed.deviceProfiles
@@ -20,6 +25,10 @@ export default class GlobalSettingsService {
           parsed.liveLocations && typeof parsed.liveLocations === "object"
             ? parsed.liveLocations
             : {},
+        backupSettings:
+          parsed.backupSettings && typeof parsed.backupSettings === "object"
+            ? parsed.backupSettings
+            : this.defaultSettings().backupSettings,
       };
     } catch (err) {
       console.warn("Failed to parse global settings", err);
@@ -38,6 +47,11 @@ export default class GlobalSettingsService {
       pointCodes: [],
       deviceProfiles: {},
       liveLocations: {},
+      backupSettings: {
+        rollingBackupsEnabled: false,
+        filenamePrefix: "carlson-backup",
+        maxCopies: 3,
+      },
     };
   }
 }

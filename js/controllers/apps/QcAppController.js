@@ -115,12 +115,21 @@ export default class QcAppController extends MiniAppController {
 
       const meta = document.createElement("div");
       meta.className = "qc-meta";
-      meta.innerHTML = `Linear misclosure: ${this.formatLevelNumber(
-        item.linearMisclosure
-      )} (ratio ${this.formatRatio(
+      const closureLabel = item.closurePointNumber
+        ? `P${item.closurePointNumber}`
+        : "start";
+      const ratioLabel = this.formatRatio(
         item.linearMisclosure,
         item.totalLength
-      )}) · Angular: ${this.formatDegrees(item.angularMisclosure)}`;
+      );
+      const directionLabel = item.misclosureDirection
+        ? ` · Bearing: ${item.misclosureDirection}`
+        : "";
+      meta.innerHTML = `Closure at ${closureLabel} · Linear misclosure: ${this.formatLevelNumber(
+        item.linearMisclosure
+      )} (ratio ${ratioLabel})${directionLabel} · Angular: ${this.formatDegrees(
+        item.angularMisclosure
+      )}`;
 
       const actions = document.createElement("div");
       actions.className = "qc-item-actions";

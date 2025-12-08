@@ -189,6 +189,11 @@ describe("GlobalSettingsService", () => {
       pointCodes: [],
       deviceProfiles: {},
       liveLocations: {},
+      backupSettings: {
+        rollingBackupsEnabled: false,
+        filenamePrefix: "carlson-backup",
+        maxCopies: 3,
+      },
     });
 
     localStorage.setItem("settings-test", "not-json");
@@ -198,6 +203,11 @@ describe("GlobalSettingsService", () => {
       pointCodes: [],
       deviceProfiles: {},
       liveLocations: {},
+      backupSettings: {
+        rollingBackupsEnabled: false,
+        filenamePrefix: "carlson-backup",
+        maxCopies: 3,
+      },
     });
   });
 
@@ -206,7 +216,10 @@ describe("GlobalSettingsService", () => {
     const roster = {
       equipment: ["GS18", "TS16"],
       teamMembers: ["Alex", "Jordan"],
-      pointCodes: ["CP", "TBM"],
+      pointCodes: [
+        { code: "CP", description: "", kind: "point" },
+        { code: "TBM", description: "", kind: "point" },
+      ],
     };
     service.save(roster);
     assert.deepEqual(JSON.parse(localStorage.getItem("settings-test")), roster);
@@ -214,6 +227,11 @@ describe("GlobalSettingsService", () => {
       ...roster,
       deviceProfiles: {},
       liveLocations: {},
+      backupSettings: {
+        rollingBackupsEnabled: false,
+        filenamePrefix: "carlson-backup",
+        maxCopies: 3,
+      },
     });
   });
 });

@@ -16,6 +16,7 @@ const EvidenceLoggerMixin = (Base) =>
       this.elements.pointsTabButton,
       this.elements.evidenceTabButton,
       this.elements.equipmentTabButton,
+      this.elements.stakeoutTabButton,
     ];
 
     Object.entries(controllers).forEach(([id, controller]) => {
@@ -49,6 +50,7 @@ const EvidenceLoggerMixin = (Base) =>
     this.populateEvidenceRecordOptions(forceRecordId);
     this.refreshEvidencePointOptions();
     this.renderEvidenceList();
+    this.renderAssociatedTrsList();
     this.updateEvidenceSaveState();
   }
 
@@ -209,6 +211,89 @@ const EvidenceLoggerMixin = (Base) =>
         label: `P${number} (${p.x.toFixed(2)}, ${p.y.toFixed(2)})`,
         coords: p,
       };
+    });
+  }
+
+  addAssociatedTrs() {
+    const township =
+      this.elements.additionalTrsTownship?.value.trim().toUpperCase() || "";
+    const range =
+      this.elements.additionalTrsRange?.value.trim().toUpperCase() || "";
+    const section = this.elements.additionalTrsSection?.value.trim() || "";
+    const sectionBreakdown =
+      this.elements.additionalTrsBreakdown?.value.trim() || "";
+
+    if (!township || !range || !section) {
+      if (this.elements.associatedTrsHint) {
+        this.elements.associatedTrsHint.textContent =
+          "Add township, range, and section to link an additional TRS.";
+        this.elements.associatedTrsHint.classList.remove("hidden");
+      }
+      return;
+    }
+
+    this.currentEvidenceAssociatedTrs = this.currentEvidenceAssociatedTrs || [];
+    this.currentEvidenceAssociatedTrs.push({
+      township,
+      range,
+      section,
+      sectionBreakdown,
+    });
+
+    this.clearAssociatedTrsInputs();
+    this.renderAssociatedTrsList();
+    this.updateEvidenceSaveState();
+  }
+
+  clearAssociatedTrsInputs() {
+    if (this.elements.additionalTrsTownship)
+      this.elements.additionalTrsTownship.value = "";
+    if (this.elements.additionalTrsRange)
+      this.elements.additionalTrsRange.value = "";
+    if (this.elements.additionalTrsSection)
+      this.elements.additionalTrsSection.value = "";
+    if (this.elements.additionalTrsBreakdown)
+      this.elements.additionalTrsBreakdown.value = "";
+  }
+
+  renderAssociatedTrsList() {
+    const list = this.elements.associatedTrsList;
+    if (!list) return;
+    const hint = this.elements.associatedTrsHint;
+    const trsList = this.currentEvidenceAssociatedTrs || [];
+    list.innerHTML = "";
+
+    if (hint) {
+      hint.classList.toggle("hidden", trsList.length > 0);
+      hint.textContent =
+        hint.textContent ||
+        "Add TRS ties for common corners or adjoining townships.";
+    }
+
+    if (trsList.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "muted";
+      empty.textContent = "No additional TRS associations added.";
+      list.appendChild(empty);
+      return;
+    }
+
+    trsList.forEach((trs, idx) => {
+      const row = document.createElement("div");
+      row.className = "associated-trs-row";
+      const text = document.createElement("div");
+      text.textContent = this.formatTrsString(trs);
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "link-button";
+      remove.textContent = "Remove";
+      remove.addEventListener("click", () => {
+        this.currentEvidenceAssociatedTrs.splice(idx, 1);
+        this.renderAssociatedTrsList();
+        this.updateEvidenceSaveState();
+      });
+      row.append(text, remove);
+      list.appendChild(row);
     });
   }
 
@@ -567,6 +652,10 @@ const EvidenceLoggerMixin = (Base) =>
       range,
       section,
       sectionBreakdown,
+      associatedTrs:
+        (this.currentEvidenceAssociatedTrs || []).slice() ||
+        existing?.associatedTrs ||
+        [],
       type: this.elements.evidenceType?.value || "",
       cornerType: this.elements.evidenceCornerType?.value || "",
       cornerStatus: this.elements.evidenceCornerStatus?.value || "",
@@ -615,6 +704,12 @@ const EvidenceLoggerMixin = (Base) =>
       });
     } else {
       this.cornerEvidenceService.addEntry(entry);
+    }
+
+    if (this.projects?.[this.currentProjectId]) {
+      this.projects[this.currentProjectId].updatedAt = new Date().toISOString();
+      this.saveProjects({ skipVersionUpdate: true });
+      this.updateSpringboardHero();
     }
 
     this.scheduleSync();
@@ -673,6 +768,10 @@ const EvidenceLoggerMixin = (Base) =>
       this.elements.evidenceNotes.value = entry.notes || "";
     if (this.elements.saveEvidenceButton)
       this.elements.saveEvidenceButton.textContent = "Update evidence";
+    this.currentEvidenceAssociatedTrs = (entry.associatedTrs || []).map(
+      (trs) => ({ ...trs })
+    );
+    this.renderAssociatedTrsList();
     this.currentEvidenceTies = (entry.ties || []).map((t) =>
       t instanceof EvidenceTie ? t : new EvidenceTie({ ...t })
     );
@@ -698,6 +797,11 @@ const EvidenceLoggerMixin = (Base) =>
     this.cornerEvidenceService.deleteEntry(this.currentProjectId, entryId);
     if (this.editingEvidenceId === entryId) {
       this.resetEvidenceForm();
+    }
+    if (this.projects?.[this.currentProjectId]) {
+      this.projects[this.currentProjectId].updatedAt = new Date().toISOString();
+      this.saveProjects({ skipVersionUpdate: true });
+      this.updateSpringboardHero();
     }
     this.renderEvidenceList();
   }
@@ -779,6 +883,20 @@ const EvidenceLoggerMixin = (Base) =>
           const trsLine = document.createElement("div");
           trsLine.textContent = `TRS: ${trs}`;
           card.appendChild(trsLine);
+        }
+        if (ev.associatedTrs?.length) {
+          const assocRow = document.createElement("div");
+          assocRow.className = "chip-row";
+          ev.associatedTrs
+            .map((trs) => this.formatTrsString(trs))
+            .filter(Boolean)
+            .forEach((label) => {
+              const chip = document.createElement("span");
+              chip.className = "trs-chip";
+              chip.textContent = label;
+              assocRow.appendChild(chip);
+            });
+          if (assocRow.children.length > 0) card.appendChild(assocRow);
         }
         if (ev.cornerType || ev.cornerStatus) {
           const cornerMeta = document.createElement("div");
@@ -950,11 +1068,21 @@ const EvidenceLoggerMixin = (Base) =>
   }
 
   buildEvidenceTrs(entry = {}) {
+    const main = this.formatTrsString(entry);
+    const associations = (entry.associatedTrs || [])
+      .map((trs) => this.formatTrsString(trs))
+      .filter(Boolean);
+    if (associations.length === 0) return main;
+    const trailing = `Also: ${associations.join("; ")}`;
+    return main ? `${main} (${trailing})` : trailing;
+  }
+
+  formatTrsString(trs = {}) {
     const parts = [];
-    if (entry.township) parts.push(entry.township.trim());
-    if (entry.range) parts.push(entry.range.trim());
-    if (entry.section) parts.push(`Sec ${entry.section}`.trim());
-    if (entry.sectionBreakdown) parts.push(entry.sectionBreakdown.trim());
+    if (trs.township) parts.push(trs.township.trim());
+    if (trs.range) parts.push(trs.range.trim());
+    if (trs.section) parts.push(`Sec ${trs.section}`.trim());
+    if (trs.sectionBreakdown) parts.push(trs.sectionBreakdown.trim());
     return parts.join(" ").trim();
   }
 

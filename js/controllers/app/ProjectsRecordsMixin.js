@@ -14,6 +14,7 @@ import SettingsAppController from "../apps/SettingsAppController.js";
 import SpringboardAppController from "../apps/SpringboardAppController.js";
 import TraverseAppController from "../apps/TraverseAppController.js";
 import VicinityMapAppController from "../apps/VicinityMapAppController.js";
+import StakeoutAppController from "../apps/StakeoutAppController.js";
 
 const ProjectsRecordsMixin = (Base) =>
   class extends Base {
@@ -37,6 +38,9 @@ const ProjectsRecordsMixin = (Base) =>
         this.refreshResearchUI();
         this.resetEquipmentForm();
         this.refreshEquipmentUI();
+        this.appControllers?.stakeoutSection?.refreshOptions?.();
+        this.appControllers?.stakeoutSection?.resetForm?.();
+        this.appControllers?.stakeoutSection?.renderStakeoutList?.();
         this.pointController.renderPointsTable();
         this.refreshEvidenceUI();
         this.populateLocalizationSelectors();
@@ -45,6 +49,8 @@ const ProjectsRecordsMixin = (Base) =>
         this.populateProjectDetailsForm(null);
         this.renderAuditTrail();
         this.updateSpringboardHero();
+        this.renderSmartPackStatus?.();
+        this.renderRollingBackupList?.();
         this.levelingController?.onProjectChanged();
         this.populateQcSettings(null);
         this.renderQualityDashboard();
@@ -72,12 +78,17 @@ const ProjectsRecordsMixin = (Base) =>
       this.refreshResearchUI();
       this.resetEquipmentForm();
       this.refreshEquipmentUI();
+      this.appControllers?.stakeoutSection?.refreshOptions?.();
+      this.appControllers?.stakeoutSection?.resetForm?.();
+      this.appControllers?.stakeoutSection?.renderStakeoutList?.();
       this.populateLocalizationSelectors();
       this.navigationController?.onProjectChanged();
       this.populatePointGenerationOptions();
       this.populateProjectDetailsForm(this.projects[id]);
       this.renderAuditTrail();
       this.updateSpringboardHero();
+      this.renderSmartPackStatus?.();
+      this.renderRollingBackupList?.();
       this.handleSpringboardScroll();
       this.levelingController?.onProjectChanged();
       this.populateQcSettings(this.projects[id]);
@@ -282,10 +293,14 @@ const ProjectsRecordsMixin = (Base) =>
             const curr = mainLine[i];
             totalLength += Math.hypot(curr.x - prev.x, curr.y - prev.y);
           }
+          const closurePointNumber = parseInt(record.closurePointNumber, 10);
+          const closureTarget = Number.isFinite(closurePointNumber)
+            ? mainLine.find((pt) => pt.pointNumber === closurePointNumber) || mainLine[0]
+            : mainLine[0];
           const start = mainLine[0];
           const end = mainLine[mainLine.length - 1];
-          const dx = end.x - start.x;
-          const dy = end.y - start.y;
+          const dx = end.x - closureTarget.x;
+          const dy = end.y - closureTarget.y;
           linearMisclosure = Math.hypot(dx, dy);
 
           const startAz =
@@ -310,6 +325,13 @@ const ProjectsRecordsMixin = (Base) =>
           const linearPass = Number.isFinite(qcSettings.traverseLinearTolerance)
             ? ratio <= qcSettings.traverseLinearTolerance
             : null;
+          const misclosureAzimuth = (Math.atan2(dx, dy) * 180) / Math.PI;
+          const misclosureBearing = this.azimuthToQuadrantBearing(
+            this.normalizeAzimuth(misclosureAzimuth)
+          );
+          const misclosureDirection = misclosureBearing?.quadrant
+            ? `${misclosureBearing.quadrant}-${misclosureBearing.formatted}`
+            : this.formatDegrees(this.normalizeAzimuth(misclosureAzimuth));
 
           if ((angularPass === false || linearPass === false) && qcSettings) {
             status = "fail";
@@ -335,6 +357,11 @@ const ProjectsRecordsMixin = (Base) =>
           totalLength,
           linearMisclosure,
           angularMisclosure,
+          misclosureRatio: ratio,
+          misclosureDirection,
+          misclosureBearing: misclosureBearing?.formatted || null,
+          closurePointNumber:
+            closureTarget?.pointNumber ?? record.startPtNum ?? startPointNumber,
           status,
           message,
         });
@@ -401,8 +428,75 @@ const ProjectsRecordsMixin = (Base) =>
       return results;
     }
 
+    renderClosureSummary(recordId = this.currentRecordId) {
+      const {
+        closureStatusChip,
+        closurePointLabel,
+        closureLinear,
+        closureAngular,
+        closureDirection,
+        closureRatio,
+      } = this.elements;
+      if (!closureStatusChip) return;
+
+      const reset = () => {
+        closureStatusChip.className = "status-chip";
+        closureStatusChip.textContent = "No traverse loaded";
+        if (closurePointLabel) closurePointLabel.textContent = "—";
+        if (closureLinear) closureLinear.textContent = "—";
+        if (closureAngular) closureAngular.textContent = "—";
+        if (closureDirection) closureDirection.textContent = "—";
+        if (closureRatio) closureRatio.textContent = "";
+      };
+
+      if (!this.currentProjectId || !recordId) {
+        reset();
+        return;
+      }
+
+      const results = this.computeQualityResults(this.currentProjectId);
+      const traverse = results.traverses.find((t) => t.id === recordId);
+      if (!traverse) {
+        reset();
+        return;
+      }
+
+      const statusClass =
+        traverse.status === "fail"
+          ? "qc-fail"
+          : traverse.status === "warn"
+          ? "qc-warning"
+          : traverse.status === "pass"
+          ? "qc-pass"
+          : "";
+      closureStatusChip.className = `status-chip ${statusClass}`.trim();
+      closureStatusChip.textContent = traverse.message || "";
+
+      if (closurePointLabel) {
+        const label = traverse.closurePointNumber
+          ? `P${traverse.closurePointNumber}`
+          : "Start";
+        closurePointLabel.textContent = label;
+      }
+      if (closureLinear)
+        closureLinear.textContent = this.formatLevelNumber(
+          traverse.linearMisclosure
+        );
+      if (closureAngular)
+        closureAngular.textContent = this.formatDegrees(traverse.angularMisclosure);
+      if (closureDirection)
+        closureDirection.textContent = traverse.misclosureDirection || "—";
+      if (closureRatio)
+        closureRatio.textContent = this.formatRatio(
+          traverse.linearMisclosure,
+          traverse.totalLength
+        );
+    }
+
     renderQualityDashboard() {
       this.appControllers?.qcSection?.renderQualityDashboard();
+      this.renderSmartPackStatus?.();
+      this.renderClosureSummary();
     }
 
     buildQualityControlSummaryData(projectId = this.currentProjectId) {
@@ -464,6 +558,8 @@ const ProjectsRecordsMixin = (Base) =>
             <td>${this.escapeHtml(t.name)}</td>
             <td>${this.escapeHtml(this.formatLevelNumber(t.linearMisclosure))}</td>
             <td>${this.escapeHtml(formatRatio(t.linearMisclosure, t.totalLength))}</td>
+            <td>${this.escapeHtml(t.closurePointNumber ? `P${t.closurePointNumber}` : "Start")}</td>
+            <td>${this.escapeHtml(t.misclosureDirection || "—")}</td>
             <td>${this.escapeHtml(this.formatDegrees(t.angularMisclosure))}</td>
             <td>${this.escapeHtml(t.message)}</td>
           </tr>`
@@ -563,12 +659,14 @@ const ProjectsRecordsMixin = (Base) =>
               <th>Traverse</th>
               <th>Linear misclosure</th>
               <th>Misclosure ratio</th>
+              <th>Closure point</th>
+              <th>Misclosure bearing</th>
               <th>Angular misclosure</th>
               <th>Status</th>
             </tr>
           </thead>
           <tbody>
-            ${traverseRows || '<tr><td colspan="5">No traverses evaluated.</td></tr>'}
+            ${traverseRows || '<tr><td colspan="6">No traverses evaluated.</td></tr>'}
           </tbody>
         </table>
       </div>
@@ -775,6 +873,8 @@ const ProjectsRecordsMixin = (Base) =>
       this.elements.bsAzimuth.value = record.bsAzimuth || "0.0000";
       this.elements.basis.value = record.basis || "";
       this.elements.firstDist.value = record.firstDist || "";
+      if (this.elements.closurePointNumber)
+        this.elements.closurePointNumber.value = record.closurePointNumber || "";
       this.elements.editor.style.display = "block";
 
       const tbody = this.elements.callsTableBody;
@@ -788,6 +888,7 @@ const ProjectsRecordsMixin = (Base) =>
       this.generateCommands();
       this.refreshEvidenceUI(record.id);
       this.populatePointGenerationOptions();
+      this.renderClosureSummary(record.id);
     }
 
     generatePointFileFromRecord() {
@@ -1442,6 +1543,42 @@ const ProjectsRecordsMixin = (Base) =>
               behavior: "smooth",
             });
           },
+        }),
+        stakeoutSection: new StakeoutAppController({
+          id: "stakeoutSection",
+          section: this.elements.stakeoutSection,
+          elements: {
+            stakeoutDatetime: this.elements.stakeoutDatetime,
+            stakeoutMonumentType: this.elements.stakeoutMonumentType,
+            stakeoutMonumentMaterial: this.elements.stakeoutMonumentMaterial,
+            stakeoutWitnessMarks: this.elements.stakeoutWitnessMarks,
+            stakeoutDigNotes: this.elements.stakeoutDigNotes,
+            stakeoutCrewMembers: this.elements.stakeoutCrewMembers,
+            stakeoutEquipmentUsed: this.elements.stakeoutEquipmentUsed,
+            stakeoutTraverseSelect: this.elements.stakeoutTraverseSelect,
+            stakeoutEvidenceSelect: this.elements.stakeoutEvidenceSelect,
+            stakeoutControlPoints: this.elements.stakeoutControlPoints,
+            saveStakeoutButton: this.elements.saveStakeoutButton,
+            resetStakeoutButton: this.elements.resetStakeoutButton,
+            stakeoutFormStatus: this.elements.stakeoutFormStatus,
+            stakeoutList: this.elements.stakeoutList,
+            stakeoutSummary: this.elements.stakeoutSummary,
+          },
+          getProjects: () => this.projects,
+          getCurrentProjectId: () => this.currentProjectId,
+          getActiveTeamMembers: () => this.getActiveTeamMembers(),
+          getEquipmentSettings: () => this.globalSettings.equipment || [],
+          getProjectEvidence: () =>
+            this.currentProjectId
+              ? this.cornerEvidenceService.getProjectEvidence(
+                  this.currentProjectId
+                )
+              : [],
+          getQualityResults: () => this.computeQualityResults(),
+          buildEvidenceTitle: (entry) => this.buildEvidenceTitle(entry),
+          escapeHtml: (text) => this.escapeHtml(text),
+          saveProjects: () => this.saveProjects(),
+          buildStatusChip: (status) => this.buildStatusChip(status),
         }),
         navigationSection: new NavigationAppController({
           id: "navigationSection",

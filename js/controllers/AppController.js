@@ -14,6 +14,7 @@ import GlobalSettingsService from "../services/GlobalSettingsService.js";
 import VersioningService from "../services/VersioningService.js";
 import SyncService from "../services/SyncService.js";
 import AuditTrailService from "../services/AuditTrailService.js";
+import RollingBackupService from "../services/RollingBackupService.js";
 
 import MiscHelpersMixin from "./app/MiscHelpersMixin.js";
 import GlobalSettingsMixin from "./app/GlobalSettingsMixin.js";
@@ -37,6 +38,7 @@ class AppControllerBase {
     this.versioningService = new VersioningService();
     this.syncService = new SyncService();
     this.auditTrailService = new AuditTrailService();
+    this.rollingBackupService = new RollingBackupService();
     this.projects = this.repository.loadProjects();
     this.globalSettings = this.normalizeGlobalSettings(
       this.globalSettingsService.load()
@@ -57,6 +59,7 @@ class AppControllerBase {
     this.currentEvidencePhotoAnnotations = [];
     this.currentEvidencePhotoMetadata = null;
     this.currentEvidenceLocation = null;
+    this.currentEvidenceAssociatedTrs = [];
     this.currentEvidenceTies = [];
     this.editingEvidenceId = null;
     this.currentTraversePointOptions = [];
@@ -325,6 +328,7 @@ class AppControllerBase {
       bsAzimuth: document.getElementById("bsAzimuth"),
       basis: document.getElementById("basis"),
       firstDist: document.getElementById("firstDist"),
+      closurePointNumber: document.getElementById("closurePointNumber"),
       callsTableBody: document.querySelector("#callsTable tbody"),
       traverseCanvas: document.getElementById("traverseCanvas"),
       projectOverviewCanvas: document.getElementById("projectOverviewCanvas"),
@@ -355,6 +359,12 @@ class AppControllerBase {
       startFromDropdownMenu: document.getElementById("startFromDropdownMenu"),
       startFromDropdownLabel: document.getElementById("startFromDropdownLabel"),
       addCallButton: document.getElementById("addCallButton"),
+      closureStatusChip: document.getElementById("closureStatusChip"),
+      closurePointLabel: document.getElementById("closurePointLabel"),
+      closureLinear: document.getElementById("closureLinear"),
+      closureAngular: document.getElementById("closureAngular"),
+      closureDirection: document.getElementById("closureDirection"),
+      closureRatio: document.getElementById("closureRatio"),
       generateCommandsButton: document.getElementById("generateCommandsButton"),
       deleteRecordButton: document.getElementById("deleteRecordButton"),
       cancelProjectButton: document.getElementById("cancelProjectButton"),
@@ -362,6 +372,7 @@ class AppControllerBase {
       pointsTabButton: document.getElementById("pointsTabButton"),
       evidenceTabButton: document.getElementById("evidenceTabButton"),
       equipmentTabButton: document.getElementById("equipmentTabButton"),
+      stakeoutTabButton: document.getElementById("stakeoutTabButton"),
       levelingSection: document.getElementById("levelingSection"),
       springboardSection: document.getElementById("springboardSection"),
       vicinityMapSection: document.getElementById("vicinityMapSection"),
@@ -373,6 +384,7 @@ class AppControllerBase {
       evidenceSection: document.getElementById("evidenceSection"),
       chainEvidenceSection: document.getElementById("chainEvidenceSection"),
       equipmentSection: document.getElementById("equipmentSection"),
+      stakeoutSection: document.getElementById("stakeoutSection"),
       helpSection: document.getElementById("helpSection"),
       helpContent: document.getElementById("helpContent"),
       helpStatus: document.getElementById("helpStatus"),
@@ -397,6 +409,17 @@ class AppControllerBase {
       evidenceSectionBreakdown: document.getElementById(
         "evidenceSectionBreakdown"
       ),
+      additionalTrsTownship: document.getElementById(
+        "additionalTrsTownship"
+      ),
+      additionalTrsRange: document.getElementById("additionalTrsRange"),
+      additionalTrsSection: document.getElementById("additionalTrsSection"),
+      additionalTrsBreakdown: document.getElementById(
+        "additionalTrsBreakdown"
+      ),
+      addTrsAssociation: document.getElementById("addTrsAssociation"),
+      associatedTrsList: document.getElementById("associatedTrsList"),
+      associatedTrsHint: document.getElementById("associatedTrsHint"),
       evidenceCornerType: document.getElementById("evidenceCornerType"),
       evidenceCornerStatus: document.getElementById("evidenceCornerStatus"),
       evidenceStatus: document.getElementById("evidenceStatus"),
@@ -483,6 +506,21 @@ class AppControllerBase {
       equipmentFormStatus: document.getElementById("equipmentFormStatus"),
       equipmentList: document.getElementById("equipmentList"),
       equipmentSummary: document.getElementById("equipmentSummary"),
+      stakeoutDatetime: document.getElementById("stakeoutDatetime"),
+      stakeoutMonumentType: document.getElementById("stakeoutMonumentType"),
+      stakeoutMonumentMaterial: document.getElementById("stakeoutMonumentMaterial"),
+      stakeoutWitnessMarks: document.getElementById("stakeoutWitnessMarks"),
+      stakeoutDigNotes: document.getElementById("stakeoutDigNotes"),
+      stakeoutCrewMembers: document.getElementById("stakeoutCrewMembers"),
+      stakeoutEquipmentUsed: document.getElementById("stakeoutEquipmentUsed"),
+      stakeoutTraverseSelect: document.getElementById("stakeoutTraverseSelect"),
+      stakeoutEvidenceSelect: document.getElementById("stakeoutEvidenceSelect"),
+      stakeoutControlPoints: document.getElementById("stakeoutControlPoints"),
+      saveStakeoutButton: document.getElementById("saveStakeoutButton"),
+      resetStakeoutButton: document.getElementById("resetStakeoutButton"),
+      stakeoutFormStatus: document.getElementById("stakeoutFormStatus"),
+      stakeoutList: document.getElementById("stakeoutList"),
+      stakeoutSummary: document.getElementById("stakeoutSummary"),
       navigationCompass: document.getElementById("navigationCompass"),
       navigationHeadingValue: document.getElementById("navigationHeadingValue"),
       navigationTargetBearing: document.getElementById(
@@ -559,12 +597,19 @@ class AppControllerBase {
       pointCodeDescriptionInput: document.getElementById(
         "pointCodeDescriptionInput"
       ),
+      pointCodeKindSelect: document.getElementById("pointCodeKindSelect"),
       savePointCodeButton: document.getElementById("savePointCodeButton"),
       resetPointCodeButton: document.getElementById("resetPointCodeButton"),
       pointCodeEditHint: document.getElementById("pointCodeEditHint"),
       pointCodeTableBody: document.getElementById("pointCodeTableBody"),
       exportAllDataButton: document.getElementById("exportAllDataButton"),
       importAllDataButton: document.getElementById("importAllDataButton"),
+      enableRollingBackups: document.getElementById("enableRollingBackups"),
+      backupFilenamePrefix: document.getElementById("backupFilenamePrefix"),
+      rollingBackupHint: document.getElementById("rollingBackupHint"),
+      rollingBackupList: document.getElementById("rollingBackupList"),
+      refreshBackupList: document.getElementById("refreshBackupList"),
+      clearProjectBackups: document.getElementById("clearProjectBackups"),
       importAllDataInput: document.getElementById("importAllDataInput"),
       auditFileInput: document.getElementById("auditFileInput"),
       createAuditSnapshotButton: document.getElementById(
@@ -606,6 +651,10 @@ class AppControllerBase {
       qcTraverseList: document.getElementById("qcTraverseList"),
       qcLevelList: document.getElementById("qcLevelList"),
       exportQcSummaryButton: document.getElementById("exportQcSummaryButton"),
+      smartPackExportButton: document.getElementById("smartPackExportButton"),
+      smartPackJsonButton: document.getElementById("smartPackJsonButton"),
+      smartPackStatusValue: document.getElementById("smartPackStatusValue"),
+      smartPackStatusNote: document.getElementById("smartPackStatusNote"),
       saveQcSettingsButton: document.getElementById("saveQcSettingsButton"),
       researchSection: document.getElementById("researchSection"),
       researchList: document.getElementById("researchList"),
@@ -656,6 +705,12 @@ class AppControllerBase {
     document
       .getElementById("exportAllButton")
       ?.addEventListener("click", () => this.exportAllProjects());
+    this.elements.smartPackExportButton?.addEventListener("click", () =>
+      this.exportSmartPackHtml()
+    );
+    this.elements.smartPackJsonButton?.addEventListener("click", () =>
+      this.exportSmartPackJson()
+    );
     document
       .getElementById("importButton")
       ?.addEventListener("click", () => this.triggerImport());
@@ -766,6 +821,18 @@ class AppControllerBase {
     this.elements.importAllDataButton?.addEventListener("click", () =>
       this.triggerAllDataImport()
     );
+    this.elements.enableRollingBackups?.addEventListener("change", (e) =>
+      this.toggleRollingBackups(e.target.checked)
+    );
+    this.elements.backupFilenamePrefix?.addEventListener("change", (e) =>
+      this.updateRollingBackupPrefix(e.target.value)
+    );
+    this.elements.refreshBackupList?.addEventListener("click", () =>
+      this.renderRollingBackupList()
+    );
+    this.elements.clearProjectBackups?.addEventListener("click", () =>
+      this.clearRollingBackupsForProject()
+    );
     this.elements.createAuditSnapshotButton?.addEventListener("click", () =>
       this.createAuditSnapshot()
     );
@@ -805,7 +872,7 @@ class AppControllerBase {
       el?.addEventListener("input", () => this.saveCurrentRecord());
     });
 
-    [this.elements.basis, this.elements.firstDist].forEach((el) => {
+    [this.elements.basis, this.elements.firstDist, this.elements.closurePointNumber].forEach((el) => {
       el?.addEventListener("input", () => {
         this.saveCurrentRecord();
         this.generateCommands();
@@ -862,6 +929,10 @@ class AppControllerBase {
 
     this.elements.evidencePointSelect?.addEventListener("change", () =>
       this.updateEvidenceSaveState()
+    );
+
+    this.elements.addTrsAssociation?.addEventListener("click", () =>
+      this.addAssociatedTrs()
     );
 
     this.elements.addEvidenceTie?.addEventListener("click", () =>
@@ -1289,16 +1360,21 @@ class AppControllerBase {
         id: this.generateId("pc"),
         code: entry.trim(),
         description: "",
+        kind: "point",
         archived: false,
       };
     }
     const code = (entry.code || "").trim();
     const description = entry.description || "";
+    const kind = (entry.kind || "point").toLowerCase() === "line"
+      ? "line"
+      : "point";
     if (!code && !description) return null;
     return {
       id: entry.id || this.generateId("pc"),
       code,
       description,
+      kind,
       archived: Boolean(entry.archived),
     };
   }
@@ -1331,6 +1407,20 @@ class AppControllerBase {
         settings.liveLocations && typeof settings.liveLocations === "object"
           ? settings.liveLocations
           : {},
+      backupSettings:
+        settings.backupSettings && typeof settings.backupSettings === "object"
+          ? {
+              rollingBackupsEnabled: Boolean(
+                settings.backupSettings.rollingBackupsEnabled
+              ),
+              filenamePrefix:
+                settings.backupSettings.filenamePrefix || "carlson-backup",
+              maxCopies:
+                Number(settings.backupSettings.maxCopies) > 0
+                  ? Number(settings.backupSettings.maxCopies)
+                  : 3,
+            }
+          : this.globalSettingsService.defaultSettings().backupSettings,
     };
     return { ...settings, ...sanitized };
   }

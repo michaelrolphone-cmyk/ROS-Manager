@@ -14,6 +14,7 @@ export default class SurveyRecord {
     status = "Draft",
     calls = [],
     startFromRecordId = null,
+    closurePointNumber = "",
     createdAt = null,
     updatedAt = null,
     version = 1,
@@ -29,6 +30,7 @@ export default class SurveyRecord {
     this.basis = basis;
     this.firstDist = firstDist;
     this.status = status;
+    this.closurePointNumber = closurePointNumber || "";
     this.calls = calls.map((call) =>
       call instanceof TraverseInstruction
         ? call
@@ -46,6 +48,7 @@ export default class SurveyRecord {
       calls: (obj.calls || []).map((call) =>
         TraverseInstruction.fromObject(call)
       ),
+      closurePointNumber: obj.closurePointNumber,
     });
   }
 
@@ -62,6 +65,7 @@ export default class SurveyRecord {
       status: this.status,
       calls: this.calls.map((call) => call.toObject()),
       startFromRecordId: this.startFromRecordId,
+      closurePointNumber: this.closurePointNumber,
       id: this.id,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,

@@ -251,6 +251,14 @@ const EquipmentSetupMixin = (Base) =>
         <div><strong>TRS</strong><br />${this.escapeHtml(
           this.buildEvidenceTrs(entry) || "Not set"
         )}</div>
+        ${
+          (entry.associatedTrs || []).length > 0
+            ? `<div><strong>Additional TRS ties</strong><br />${(entry.associatedTrs || [])
+                .map((trs) => this.escapeHtml(this.formatTrsString(trs)))
+                .filter(Boolean)
+                .join("<br />")}</div>`
+            : ""
+        }
         <div><strong>Status</strong><br />${this.escapeHtml(entry.status || "Draft")}</div>
         <div><strong>Generated</strong><br />${this.escapeHtml(
           new Date(entry.createdAt).toLocaleString()
@@ -373,6 +381,14 @@ const EquipmentSetupMixin = (Base) =>
       if (this.elements.evidenceRecordingInfo)
         this.elements.evidenceRecordingInfo.value = "";
       if (this.elements.evidenceNotes) this.elements.evidenceNotes.value = "";
+      if (this.elements.additionalTrsTownship)
+        this.elements.additionalTrsTownship.value = "";
+      if (this.elements.additionalTrsRange)
+        this.elements.additionalTrsRange.value = "";
+      if (this.elements.additionalTrsSection)
+        this.elements.additionalTrsSection.value = "";
+      if (this.elements.additionalTrsBreakdown)
+        this.elements.additionalTrsBreakdown.value = "";
       if (this.elements.evidencePhoto) this.elements.evidencePhoto.value = "";
       if (this.elements.evidenceTiePhotos)
         this.elements.evidenceTiePhotos.value = "";
@@ -392,11 +408,13 @@ const EquipmentSetupMixin = (Base) =>
       this.currentEvidencePhotoAnnotations = [];
       this.currentEvidencePhotoMetadata = null;
       this.currentEvidenceLocation = null;
+      this.currentEvidenceAssociatedTrs = [];
       this.currentEvidenceTies = [];
       this.editingEvidenceId = null;
       this.currentAnnotationMode = null;
       this.annotationDraftPoint = null;
       this.setAnnotationMode?.("arrow");
+      this.renderAssociatedTrsList();
       this.renderEvidenceTies();
       this.updateEvidenceSaveState();
     }
@@ -558,6 +576,8 @@ const EquipmentSetupMixin = (Base) =>
       record.bsAzimuth = this.elements.bsAzimuth.value.trim();
       record.basis = this.elements.basis.value.trim();
       record.firstDist = this.elements.firstDist.value.trim();
+      record.closurePointNumber =
+        this.elements.closurePointNumber?.value?.trim() || "";
       record.status = this.elements.recordStatus?.value || "Draft";
 
       record.calls = this.serializeCallsFromContainer(this.elements.callsTableBody);

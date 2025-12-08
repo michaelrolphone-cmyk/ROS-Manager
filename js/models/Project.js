@@ -2,6 +2,7 @@ import SurveyRecord from "./SurveyRecord.js";
 import EquipmentLog from "./EquipmentLog.js";
 import NavigationBookmark from "./NavigationBookmark.js";
 import LevelRun from "./LevelRun.js";
+import StakeoutEntry from "./StakeoutEntry.js";
 
 import Point from "./Point.js";
 import PointFile from "./PointFile.js";
@@ -20,6 +21,7 @@ export default class Project {
     sections = [],
     records = {},
     equipmentLogs = [],
+    stakeoutEntries = [],
     referencePoints = [],
     points = [],
     pointFiles = [],
@@ -93,6 +95,11 @@ export default class Project {
     this.equipmentLogs = equipmentLogs.map((entry) =>
       entry instanceof EquipmentLog ? entry : EquipmentLog.fromObject(entry)
     );
+    this.stakeoutEntries = stakeoutEntries.map((entry) =>
+      entry instanceof StakeoutEntry
+        ? entry
+        : StakeoutEntry.fromObject(entry)
+    );
     this.referencePoints = Array.isArray(referencePoints)
       ? referencePoints
       : [];
@@ -125,6 +132,7 @@ export default class Project {
       sections: this.sections,
       records: Object.fromEntries(entries),
       equipmentLogs: this.equipmentLogs.map((entry) => entry.toObject()),
+      stakeoutEntries: this.stakeoutEntries.map((entry) => entry.toObject()),
       referencePoints: this.referencePoints,
       pointFiles: this.pointFiles.map((pf) =>
         pf instanceof PointFile ? pf.toObject() : PointFile.fromObject(pf).toObject()
