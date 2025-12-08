@@ -288,6 +288,9 @@ const ProjectsRecordsMixin = (Base) =>
         let ratio = null;
         let misclosureDirection = null;
         let misclosureBearing = null;
+        let closureTarget = null;
+        const startPointNumber =
+          mainLine[0]?.pointNumber ?? record.startPtNum ?? null;
         let status = "warn";
         let message = "Add traverse calls to compute closure.";
 
@@ -298,7 +301,7 @@ const ProjectsRecordsMixin = (Base) =>
             totalLength += Math.hypot(curr.x - prev.x, curr.y - prev.y);
           }
           const closurePointNumber = parseInt(record.closurePointNumber, 10);
-          const closureTarget = Number.isFinite(closurePointNumber)
+          closureTarget = Number.isFinite(closurePointNumber)
             ? mainLine.find((pt) => pt.pointNumber === closurePointNumber) || mainLine[0]
             : mainLine[0];
           const start = mainLine[0];
