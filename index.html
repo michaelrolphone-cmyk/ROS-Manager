@@ -283,6 +283,48 @@
             </form>
           </div>
 
+          <div class="card" id="auditTrailCard">
+            <div class="card-header">
+              <div>
+                <p class="eyebrow" style="color: #475569">Audit Trail</p>
+                <h3 style="margin: 4px 0">Immutable Audit Trail</h3>
+                <p class="subtitle" style="margin-top: 0">
+                  Capture a timestamped, hashed snapshot of this project and
+                  verify exported bundles against their checksum.
+                </p>
+              </div>
+              <div class="view-toggle">
+                <button id="createAuditSnapshotButton" class="secondary">
+                  Create Audit Snapshot
+                </button>
+              </div>
+            </div>
+            <div class="audit-grid">
+              <div>
+                <div class="stat-chip" style="width: 100%">
+                  <div class="stat-label">Latest snapshot</div>
+                  <div class="stat-value" id="latestAuditTimestamp">None</div>
+                  <div class="stat-meta" id="latestAuditMeta"></div>
+                </div>
+                <div class="mini-note" id="auditStatus"></div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap">
+                  <button id="downloadLatestAuditButton" class="secondary">
+                    Download Latest Audit Bundle
+                  </button>
+                  <button id="verifyAuditButton">Verify Audit Bundle</button>
+                </div>
+              </div>
+              <div>
+                <div class="stat-chip" style="width: 100%">
+                  <div class="stat-label">Recent hashes</div>
+                  <div id="auditEntriesList" class="mini-note">
+                    No snapshots yet.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <h2>Project Apps</h2>
           <p class="subtitle" style="margin-top: 0">
             Select a mini app to work with your current project.
@@ -310,6 +352,13 @@
               <span class="app-title">Differential Levels</span>
               <span class="app-hint"
                 >Record BS/FS shots and running closures</span
+              >
+            </button>
+            <button class="app-tile" data-target="qcSection">
+              <span class="app-icon">✅</span>
+              <span class="app-title">QC Dashboard</span>
+              <span class="app-hint"
+                >Compare traverses and levels against tolerances</span
               >
             </button>
             <button class="app-tile" data-target="evidenceSection">
@@ -782,6 +831,112 @@
                 </thead>
                 <tbody id="levelEntriesTableBody"></tbody>
               </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="qcSection" class="tool-section">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <p class="eyebrow" style="color: #475569">Quality Control</p>
+                <h3 style="margin-top: 2px">QC Dashboard</h3>
+                <p class="subtitle" style="margin-top: 4px">
+                  Configure tolerances and review traverses and level loops
+                  against project limits.
+                </p>
+              </div>
+              <div class="view-toggle">
+                <span class="status-chip" id="qcOverallStatus"
+                  >No checks yet</span
+                >
+              </div>
+            </div>
+
+            <div class="qc-grid">
+              <div class="qc-panel">
+                <h4 style="margin-top: 0">Project tolerances</h4>
+                <div class="form-grid">
+                  <div>
+                    <label for="qcTraverseAngularTolerance"
+                      >Traverse angular tolerance (deg)</label
+                    >
+                    <input
+                      type="number"
+                      step="0.01"
+                      id="qcTraverseAngularTolerance"
+                      placeholder="0.25"
+                    />
+                  </div>
+                  <div>
+                    <label for="qcTraverseLinearTolerance"
+                      >Traverse linear misclosure per distance</label
+                    >
+                    <input
+                      type="number"
+                      step="0.0001"
+                      id="qcTraverseLinearTolerance"
+                      placeholder="0.0002"
+                    />
+                    <small class="app-hint"
+                      >Use misclosure per unit distance (e.g., 0.0002 ≈
+                      1:5000).</small
+                    >
+                  </div>
+                  <div>
+                    <label for="qcLevelTolerance"
+                      >Level misclosure factor (× √K)</label
+                    >
+                    <input
+                      type="number"
+                      step="0.001"
+                      id="qcLevelTolerance"
+                      placeholder="0.02"
+                    />
+                    <small class="app-hint"
+                      >K is the count of instrument setups/legs in the level
+                      loop.</small
+                    >
+                  </div>
+                </div>
+                <div class="qc-actions">
+                  <button id="saveQcSettingsButton">Save QC Settings</button>
+                  <span class="mini-note" id="qcSettingsStatus"></span>
+                </div>
+              </div>
+
+              <div class="qc-panel">
+                <h4 style="margin-top: 0">Summary</h4>
+                <div id="qcSummary" class="qc-summary">
+                  Configure tolerances to start evaluating traverses and level
+                  runs.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <p class="eyebrow" style="color: #475569">Traverses</p>
+                <h3 style="margin-top: 2px">Traverse checks</h3>
+              </div>
+            </div>
+            <div id="qcTraverseList" class="qc-list">
+              Create a traverse to see closure checks.
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <p class="eyebrow" style="color: #475569">Level loops</p>
+                <h3 style="margin-top: 2px">Level loop checks</h3>
+              </div>
+            </div>
+            <div id="qcLevelList" class="qc-list">
+              Create a level run with a closing elevation to see misclosure
+              checks.
             </div>
           </div>
         </div>
@@ -1406,6 +1561,11 @@
 
             <div class="navigation-grid">
               <div class="navigation-panel compass-wrapper">
+                <div class="navigation-toolbar">
+                  <button id="navigationToggleView" class="secondary">
+                    Switch to Map View
+                  </button>
+                </div>
                 <canvas
                   id="navigationCompass"
                   width="320"
@@ -1438,6 +1598,12 @@
                   id="navigationStatus"
                   style="margin: 0"
                 ></div>
+                <div class="stat-chip" style="width: 100%">
+                  <div class="stat-label">Nearest points</div>
+                  <div class="nearby-points" id="nearestPointsList">
+                    Waiting for GPS fix…
+                  </div>
+                </div>
               </div>
 
               <div
@@ -1735,6 +1901,12 @@
     <input
       type="file"
       id="importAllDataInput"
+      style="display: none"
+      accept=".json,application/json"
+    />
+    <input
+      type="file"
+      id="auditFileInput"
       style="display: none"
       accept=".json,application/json"
     />

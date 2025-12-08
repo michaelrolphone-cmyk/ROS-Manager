@@ -15,6 +15,7 @@ import LevelingController from "./LevelingController.js";
 import GlobalSettingsService from "../services/GlobalSettingsService.js";
 import VersioningService from "../services/VersioningService.js";
 import SyncService from "../services/SyncService.js";
+import AuditTrailService from "../services/AuditTrailService.js";
 
 export default class AppController {
   constructor() {
@@ -25,6 +26,7 @@ export default class AppController {
     );
     this.versioningService = new VersioningService();
     this.syncService = new SyncService();
+    this.auditTrailService = new AuditTrailService();
     this.projects = this.repository.loadProjects();
     this.globalSettings = this.normalizeGlobalSettings(
       this.globalSettingsService.load()
@@ -69,6 +71,12 @@ export default class AppController {
       idlePromise: null,
     };
 
+    this.defaultQcSettings = {
+      traverseAngularTolerance: 0.25,
+      traverseLinearTolerance: 0.0002,
+      levelMisclosurePerDistance: 0.02,
+    };
+
     this.cacheDom();
     this.setupUserActivityGuards();
     this.appLaunchers = document.querySelectorAll(".app-tile");
@@ -105,6 +113,8 @@ export default class AppController {
         bookmarksList: this.elements.navigationBookmarksList,
         refreshButton: this.elements.refreshNavigation,
         clearTargetButton: this.elements.clearNavigationTarget,
+        toggleViewButton: this.elements.navigationToggleView,
+        nearestPointsList: this.elements.nearestPointsList,
         mapPanel: this.elements.navigationMapPanel,
         mapFrame: this.elements.navigationMapFrame,
         mapStatus: this.elements.navigationMapStatus,
@@ -441,6 +451,8 @@ export default class AppController {
       navigationBookmarksList: document.getElementById(
         "navigationBookmarksList"
       ),
+      navigationToggleView: document.getElementById("navigationToggleView"),
+      nearestPointsList: document.getElementById("nearestPointsList"),
       refreshNavigation: document.getElementById("refreshNavigation"),
       clearNavigationTarget: document.getElementById("clearNavigationTarget"),
       navigationMapPanel: document.getElementById("navigationMapPanel"),
@@ -484,6 +496,18 @@ export default class AppController {
       exportAllDataButton: document.getElementById("exportAllDataButton"),
       importAllDataButton: document.getElementById("importAllDataButton"),
       importAllDataInput: document.getElementById("importAllDataInput"),
+      auditFileInput: document.getElementById("auditFileInput"),
+      createAuditSnapshotButton: document.getElementById(
+        "createAuditSnapshotButton"
+      ),
+      latestAuditTimestamp: document.getElementById("latestAuditTimestamp"),
+      latestAuditMeta: document.getElementById("latestAuditMeta"),
+      auditEntriesList: document.getElementById("auditEntriesList"),
+      auditStatus: document.getElementById("auditStatus"),
+      downloadLatestAuditButton: document.getElementById(
+        "downloadLatestAuditButton"
+      ),
+      verifyAuditButton: document.getElementById("verifyAuditButton"),
       levelRunSelect: document.getElementById("levelRunSelect"),
       newLevelRunButton: document.getElementById("newLevelRunButton"),
       levelRunName: document.getElementById("levelRunName"),
@@ -498,6 +522,19 @@ export default class AppController {
       levelMisclosure: document.getElementById("levelMisclosure"),
       levelClosureNote: document.getElementById("levelClosureNote"),
       exportLevelRunButton: document.getElementById("exportLevelRunButton"),
+      qcOverallStatus: document.getElementById("qcOverallStatus"),
+      qcTraverseAngularTolerance: document.getElementById(
+        "qcTraverseAngularTolerance"
+      ),
+      qcTraverseLinearTolerance: document.getElementById(
+        "qcTraverseLinearTolerance"
+      ),
+      qcLevelTolerance: document.getElementById("qcLevelTolerance"),
+      qcSettingsStatus: document.getElementById("qcSettingsStatus"),
+      qcSummary: document.getElementById("qcSummary"),
+      qcTraverseList: document.getElementById("qcTraverseList"),
+      qcLevelList: document.getElementById("qcLevelList"),
+      saveQcSettingsButton: document.getElementById("saveQcSettingsButton"),
       researchSection: document.getElementById("researchSection"),
       researchList: document.getElementById("researchList"),
       researchSummary: document.getElementById("researchSummary"),
@@ -648,6 +685,18 @@ export default class AppController {
     this.elements.importAllDataButton?.addEventListener("click", () =>
       this.triggerAllDataImport()
     );
+    this.elements.createAuditSnapshotButton?.addEventListener("click", () =>
+      this.createAuditSnapshot()
+    );
+    this.elements.downloadLatestAuditButton?.addEventListener("click", () =>
+      this.downloadLatestAudit()
+    );
+    this.elements.verifyAuditButton?.addEventListener("click", () =>
+      this.triggerAuditVerification()
+    );
+    this.elements.auditFileInput?.addEventListener("change", (e) => {
+      this.handleAuditVerificationFile(e.target);
+    });
 
     this.elements.recordNameInput?.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
@@ -778,6 +827,16 @@ export default class AppController {
     );
     this.elements.exportResearchButton?.addEventListener("click", () =>
       this.exportResearchPacket()
+    );
+
+    this.elements.saveQcSettingsButton?.addEventListener("click", () =>
+      this.saveQcSettings()
+    );
+    this.elements.qcTraverseList?.addEventListener("click", (evt) =>
+      this.handleQcListClick(evt)
+    );
+    this.elements.qcLevelList?.addEventListener("click", (evt) =>
+      this.handleQcListClick(evt)
     );
 
     [
@@ -1118,6 +1177,7 @@ export default class AppController {
     this.populateLocalizationSelectors();
     this.navigationController?.renderTargetOptions();
     this.renderReferencePointOptions();
+    this.renderQualityDashboard();
     if (!skipSync) {
       this.scheduleSync();
     }
@@ -1376,6 +1436,136 @@ export default class AppController {
     reader.readAsText(file);
   }
 
+  getCurrentProject() {
+    return this.currentProjectId ? this.projects[this.currentProjectId] : null;
+  }
+
+  async createAuditSnapshot() {
+    const project = this.getCurrentProject();
+    if (!project) {
+      this.setAuditStatus("Select or create a project first.");
+      return;
+    }
+
+    const user = this.getCurrentDeviceProfile?.()?.teamMember || null;
+    const snapshot = await this.auditTrailService.createSnapshot(
+      {
+        project,
+        evidence: this.cornerEvidenceService.serializeAllEvidence(),
+        research: this.researchDocumentService.serializeAll(),
+        globalSettings: this.globalSettings,
+        exportMetadata: this.buildExportMetadata("Audit"),
+      },
+      {
+        deviceId: this.deviceId,
+        user,
+      }
+    );
+
+    project.auditTrail = project.auditTrail || [];
+    project.auditTrail.push(snapshot);
+    this.saveProjects();
+    this.renderAuditTrail(project);
+    this.setAuditStatus("Audit snapshot captured and hashed.");
+  }
+
+  renderAuditTrail(project = this.getCurrentProject()) {
+    const list = this.elements.auditEntriesList;
+    const latestTs = this.elements.latestAuditTimestamp;
+    const latestMeta = this.elements.latestAuditMeta;
+
+    if (!list || !latestTs || !latestMeta) return;
+
+    list.innerHTML = "";
+    latestTs.textContent = "None";
+    latestMeta.textContent = "";
+
+    if (!project || !project.auditTrail?.length) {
+      list.textContent = "No snapshots yet.";
+      return;
+    }
+
+    const sorted = project.auditTrail
+      .slice()
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    const latest = sorted[0];
+    latestTs.textContent = new Date(latest.timestamp).toLocaleString();
+    latestMeta.textContent =
+      (latest.user ? `${latest.user} • ` : "") +
+      (latest.deviceId || "Unknown device");
+
+    sorted.slice(0, 5).forEach((entry) => {
+      const row = document.createElement("div");
+      row.className = "audit-entry-row";
+      const when = new Date(entry.timestamp).toLocaleString();
+      const who = entry.user || entry.deviceId || "Unassigned";
+      row.innerHTML = `<strong>${when}</strong><span>${who}</span><code>${entry.hash}</code>`;
+      list.appendChild(row);
+    });
+  }
+
+  downloadLatestAudit() {
+    const project = this.getCurrentProject();
+    if (!project || !project.auditTrail?.length) {
+      this.setAuditStatus("No audit snapshots to download yet.");
+      return;
+    }
+
+    const latest = project.auditTrail
+      .slice()
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+    const payload = {
+      bundle: latest.bundle,
+      hash: latest.hash,
+      timestamp: latest.timestamp,
+      deviceId: latest.deviceId,
+      user: latest.user,
+    };
+    const filename = `${project.name || "project"}-audit-${
+      latest.timestamp
+    }.json`;
+    this.downloadJson(payload, filename);
+    this.setAuditStatus("Downloaded latest audit bundle.");
+  }
+
+  triggerAuditVerification() {
+    if (this.elements.auditFileInput) {
+      this.elements.auditFileInput.value = "";
+      this.elements.auditFileInput.click();
+    }
+  }
+
+  async handleAuditVerificationFile(input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (!data.bundle || !data.hash) {
+          throw new Error("Invalid audit bundle file");
+        }
+        const valid = await this.auditTrailService.verifySnapshot(
+          data.bundle,
+          data.hash
+        );
+        this.setAuditStatus(valid
+          ? "Audit bundle verification PASSED."
+          : "Audit bundle verification FAILED.");
+      } catch (err) {
+        this.setAuditStatus(`Verification failed: ${err.message}`);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  setAuditStatus(message) {
+    if (this.elements.auditStatus) {
+      this.elements.auditStatus.textContent = message;
+    }
+  }
+
   /* ===================== Projects & Records ===================== */
   loadProject(id, options = {}) {
     const { preserveRecord = false } = options;
@@ -1402,8 +1592,11 @@ export default class AppController {
       this.navigationController?.onProjectChanged();
       this.populatePointGenerationOptions();
       this.populateProjectDetailsForm(null);
+      this.renderAuditTrail();
       this.updateSpringboardHero();
       this.levelingController?.onProjectChanged();
+      this.populateQcSettings(null);
+      this.renderQualityDashboard();
       return;
     }
 
@@ -1430,9 +1623,12 @@ export default class AppController {
     this.navigationController?.onProjectChanged();
     this.populatePointGenerationOptions();
     this.populateProjectDetailsForm(this.projects[id]);
+    this.renderAuditTrail();
     this.updateSpringboardHero();
     this.handleSpringboardScroll();
     this.levelingController?.onProjectChanged();
+    this.populateQcSettings(this.projects[id]);
+    this.renderQualityDashboard();
 
     if (this.currentRecordId) {
       this.loadRecord(this.currentRecordId);
@@ -1545,6 +1741,399 @@ export default class AppController {
     this.updateSpringboardHero();
     this.handleSpringboardScroll();
     this.setProjectDetailsEditing(false);
+  }
+
+  populateQcSettings(project) {
+    const settings = this.getProjectQcSettings(project);
+    if (this.elements.qcTraverseAngularTolerance)
+      this.elements.qcTraverseAngularTolerance.value =
+        settings.traverseAngularTolerance ?? "";
+    if (this.elements.qcTraverseLinearTolerance)
+      this.elements.qcTraverseLinearTolerance.value =
+        settings.traverseLinearTolerance ?? "";
+    if (this.elements.qcLevelTolerance)
+      this.elements.qcLevelTolerance.value =
+        settings.levelMisclosurePerDistance ?? "";
+    if (this.elements.qcSettingsStatus)
+      this.elements.qcSettingsStatus.textContent = "";
+  }
+
+  getProjectQcSettings(project) {
+    return {
+      ...this.defaultQcSettings,
+      ...((project && project.qcSettings) || {}),
+    };
+  }
+
+  saveQcSettings() {
+    if (!this.currentProjectId || !this.projects[this.currentProjectId]) {
+      alert("Select a project first.");
+      return;
+    }
+
+    const project = this.projects[this.currentProjectId];
+    const settings = this.getProjectQcSettings(project);
+    const angular = parseFloat(
+      this.elements.qcTraverseAngularTolerance?.value
+    );
+    const linear = parseFloat(
+      this.elements.qcTraverseLinearTolerance?.value
+    );
+    const level = parseFloat(this.elements.qcLevelTolerance?.value);
+
+    if (Number.isFinite(angular)) settings.traverseAngularTolerance = angular;
+    if (Number.isFinite(linear)) settings.traverseLinearTolerance = linear;
+    if (Number.isFinite(level)) settings.levelMisclosurePerDistance = level;
+
+    project.qcSettings = settings;
+    this.saveProjects();
+    this.populateQcSettings(project);
+    this.renderQualityDashboard();
+
+    if (this.elements.qcSettingsStatus) {
+      this.elements.qcSettingsStatus.textContent = "Tolerances saved.";
+      setTimeout(() => {
+        if (this.elements.qcSettingsStatus)
+          this.elements.qcSettingsStatus.textContent = "";
+      }, 2500);
+    }
+  }
+
+  computeQualityResults() {
+    const project = this.currentProjectId
+      ? this.projects[this.currentProjectId]
+      : null;
+
+    const results = {
+      traverses: [],
+      levels: [],
+      overallClass: "",
+      overallLabel: "No checks yet",
+      failedTraverseIds: [],
+    };
+
+    if (!project) return results;
+
+    const qcSettings = this.getProjectQcSettings(project);
+    const records = project.records || {};
+    Object.entries(records).forEach(([id, record], idx) => {
+      const geometry = this.computeTraversePointsForRecord(
+        this.currentProjectId,
+        id
+      );
+      const mainLine = geometry?.polylines?.[0] || geometry?.points || [];
+      let totalLength = 0;
+      let linearMisclosure = null;
+      let angularMisclosure = null;
+      let status = "warn";
+      let message = "Add traverse calls to compute closure.";
+
+      if (mainLine.length >= 2) {
+        for (let i = 1; i < mainLine.length; i++) {
+          const prev = mainLine[i - 1];
+          const curr = mainLine[i];
+          totalLength += Math.hypot(curr.x - prev.x, curr.y - prev.y);
+        }
+        const start = mainLine[0];
+        const end = mainLine[mainLine.length - 1];
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        linearMisclosure = Math.hypot(dx, dy);
+
+        const startAz =
+          (Math.atan2(mainLine[1].x - start.x, mainLine[1].y - start.y) *
+            180) /
+          Math.PI;
+        const endAz =
+          (Math.atan2(end.x - mainLine[mainLine.length - 2].x, end.y - mainLine[
+            mainLine.length - 2
+          ].y) *
+            180) /
+          Math.PI;
+        angularMisclosure = Math.abs(
+          this.normalizeAngleDiff(endAz - startAz)
+        );
+
+        const ratio =
+          totalLength > 0 ? linearMisclosure / totalLength : Number.POSITIVE_INFINITY;
+        const angularPass = Number.isFinite(qcSettings.traverseAngularTolerance)
+          ? angularMisclosure <= qcSettings.traverseAngularTolerance
+          : null;
+        const linearPass = Number.isFinite(qcSettings.traverseLinearTolerance)
+          ? ratio <= qcSettings.traverseLinearTolerance
+          : null;
+
+        if ((angularPass === false || linearPass === false) && qcSettings) {
+          status = "fail";
+          message = "Fails tolerance";
+          results.failedTraverseIds.push(id);
+        } else if (angularPass === null && linearPass === null) {
+          status = "warn";
+          message = "Set tolerances to evaluate.";
+        } else {
+          status = "pass";
+          message = "Passes tolerance";
+        }
+
+        if (!Number.isFinite(linearMisclosure)) {
+          status = "warn";
+          message = "Need numeric distances to compute closure.";
+        }
+      }
+
+      results.traverses.push({
+        id,
+        name: record.name || `Record ${idx + 1}`,
+        totalLength,
+        linearMisclosure,
+        angularMisclosure,
+        status,
+        message,
+      });
+    });
+
+    const levelRuns = project.levelRuns || [];
+    levelRuns.forEach((run, idx) => {
+      const stats = this.levelingController?.computeLevelingRows
+        ? this.levelingController.computeLevelingRows(run)
+        : {};
+      const k = Math.max(stats.rows?.length || 0, 1);
+      const allowed =
+        Number.isFinite(qcSettings.levelMisclosurePerDistance)
+          ? qcSettings.levelMisclosurePerDistance * Math.sqrt(k)
+          : null;
+      const misclosure = Number.isFinite(stats?.misclosure)
+        ? Math.abs(stats.misclosure)
+        : null;
+      let status = "warn";
+      let message = "Add a closing elevation to evaluate.";
+      if (Number.isFinite(misclosure) && Number.isFinite(allowed)) {
+        status = misclosure <= allowed ? "pass" : "fail";
+        message =
+          misclosure <= allowed
+            ? "Passes tolerance"
+            : "Fails tolerance";
+      } else if (Number.isFinite(misclosure)) {
+        status = "warn";
+        message = "Set tolerance to evaluate.";
+      }
+
+      results.levels.push({
+        id: run.id,
+        name: run.name || `Level run ${idx + 1}`,
+        misclosure,
+        allowed,
+        status,
+        message,
+      });
+    });
+
+    const hasChecks = results.traverses.length > 0 || results.levels.length > 0;
+    const hasFails =
+      results.traverses.some((t) => t.status === "fail") ||
+      results.levels.some((l) => l.status === "fail");
+    const hasWarnings =
+      results.traverses.some((t) => t.status === "warn") ||
+      results.levels.some((l) => l.status === "warn");
+
+    if (!hasChecks) {
+      results.overallClass = "";
+      results.overallLabel = "No checks yet";
+    } else if (hasFails) {
+      results.overallClass = "qc-fail";
+      results.overallLabel = "QC failed";
+    } else if (hasWarnings) {
+      results.overallClass = "qc-warning";
+      results.overallLabel = "Needs attention";
+    } else {
+      results.overallClass = "qc-pass";
+      results.overallLabel = "QC passed";
+    }
+
+    return results;
+  }
+
+  renderQualityDashboard() {
+    if (!this.elements.qcOverallStatus) return;
+    const results = this.computeQualityResults();
+    this.latestQcResults = results;
+
+    const statusEl = this.elements.qcOverallStatus;
+    statusEl.classList.remove("qc-pass", "qc-fail", "qc-warning");
+    if (results.overallClass) statusEl.classList.add(results.overallClass);
+    statusEl.textContent = results.overallLabel;
+
+    const summaryEl = this.elements.qcSummary;
+    if (summaryEl) {
+      if (!this.currentProjectId) {
+        summaryEl.textContent = "Select a project to view QC results.";
+      } else {
+        const traversePass = results.traverses.filter(
+          (t) => t.status === "pass"
+        ).length;
+        const levelPass = results.levels.filter((l) => l.status === "pass").length;
+        summaryEl.innerHTML = `
+          <div class="summary-chip">Traverses passing: ${traversePass} / ${
+          results.traverses.length
+        }</div>
+          <div class="summary-chip">Level loops passing: ${levelPass} / ${
+          results.levels.length
+        }</div>
+          <div class="summary-chip">Failed items: ${
+          results.failedTraverseIds.length +
+          results.levels.filter((l) => l.status === "fail").length
+        }</div>`;
+      }
+    }
+
+    this.renderTraverseQcList(results);
+    this.renderLevelQcList(results);
+  }
+
+  renderTraverseQcList(results) {
+    const list = this.elements.qcTraverseList;
+    if (!list) return;
+    list.innerHTML = "";
+    if (!this.currentProjectId) {
+      list.textContent = "Select a project to review traverses.";
+      return;
+    }
+    if (!results.traverses.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.textContent = "Create a record to evaluate traverse closure.";
+      list.appendChild(empty);
+      return;
+    }
+
+    results.traverses.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "qc-item";
+      if (item.status === "pass") row.classList.add("qc-pass");
+      if (item.status === "fail") row.classList.add("qc-fail");
+      if (item.status === "warn") row.classList.add("qc-warning");
+
+      const header = document.createElement("div");
+      header.className = "qc-item-header";
+      const name = document.createElement("strong");
+      name.textContent = item.name;
+      const chip = document.createElement("span");
+      chip.className = "status-chip";
+      chip.textContent = item.message;
+      header.append(name, chip);
+
+      const meta = document.createElement("div");
+      meta.className = "qc-meta";
+      meta.innerHTML = `Linear misclosure: ${this.formatLevelNumber(
+        item.linearMisclosure
+      )} (ratio ${this.formatRatio(
+        item.linearMisclosure,
+        item.totalLength
+      )}) · Angular: ${this.formatDegrees(item.angularMisclosure)}`;
+
+      const actions = document.createElement("div");
+      actions.className = "qc-item-actions";
+      const open = document.createElement("button");
+      open.type = "button";
+      open.textContent = "Open traverse";
+      open.dataset.action = "open-traverse";
+      open.dataset.recordId = item.id;
+      actions.appendChild(open);
+
+      row.append(header, meta, actions);
+      list.appendChild(row);
+    });
+  }
+
+  renderLevelQcList(results) {
+    const list = this.elements.qcLevelList;
+    if (!list) return;
+    list.innerHTML = "";
+    if (!this.currentProjectId) {
+      list.textContent = "Select a project to review level loops.";
+      return;
+    }
+    if (!results.levels.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.textContent = "Add level runs to evaluate misclosure.";
+      list.appendChild(empty);
+      return;
+    }
+
+    results.levels.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "qc-item";
+      if (item.status === "pass") row.classList.add("qc-pass");
+      if (item.status === "fail") row.classList.add("qc-fail");
+      if (item.status === "warn") row.classList.add("qc-warning");
+
+      const header = document.createElement("div");
+      header.className = "qc-item-header";
+      const name = document.createElement("strong");
+      name.textContent = item.name;
+      const chip = document.createElement("span");
+      chip.className = "status-chip";
+      chip.textContent = item.message;
+      header.append(name, chip);
+
+      const meta = document.createElement("div");
+      meta.className = "qc-meta";
+      meta.textContent = `Misclosure: ${this.formatLevelNumber(
+        item.misclosure
+      )} (allowed ${this.formatLevelNumber(item.allowed)})`;
+
+      const actions = document.createElement("div");
+      actions.className = "qc-item-actions";
+      const open = document.createElement("button");
+      open.type = "button";
+      open.textContent = "Open level run";
+      open.dataset.action = "open-level";
+      open.dataset.levelId = item.id;
+      actions.appendChild(open);
+
+      row.append(header, meta, actions);
+      list.appendChild(row);
+    });
+  }
+
+  handleQcListClick(evt) {
+    const traverseBtn = evt.target.closest("button[data-action='open-traverse']");
+    if (traverseBtn && traverseBtn.dataset.recordId) {
+      this.switchTab("traverseSection");
+      this.loadRecord(traverseBtn.dataset.recordId);
+      return;
+    }
+
+    const levelBtn = evt.target.closest("button[data-action='open-level']");
+    if (levelBtn && levelBtn.dataset.levelId) {
+      this.switchTab("levelingSection");
+      if (this.levelingController) {
+        this.levelingController.currentLevelRunId = levelBtn.dataset.levelId;
+        this.levelingController.renderLevelRuns();
+      }
+    }
+  }
+
+  formatRatio(misclosure, length) {
+    if (!Number.isFinite(misclosure) || !Number.isFinite(length) || length === 0)
+      return "—";
+    if (misclosure === 0) return "Closed";
+    const ratio = length / misclosure;
+    return `1:${Math.round(ratio).toLocaleString()}`;
+  }
+
+  formatDegrees(value) {
+    return Number.isFinite(value) ? `${value.toFixed(2)}°` : "—";
+  }
+
+  normalizeAngleDiff(angle) {
+    const normalized = ((angle + 180) % 360) - 180;
+    return normalized;
+  }
+
+  formatLevelNumber(value) {
+    return Number.isFinite(value) ? value.toFixed(3) : "—";
   }
 
   deleteCurrentProject() {
@@ -2673,6 +3262,8 @@ export default class AppController {
     );
     const container = this.elements.evidenceList;
     container.innerHTML = "";
+    const qcResults = this.latestQcResults || this.computeQualityResults();
+    const failingTraverseIds = qcResults?.failedTraverseIds || [];
 
     if (!this.currentProjectId) {
       this.elements.evidenceSummary.textContent =
@@ -2713,6 +3304,15 @@ export default class AppController {
         status.setAttribute("aria-label", ev.status || "Draft");
         status.style.marginTop = "6px";
         card.append(title, meta, status);
+
+        if (ev.recordId && failingTraverseIds.includes(ev.recordId)) {
+          card.classList.add("qc-risk-card");
+          const qcWarning = document.createElement("div");
+          qcWarning.className = "mini-note";
+          qcWarning.textContent =
+            "QC: traverse closure failed for this linked record.";
+          card.appendChild(qcWarning);
+        }
 
         if (ev.coords) {
           const coords = document.createElement("div");
@@ -6248,6 +6848,8 @@ export default class AppController {
   getPeerLocations() {
     const locations = this.globalSettings.liveLocations || {};
     const profiles = this.globalSettings.deviceProfiles || {};
+    const maxAgeMs = 5 * 60 * 1000;
+    const now = Date.now();
 
     return Object.entries(locations)
       .filter(([, loc]) => loc && typeof loc.lat === "number" && typeof loc.lon === "number")
@@ -6258,7 +6860,12 @@ export default class AppController {
         accuracy: loc.accuracy,
         updatedAt: loc.updatedAt,
         teamMember: loc.teamMember || profiles[deviceId]?.teamMember,
-      }));
+      }))
+      .filter((loc) => {
+        const updatedAt = new Date(loc.updatedAt || 0).getTime();
+        if (!Number.isFinite(updatedAt)) return false;
+        return now - updatedAt <= maxAgeMs;
+      });
   }
 
   addEquipmentName() {

@@ -32,6 +32,8 @@ export default class Project {
     lastExportedAt = null,
     version = 1,
     levelRuns = [],
+    auditTrail = [],
+    qcSettings = {},
   } = {}) {
     const stamp = new Date().toISOString();
     this.id = id;
@@ -75,6 +77,13 @@ export default class Project {
     this.updatedAt = updatedAt || this.createdAt;
     this.lastExportedAt = lastExportedAt || null;
     this.version = version ?? 1;
+    this.auditTrail = Array.isArray(auditTrail) ? auditTrail : [];
+    const defaultQc = {
+      traverseAngularTolerance: 0.25,
+      traverseLinearTolerance: 0.0002,
+      levelMisclosurePerDistance: 0.02,
+    };
+    this.qcSettings = { ...defaultQc, ...(qcSettings || {}) };
 
     Object.entries(records).forEach(([id, record]) => {
       this.records[id] = record instanceof SurveyRecord
@@ -135,6 +144,8 @@ export default class Project {
       levelRuns: this.levelRuns.map((run) =>
         run instanceof LevelRun ? run.toObject() : LevelRun.fromObject(run).toObject()
       ),
+      auditTrail: this.auditTrail,
+      qcSettings: this.qcSettings,
     };
   }
 }
