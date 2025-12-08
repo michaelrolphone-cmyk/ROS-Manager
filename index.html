@@ -1787,29 +1787,113 @@
             </p>
 
             <div class="form-grid">
-              <div>
-                <label for="equipmentNameInput">Equipment Names</label>
-                <div class="input-row">
-                  <input
-                    type="text"
-                    id="equipmentNameInput"
-                    placeholder="Base 1, Rover, Receiver"
-                  />
-                  <button type="button" id="addEquipmentNameButton">Add</button>
+              <div class="card" style="margin-top: 0">
+                <h4 style="margin-top: 0">Equipment Library</h4>
+                <div class="form-grid">
+                  <label>
+                    Name
+                    <input
+                      type="text"
+                      id="equipmentNameInput"
+                      placeholder="Base 1, Rover, Receiver"
+                    />
+                  </label>
+                  <label>
+                    Make
+                    <input type="text" id="equipmentMakeInput" />
+                  </label>
+                  <label>
+                    Model
+                    <input type="text" id="equipmentModelInput" />
+                  </label>
+                  <label>
+                    Manual URL
+                    <input
+                      type="url"
+                      id="equipmentManualInput"
+                      placeholder="https://manufacturer.example/manual"
+                    />
+                  </label>
+                  <label class="full-width">
+                    Notes
+                    <textarea
+                      id="equipmentNotesInput"
+                      rows="2"
+                      placeholder="Calibration info, known issues"
+                    ></textarea>
+                  </label>
                 </div>
-                <ul id="equipmentNameList" class="pill-list"></ul>
+                <div class="input-row" style="margin-top: 8px">
+                  <button type="button" id="saveEquipmentButton">
+                    Save Equipment
+                  </button>
+                  <button type="button" id="resetEquipmentButton">
+                    Reset
+                  </button>
+                  <div class="subtitle" id="equipmentEditHint"></div>
+                </div>
+                <table class="calls-table" style="margin-top: 12px">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Make/Model</th>
+                      <th>Manual</th>
+                      <th>Notes</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="equipmentTableBody"></tbody>
+                </table>
               </div>
-              <div>
-                <label for="teamMemberInput">Team Members</label>
-                <div class="input-row">
-                  <input
-                    type="text"
-                    id="teamMemberInput"
-                    placeholder="Crew Chief, Rodman"
-                  />
-                  <button type="button" id="addTeamMemberButton">Add</button>
+
+              <div class="card" style="margin-top: 0">
+                <h4 style="margin-top: 0">Team Members</h4>
+                <div class="form-grid">
+                  <label>
+                    Name
+                    <input
+                      type="text"
+                      id="teamMemberInput"
+                      placeholder="Crew Chief, Rodman"
+                    />
+                  </label>
+                  <label>
+                    Role
+                    <input type="text" id="teamMemberRoleInput" />
+                  </label>
+                  <label>
+                    Title
+                    <input type="text" id="teamMemberTitleInput" />
+                  </label>
+                  <label>
+                    Phone
+                    <input type="tel" id="teamMemberPhoneInput" />
+                  </label>
+                  <label>
+                    Email
+                    <input type="email" id="teamMemberEmailInput" />
+                  </label>
                 </div>
-                <ul id="teamMemberList" class="pill-list"></ul>
+                <div class="input-row" style="margin-top: 8px">
+                  <button type="button" id="saveTeamMemberButton">Save</button>
+                  <button type="button" id="resetTeamMemberButton">
+                    Reset
+                  </button>
+                  <div class="subtitle" id="teamMemberEditHint"></div>
+                </div>
+                <table class="calls-table" style="margin-top: 12px">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Role/Title</th>
+                      <th>Contact</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="teamMemberTableBody"></tbody>
+                </table>
               </div>
             </div>
 
@@ -1833,13 +1917,17 @@
                   id="pointCodeDescriptionInput"
                   placeholder="Description"
                 />
-                <button type="button" id="addPointCodeButton">Add</button>
+                <button type="button" id="savePointCodeButton">Save</button>
+                <button type="button" id="resetPointCodeButton">Reset</button>
+                <div class="subtitle" id="pointCodeEditHint"></div>
               </div>
               <table class="calls-table">
                 <thead>
                   <tr>
                     <th>Code</th>
                     <th>Description</th>
+                    <th>Status</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody id="pointCodeTableBody"></tbody>

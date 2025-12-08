@@ -348,15 +348,15 @@
 
 ### 6.1 Entity Management & Archival
 
-* Allow editing of:
+* ✅ Allow editing of:
   * Names, equipment, and point codes.
 
-* Allow deleting:
+* ✅ Allow deleting:
   * Team members, equipment, and point codes.
 
-* Every team member, equipment item, and point code must have a **unique identifier** used across the app for references by ID.
+* ✅ Every team member, equipment item, and point code must have a **unique identifier** used across the app for references by ID.
 
-* If a team member, equipment item, or point code is used anywhere in project data:
+* ✅ If a team member, equipment item, or point code is used anywhere in project data:
   * Deleting it must:
     * **flag the record as archived** rather than completely deleting it.
     * Preserve references so that historical data remains valid and uncorrupted.
@@ -365,12 +365,12 @@
 
 ### 6.2 Extended Metadata
 
-* Equipment entries should support:
+* ✅ Equipment entries should support:
   * Make and model.
   * URL(s) to manuals.
   * Notes field (for calibration info, known issues, etc.).
 
-* Team member entries should support:
+* ✅ Team member entries should support:
   * Job role.
   * Title.
   * Contact information (phone, email, etc.).

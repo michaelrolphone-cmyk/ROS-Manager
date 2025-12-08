@@ -49,6 +49,8 @@ export default class AppController {
     this.currentTraversePointOptions = [];
     this.currentEquipmentLocation = null;
     this.editingEquipmentId = null;
+    this.editingTeamMemberId = null;
+    this.editingPointCodeId = null;
     this.defaultHeaderMapLayer =
       'url(\'data:image/svg+xml,%3Csvg width="400" height="240" viewBox="0 0 400 240" fill="none" xmlns="http://www.w3.org/2000/svg"%3E%3Cg opacity="0.35" stroke="%23a5b4fc" stroke-width="1.5"%3E%3Cpath d="M-40 24C40 52 120 52 200 24C280 -4 360 -4 440 24"/%3E%3Cpath d="M-40 84C40 112 120 112 200 84C280 56 360 56 440 84"/%3E%3Cpath d="M-40 144C40 172 120 172 200 144C280 116 360 116 440 144"/%3E%3Cpath d="M-40 204C40 232 120 232 200 204C280 176 360 176 440 204"/%3E%3Cpath d="M120 -20C92 60 92 140 120 220"/%3E%3Cpath d="M200 -20C172 60 172 140 200 220"/%3E%3Cpath d="M280 -20C252 60 252 140 280 220"/%3E%3C/g%3E%3Ccircle cx="200" cy="120" r="60" stroke="%23638cf5" stroke-width="2.5" opacity="0.35"/%3E%3C/svg%3E\')';
     this.geocodeCache = {};
@@ -480,18 +482,32 @@ export default class AppController {
       applyLocalization: document.getElementById("applyLocalization"),
       clearLocalization: document.getElementById("clearLocalization"),
       equipmentNameInput: document.getElementById("equipmentNameInput"),
-      addEquipmentNameButton: document.getElementById("addEquipmentNameButton"),
-      equipmentNameList: document.getElementById("equipmentNameList"),
+      equipmentMakeInput: document.getElementById("equipmentMakeInput"),
+      equipmentModelInput: document.getElementById("equipmentModelInput"),
+      equipmentManualInput: document.getElementById("equipmentManualInput"),
+      equipmentNotesInput: document.getElementById("equipmentNotesInput"),
+      saveEquipmentButton: document.getElementById("saveEquipmentButton"),
+      resetEquipmentButton: document.getElementById("resetEquipmentButton"),
+      equipmentEditHint: document.getElementById("equipmentEditHint"),
+      equipmentTableBody: document.getElementById("equipmentTableBody"),
       teamMemberInput: document.getElementById("teamMemberInput"),
-      addTeamMemberButton: document.getElementById("addTeamMemberButton"),
-      teamMemberList: document.getElementById("teamMemberList"),
+      teamMemberRoleInput: document.getElementById("teamMemberRoleInput"),
+      teamMemberTitleInput: document.getElementById("teamMemberTitleInput"),
+      teamMemberPhoneInput: document.getElementById("teamMemberPhoneInput"),
+      teamMemberEmailInput: document.getElementById("teamMemberEmailInput"),
+      saveTeamMemberButton: document.getElementById("saveTeamMemberButton"),
+      resetTeamMemberButton: document.getElementById("resetTeamMemberButton"),
+      teamMemberEditHint: document.getElementById("teamMemberEditHint"),
+      teamMemberTableBody: document.getElementById("teamMemberTableBody"),
       deviceTeamMemberSelect: document.getElementById("deviceTeamMemberSelect"),
       deviceIdentifierHint: document.getElementById("deviceIdentifierHint"),
       pointCodeInput: document.getElementById("pointCodeInput"),
       pointCodeDescriptionInput: document.getElementById(
         "pointCodeDescriptionInput"
       ),
-      addPointCodeButton: document.getElementById("addPointCodeButton"),
+      savePointCodeButton: document.getElementById("savePointCodeButton"),
+      resetPointCodeButton: document.getElementById("resetPointCodeButton"),
+      pointCodeEditHint: document.getElementById("pointCodeEditHint"),
       pointCodeTableBody: document.getElementById("pointCodeTableBody"),
       exportAllDataButton: document.getElementById("exportAllDataButton"),
       importAllDataButton: document.getElementById("importAllDataButton"),
@@ -667,17 +683,26 @@ export default class AppController {
       this.handleAllDataImport(e.target);
     });
 
-    this.elements.addEquipmentNameButton?.addEventListener("click", () =>
-      this.addEquipmentName()
+    this.elements.saveEquipmentButton?.addEventListener("click", () =>
+      this.saveEquipment()
     );
-    this.elements.addTeamMemberButton?.addEventListener("click", () =>
-      this.addTeamMember()
+    this.elements.resetEquipmentButton?.addEventListener("click", () =>
+      this.resetEquipmentForm()
+    );
+    this.elements.saveTeamMemberButton?.addEventListener("click", () =>
+      this.saveTeamMember()
+    );
+    this.elements.resetTeamMemberButton?.addEventListener("click", () =>
+      this.resetTeamMemberForm()
     );
     this.elements.deviceTeamMemberSelect?.addEventListener("change", (e) =>
       this.setDeviceTeamMember(e.target.value)
     );
-    this.elements.addPointCodeButton?.addEventListener("click", () =>
-      this.addPointCode()
+    this.elements.savePointCodeButton?.addEventListener("click", () =>
+      this.savePointCode()
+    );
+    this.elements.resetPointCodeButton?.addEventListener("click", () =>
+      this.resetPointCodeForm()
     );
     this.elements.exportAllDataButton?.addEventListener("click", () =>
       this.exportAllData()
@@ -1189,17 +1214,106 @@ export default class AppController {
     });
   }
 
+  generateId(prefix = "id") {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return `${prefix}-${crypto.randomUUID()}`;
+    }
+    return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+
+  normalizeEquipmentEntry(entry) {
+    if (!entry) return null;
+    if (typeof entry === "string") {
+      return {
+        id: this.generateId("equip"),
+        name: entry.trim(),
+        make: "",
+        model: "",
+        manualUrl: "",
+        notes: "",
+        archived: false,
+      };
+    }
+    const name = (entry.name || "").trim();
+    if (!name) return null;
+    return {
+      id: entry.id || this.generateId("equip"),
+      name,
+      make: entry.make || "",
+      model: entry.model || "",
+      manualUrl: entry.manualUrl || entry.manual || "",
+      notes: entry.notes || "",
+      archived: Boolean(entry.archived),
+    };
+  }
+
+  normalizeTeamMember(entry) {
+    if (!entry) return null;
+    if (typeof entry === "string") {
+      return {
+        id: this.generateId("team"),
+        name: entry.trim(),
+        role: "",
+        title: "",
+        phone: "",
+        email: "",
+        archived: false,
+      };
+    }
+    const name = (entry.name || "").trim();
+    if (!name) return null;
+    return {
+      id: entry.id || this.generateId("team"),
+      name,
+      role: entry.role || "",
+      title: entry.title || "",
+      phone: entry.phone || "",
+      email: entry.email || "",
+      archived: Boolean(entry.archived),
+    };
+  }
+
+  normalizePointCode(entry) {
+    if (!entry) return null;
+    if (typeof entry === "string") {
+      return {
+        id: this.generateId("pc"),
+        code: entry.trim(),
+        description: "",
+        archived: false,
+      };
+    }
+    const code = (entry.code || "").trim();
+    const description = entry.description || "";
+    if (!code && !description) return null;
+    return {
+      id: entry.id || this.generateId("pc"),
+      code,
+      description,
+      archived: Boolean(entry.archived),
+    };
+  }
+
   normalizeGlobalSettings(settings = {}) {
+    const equipment = Array.isArray(settings.equipment)
+      ? settings.equipment
+          .map((item) => this.normalizeEquipmentEntry(item))
+          .filter(Boolean)
+      : [];
+    const teamMembers = Array.isArray(settings.teamMembers)
+      ? settings.teamMembers
+          .map((item) => this.normalizeTeamMember(item))
+          .filter(Boolean)
+      : [];
+    const pointCodes = Array.isArray(settings.pointCodes)
+      ? settings.pointCodes
+          .map((item) => this.normalizePointCode(item))
+          .filter(Boolean)
+      : [];
     const sanitized = {
-      equipment: Array.isArray(settings.equipment)
-        ? settings.equipment.filter(Boolean)
-        : [],
-      teamMembers: Array.isArray(settings.teamMembers)
-        ? settings.teamMembers.filter(Boolean)
-        : [],
-      pointCodes: Array.isArray(settings.pointCodes)
-        ? settings.pointCodes.filter(Boolean)
-        : [],
+      equipment,
+      teamMembers,
+      pointCodes,
       deviceProfiles:
         settings.deviceProfiles && typeof settings.deviceProfiles === "object"
           ? settings.deviceProfiles
@@ -3902,15 +4016,19 @@ export default class AppController {
 
     const previousValue = select.value;
     select.innerHTML = "";
-    const members = (this.globalSettings.teamMembers || []).filter(Boolean);
+    const memberNames = this.getActiveTeamMembers()
+      .map((entry) => entry.name)
+      .filter(Boolean);
 
     const placeholder = document.createElement("option");
     placeholder.value = "";
     placeholder.textContent =
-      members.length > 0 ? "Select team member" : "Add team members in settings";
+      memberNames.length > 0
+        ? "Select team member"
+        : "Add team members in settings";
     select.appendChild(placeholder);
 
-    members
+    memberNames
       .slice()
       .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
       .forEach((member) => {
@@ -3941,8 +4059,8 @@ export default class AppController {
     const names = new Set();
 
     (this.globalSettings.equipment || [])
-      .filter(Boolean)
-      .forEach((name) => names.add(name));
+      .filter((entry) => entry && !entry.archived && entry.name)
+      .forEach((entry) => names.add(entry.name));
     project?.equipmentLogs?.forEach((log) => {
       (log.equipmentUsed || [])
         .filter(Boolean)
@@ -6755,7 +6873,9 @@ export default class AppController {
   renderDeviceIdentityOptions() {
     const select = this.elements.deviceTeamMemberSelect;
     const hint = this.elements.deviceIdentifierHint;
-    const members = (this.globalSettings.teamMembers || []).filter(Boolean);
+    const memberNames = this.getActiveTeamMembers()
+      .map((entry) => entry.name)
+      .filter(Boolean);
     const currentProfile = this.getCurrentDeviceProfile();
     const selectedMember = currentProfile?.teamMember || "";
 
@@ -6769,13 +6889,13 @@ export default class AppController {
 
     const previousValue = select.value;
     const placeholderText =
-      members.length > 0
+      memberNames.length > 0
         ? "Select team member"
         : "Add team members to assign";
 
     const desiredOptions = [
       "",
-      ...members
+      ...memberNames
         .slice()
         .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" })),
     ];
@@ -6868,61 +6988,208 @@ export default class AppController {
       });
   }
 
-  addEquipmentName() {
-    const input = this.elements.equipmentNameInput;
-    const name = (input?.value || "").trim();
+  getActiveEquipment() {
+    return (this.globalSettings.equipment || []).filter(
+      (item) => item && !item.archived
+    );
+  }
+
+  getActiveTeamMembers() {
+    return (this.globalSettings.teamMembers || []).filter(
+      (item) => item && !item.archived
+    );
+  }
+
+  saveEquipment() {
+    const name = (this.elements.equipmentNameInput?.value || "").trim();
+    const make = (this.elements.equipmentMakeInput?.value || "").trim();
+    const model = (this.elements.equipmentModelInput?.value || "").trim();
+    const manualUrl = (this.elements.equipmentManualInput?.value || "").trim();
+    const notes = (this.elements.equipmentNotesInput?.value || "").trim();
     if (!name) return;
-    this.globalSettings.equipment.push(name);
+
+    const entry = this.normalizeEquipmentEntry({
+      id: this.editingEquipmentId || undefined,
+      name,
+      make,
+      model,
+      manualUrl,
+      notes,
+      archived: false,
+    });
+    const existingIndex = (this.globalSettings.equipment || []).findIndex(
+      (item) => item.id === entry.id
+    );
+    if (existingIndex >= 0) {
+      this.globalSettings.equipment.splice(existingIndex, 1, entry);
+    } else {
+      this.globalSettings.equipment.push(entry);
+    }
     this.saveGlobalSettings();
-    if (input) input.value = "";
+    this.resetEquipmentForm();
     this.renderGlobalSettings();
   }
 
-  addTeamMember() {
-    const input = this.elements.teamMemberInput;
-    const name = (input?.value || "").trim();
-    if (!name) return;
-    this.globalSettings.teamMembers.push(name);
+  resetEquipmentForm() {
+    if (this.elements.equipmentNameInput) this.elements.equipmentNameInput.value = "";
+    if (this.elements.equipmentMakeInput) this.elements.equipmentMakeInput.value = "";
+    if (this.elements.equipmentModelInput) this.elements.equipmentModelInput.value = "";
+    if (this.elements.equipmentManualInput)
+      this.elements.equipmentManualInput.value = "";
+    if (this.elements.equipmentNotesInput) this.elements.equipmentNotesInput.value = "";
+    this.editingEquipmentId = null;
+    if (this.elements.equipmentEditHint) this.elements.equipmentEditHint.textContent = "";
+  }
+
+  startEditEquipment(id) {
+    const entry = (this.globalSettings.equipment || []).find((item) => item.id === id);
+    if (!entry) return;
+    this.editingEquipmentId = id;
+    if (this.elements.equipmentNameInput) this.elements.equipmentNameInput.value = entry.name || "";
+    if (this.elements.equipmentMakeInput) this.elements.equipmentMakeInput.value = entry.make || "";
+    if (this.elements.equipmentModelInput) this.elements.equipmentModelInput.value = entry.model || "";
+    if (this.elements.equipmentManualInput)
+      this.elements.equipmentManualInput.value = entry.manualUrl || "";
+    if (this.elements.equipmentNotesInput) this.elements.equipmentNotesInput.value = entry.notes || "";
+    if (this.elements.equipmentEditHint)
+      this.elements.equipmentEditHint.textContent = "Editing existing equipment";
+  }
+
+  toggleEquipmentArchive(id) {
+    const entry = (this.globalSettings.equipment || []).find((item) => item.id === id);
+    if (!entry) return;
+    entry.archived = !entry.archived;
+    if (this.editingEquipmentId === id && entry.archived) {
+      this.resetEquipmentForm();
+    }
     this.saveGlobalSettings();
-    if (input) input.value = "";
     this.renderGlobalSettings();
   }
 
-  addPointCode() {
+  saveTeamMember() {
+    const name = (this.elements.teamMemberInput?.value || "").trim();
+    const role = (this.elements.teamMemberRoleInput?.value || "").trim();
+    const title = (this.elements.teamMemberTitleInput?.value || "").trim();
+    const phone = (this.elements.teamMemberPhoneInput?.value || "").trim();
+    const email = (this.elements.teamMemberEmailInput?.value || "").trim();
+    if (!name) return;
+
+    const entry = this.normalizeTeamMember({
+      id: this.editingTeamMemberId || undefined,
+      name,
+      role,
+      title,
+      phone,
+      email,
+      archived: false,
+    });
+    const existingIndex = (this.globalSettings.teamMembers || []).findIndex(
+      (item) => item.id === entry.id
+    );
+    if (existingIndex >= 0) {
+      this.globalSettings.teamMembers.splice(existingIndex, 1, entry);
+    } else {
+      this.globalSettings.teamMembers.push(entry);
+    }
+    this.saveGlobalSettings();
+    this.resetTeamMemberForm();
+    this.renderGlobalSettings();
+  }
+
+  resetTeamMemberForm() {
+    if (this.elements.teamMemberInput) this.elements.teamMemberInput.value = "";
+    if (this.elements.teamMemberRoleInput) this.elements.teamMemberRoleInput.value = "";
+    if (this.elements.teamMemberTitleInput) this.elements.teamMemberTitleInput.value = "";
+    if (this.elements.teamMemberPhoneInput) this.elements.teamMemberPhoneInput.value = "";
+    if (this.elements.teamMemberEmailInput) this.elements.teamMemberEmailInput.value = "";
+    this.editingTeamMemberId = null;
+    if (this.elements.teamMemberEditHint) this.elements.teamMemberEditHint.textContent = "";
+  }
+
+  startEditTeamMember(id) {
+    const entry = (this.globalSettings.teamMembers || []).find((item) => item.id === id);
+    if (!entry) return;
+    this.editingTeamMemberId = id;
+    if (this.elements.teamMemberInput) this.elements.teamMemberInput.value = entry.name || "";
+    if (this.elements.teamMemberRoleInput) this.elements.teamMemberRoleInput.value = entry.role || "";
+    if (this.elements.teamMemberTitleInput) this.elements.teamMemberTitleInput.value = entry.title || "";
+    if (this.elements.teamMemberPhoneInput) this.elements.teamMemberPhoneInput.value = entry.phone || "";
+    if (this.elements.teamMemberEmailInput) this.elements.teamMemberEmailInput.value = entry.email || "";
+    if (this.elements.teamMemberEditHint)
+      this.elements.teamMemberEditHint.textContent = "Editing team member";
+  }
+
+  toggleTeamMemberArchive(id) {
+    const entry = (this.globalSettings.teamMembers || []).find((item) => item.id === id);
+    if (!entry) return;
+    entry.archived = !entry.archived;
+    if (this.editingTeamMemberId === id && entry.archived) {
+      this.resetTeamMemberForm();
+    }
+    this.saveGlobalSettings();
+    this.renderGlobalSettings();
+  }
+
+  savePointCode() {
     const code = (this.elements.pointCodeInput?.value || "").trim();
     const desc = (this.elements.pointCodeDescriptionInput?.value || "").trim();
-    if (!code || !desc) return;
-    this.globalSettings.pointCodes.push({ code, description: desc });
+    if (!code && !desc) return;
+    const entry = this.normalizePointCode({
+      id: this.editingPointCodeId || undefined,
+      code,
+      description: desc,
+      archived: false,
+    });
+    const existingIndex = (this.globalSettings.pointCodes || []).findIndex(
+      (row) => row.id === entry.id
+    );
+    if (existingIndex >= 0) {
+      this.globalSettings.pointCodes.splice(existingIndex, 1, entry);
+    } else {
+      this.globalSettings.pointCodes.push(entry);
+    }
     this.saveGlobalSettings();
+    this.resetPointCodeForm();
+    this.renderGlobalSettings();
+  }
+
+  resetPointCodeForm() {
     if (this.elements.pointCodeInput) this.elements.pointCodeInput.value = "";
     if (this.elements.pointCodeDescriptionInput)
       this.elements.pointCodeDescriptionInput.value = "";
+    this.editingPointCodeId = null;
+    if (this.elements.pointCodeEditHint) this.elements.pointCodeEditHint.textContent = "";
+  }
+
+  startEditPointCode(id) {
+    const entry = (this.globalSettings.pointCodes || []).find((row) => row.id === id);
+    if (!entry) return;
+    this.editingPointCodeId = id;
+    if (this.elements.pointCodeInput) this.elements.pointCodeInput.value = entry.code || "";
+    if (this.elements.pointCodeDescriptionInput)
+      this.elements.pointCodeDescriptionInput.value = entry.description || "";
+    if (this.elements.pointCodeEditHint)
+      this.elements.pointCodeEditHint.textContent = "Editing point code";
+  }
+
+  togglePointCodeArchive(id) {
+    const entry = (this.globalSettings.pointCodes || []).find((row) => row.id === id);
+    if (!entry) return;
+    entry.archived = !entry.archived;
+    if (this.editingPointCodeId === id && entry.archived) {
+      this.resetPointCodeForm();
+    }
+    this.saveGlobalSettings();
     this.renderGlobalSettings();
   }
 
   renderGlobalSettings() {
-    this.renderPillList(
-      this.elements.equipmentNameList,
-      this.globalSettings.equipment
-    );
-    this.renderPillList(
-      this.elements.teamMemberList,
-      this.globalSettings.teamMembers
-    );
     this.renderDeviceIdentityOptions();
     this.renderPointCodes();
+    this.renderEquipmentRows();
+    this.renderTeamMemberRows();
     this.renderEquipmentSetupByOptions();
     this.renderEquipmentPickerOptions();
-  }
-
-  renderPillList(container, items) {
-    if (!container) return;
-    container.innerHTML = "";
-    (items || []).forEach((item) => {
-      const li = document.createElement("li");
-      li.textContent = item;
-      container.appendChild(li);
-    });
   }
 
   renderPointCodes() {
@@ -6931,12 +7198,104 @@ export default class AppController {
     tbody.innerHTML = "";
     (this.globalSettings.pointCodes || []).forEach((row) => {
       const tr = document.createElement("tr");
+      if (row.archived) {
+        tr.style.opacity = 0.6;
+      }
       const codeCell = document.createElement("td");
       codeCell.textContent = row.code;
       const descCell = document.createElement("td");
       descCell.textContent = row.description;
+      const statusCell = document.createElement("td");
+      statusCell.textContent = row.archived ? "Archived" : "Active";
+      const actionsCell = document.createElement("td");
+      const editButton = document.createElement("button");
+      editButton.textContent = "Edit";
+      editButton.addEventListener("click", () => this.startEditPointCode(row.id));
+      const archiveButton = document.createElement("button");
+      archiveButton.textContent = row.archived ? "Restore" : "Archive";
+      archiveButton.addEventListener("click", () => this.togglePointCodeArchive(row.id));
+      actionsCell.appendChild(editButton);
+      actionsCell.appendChild(archiveButton);
+
       tr.appendChild(codeCell);
       tr.appendChild(descCell);
+      tr.appendChild(statusCell);
+      tr.appendChild(actionsCell);
+      tbody.appendChild(tr);
+    });
+  }
+
+  renderEquipmentRows() {
+    const tbody = this.elements.equipmentTableBody;
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    (this.globalSettings.equipment || []).forEach((entry) => {
+      const tr = document.createElement("tr");
+      if (entry.archived) tr.style.opacity = 0.6;
+      const nameCell = document.createElement("td");
+      nameCell.textContent = entry.name;
+      const makeModelCell = document.createElement("td");
+      makeModelCell.textContent = [entry.make, entry.model].filter(Boolean).join(" ");
+      const manualCell = document.createElement("td");
+      if (entry.manualUrl) {
+        const link = document.createElement("a");
+        link.href = entry.manualUrl;
+        link.textContent = "Manual";
+        link.target = "_blank";
+        manualCell.appendChild(link);
+      }
+      const notesCell = document.createElement("td");
+      notesCell.textContent = entry.notes || "";
+      const statusCell = document.createElement("td");
+      statusCell.textContent = entry.archived ? "Archived" : "Active";
+      const actionsCell = document.createElement("td");
+      const editButton = document.createElement("button");
+      editButton.textContent = "Edit";
+      editButton.addEventListener("click", () => this.startEditEquipment(entry.id));
+      const archiveButton = document.createElement("button");
+      archiveButton.textContent = entry.archived ? "Restore" : "Archive";
+      archiveButton.addEventListener("click", () => this.toggleEquipmentArchive(entry.id));
+      actionsCell.appendChild(editButton);
+      actionsCell.appendChild(archiveButton);
+      tr.appendChild(nameCell);
+      tr.appendChild(makeModelCell);
+      tr.appendChild(manualCell);
+      tr.appendChild(notesCell);
+      tr.appendChild(statusCell);
+      tr.appendChild(actionsCell);
+      tbody.appendChild(tr);
+    });
+  }
+
+  renderTeamMemberRows() {
+    const tbody = this.elements.teamMemberTableBody;
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    (this.globalSettings.teamMembers || []).forEach((entry) => {
+      const tr = document.createElement("tr");
+      if (entry.archived) tr.style.opacity = 0.6;
+      const nameCell = document.createElement("td");
+      nameCell.textContent = entry.name;
+      const roleCell = document.createElement("td");
+      roleCell.textContent = [entry.role, entry.title].filter(Boolean).join(" • ");
+      const contactCell = document.createElement("td");
+      contactCell.textContent = [entry.phone, entry.email].filter(Boolean).join(" | ");
+      const statusCell = document.createElement("td");
+      statusCell.textContent = entry.archived ? "Archived" : "Active";
+      const actionsCell = document.createElement("td");
+      const editButton = document.createElement("button");
+      editButton.textContent = "Edit";
+      editButton.addEventListener("click", () => this.startEditTeamMember(entry.id));
+      const archiveButton = document.createElement("button");
+      archiveButton.textContent = entry.archived ? "Restore" : "Archive";
+      archiveButton.addEventListener("click", () => this.toggleTeamMemberArchive(entry.id));
+      actionsCell.appendChild(editButton);
+      actionsCell.appendChild(archiveButton);
+      tr.appendChild(nameCell);
+      tr.appendChild(roleCell);
+      tr.appendChild(contactCell);
+      tr.appendChild(statusCell);
+      tr.appendChild(actionsCell);
       tbody.appendChild(tr);
     });
   }
