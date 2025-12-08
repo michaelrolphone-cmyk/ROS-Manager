@@ -310,6 +310,13 @@
               <span class="app-title">Evidence Records</span>
               <span class="app-hint">Document monuments and attach photos</span>
             </button>
+            <button class="app-tile" data-target="researchSection">
+              <span class="app-icon">📚</span>
+              <span class="app-title">Historical Research</span>
+              <span class="app-hint"
+                >Capture controlling/supporting source documents</span
+              >
+            </button>
             <button class="app-tile" data-target="equipmentSection">
               <span class="app-icon">📡</span>
               <span class="app-title">Equipment Setup</span>
@@ -768,6 +775,16 @@
               from your records of survey.
             </p>
 
+            <div id="cpfValidationStatus" class="validation-callout hidden">
+              <strong>CP&amp;F validation</strong>
+              <p class="subtitle">
+                Required Idaho CP&amp;F fields must be completed before a
+                Corner Perpetuation Filing can be finalized. Click a tag to
+                jump to the missing field.
+              </p>
+              <div class="cpf-chip-row"></div>
+            </div>
+
             <div class="form-grid">
               <div>
                 <label for="evidenceRecordSelect">Record</label>
@@ -836,6 +853,98 @@
                   <option value="Ready for Review">Ready for Review</option>
                   <option value="Final">Final</option>
                 </select>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div>
+                <label for="evidenceBasisOfBearing">Basis of bearing</label>
+                <input
+                  id="evidenceBasisOfBearing"
+                  type="text"
+                  placeholder="Record of Survey 2020-123, grid north..."
+                />
+              </div>
+              <div>
+                <label for="evidenceMonumentType">Monument type</label>
+                <input
+                  id="evidenceMonumentType"
+                  type="text"
+                  placeholder="Iron rod, brass cap, stone..."
+                />
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div>
+                <label for="evidenceMonumentMaterial">Monument material</label>
+                <input
+                  id="evidenceMonumentMaterial"
+                  type="text"
+                  placeholder="Steel, aluminum, concrete..."
+                />
+              </div>
+              <div>
+                <label for="evidenceMonumentSize">Monument size</label>
+                <input
+                  id="evidenceMonumentSize"
+                  type="text"
+                  placeholder="5/8&quot; x 24&quot; rebar, 3&quot; brass cap..."
+                />
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div>
+                <label for="evidenceSurveyorName">Responsible surveyor</label>
+                <input
+                  id="evidenceSurveyorName"
+                  type="text"
+                  placeholder="Name"
+                />
+              </div>
+              <div>
+                <label for="evidenceSurveyorLicense">Idaho PLS #</label>
+                <input
+                  id="evidenceSurveyorLicense"
+                  type="text"
+                  placeholder="12345"
+                />
+              </div>
+              <div>
+                <label for="evidenceSurveyorFirm">Firm</label>
+                <input
+                  id="evidenceSurveyorFirm"
+                  type="text"
+                  placeholder="Firm (optional)"
+                />
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div>
+                <label for="evidenceSurveyDates">Survey date(s)</label>
+                <input
+                  id="evidenceSurveyDates"
+                  type="text"
+                  placeholder="2024-03-01 and 2024-03-03"
+                />
+              </div>
+              <div>
+                <label for="evidenceSurveyCounty">County</label>
+                <input
+                  id="evidenceSurveyCounty"
+                  type="text"
+                  placeholder="Ada County"
+                />
+              </div>
+              <div>
+                <label for="evidenceRecordingInfo">Recording info</label>
+                <input
+                  id="evidenceRecordingInfo"
+                  type="text"
+                  placeholder="Instrument #, Book/Page"
+                />
               </div>
             </div>
 
@@ -949,6 +1058,194 @@
             <h3>Project Evidence Points</h3>
             <p class="subtitle" id="evidenceSummary" style="margin-top: 0"></p>
             <div id="evidenceList"></div>
+          </div>
+        </div>
+
+        <div id="researchSection" class="tool-section">
+          <div class="card">
+            <h3>Historical Research / Source Documentation</h3>
+            <p class="subtitle" style="margin-top: 0">
+              Catalog controlling, supporting, conflicting, and discarded
+              sources with reviewer and TRS context.
+            </p>
+
+            <div class="form-grid">
+              <div>
+                <label for="researchDocumentType">Document type</label>
+                <select id="researchDocumentType">
+                  <option value="">Select…</option>
+                  <option>GLO plat / field notes</option>
+                  <option>Record of Survey</option>
+                  <option>Subdivision plat / annexation</option>
+                  <option>Deed / title chain</option>
+                  <option>Easement</option>
+                  <option>CP&amp;F</option>
+                  <option>BLM summary/report</option>
+                  <option>Agency correspondence</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div>
+                <label for="researchJurisdiction">Jurisdiction</label>
+                <select id="researchJurisdiction">
+                  <option value="">Select…</option>
+                  <option>County</option>
+                  <option>BLM</option>
+                  <option>Federal</option>
+                  <option>Private</option>
+                  <option>Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div>
+                <label for="researchInstrument">Instrument #</label>
+                <input
+                  id="researchInstrument"
+                  type="text"
+                  placeholder="Instrument number"
+                />
+              </div>
+              <div>
+                <label for="researchBookPage">Book / Page</label>
+                <input
+                  id="researchBookPage"
+                  type="text"
+                  placeholder="Book/Page"
+                />
+              </div>
+              <div>
+                <label for="researchDocumentNumber">Document #</label>
+                <input
+                  id="researchDocumentNumber"
+                  type="text"
+                  placeholder="Document number"
+                />
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div>
+                <label for="researchTownship">Township</label>
+                <input
+                  id="researchTownship"
+                  type="text"
+                  placeholder="T2N"
+                />
+              </div>
+              <div>
+                <label for="researchRange">Range</label>
+                <input id="researchRange" type="text" placeholder="R3W" />
+              </div>
+              <div>
+                <label for="researchSections">Section(s)</label>
+                <input
+                  id="researchSections"
+                  type="text"
+                  placeholder="11, 12"
+                />
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div>
+                <label for="researchAliquots">Aliquots</label>
+                <input
+                  id="researchAliquots"
+                  type="text"
+                  placeholder="NW1/4 SE1/4"
+                />
+              </div>
+              <div>
+                <label for="researchSource">Source reference</label>
+                <input
+                  id="researchSource"
+                  type="text"
+                  placeholder="URL, scanner source, or file path"
+                />
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div>
+                <label for="researchDateReviewed">Date reviewed</label>
+                <input id="researchDateReviewed" type="date" />
+              </div>
+              <div>
+                <label for="researchReviewer">Reviewer</label>
+                <input
+                  id="researchReviewer"
+                  type="text"
+                  placeholder="Survey crew or reviewer"
+                />
+              </div>
+              <div>
+                <label for="researchClassification">Classification</label>
+                <select id="researchClassification">
+                  <option value="">Select…</option>
+                  <option>Controlling</option>
+                  <option>Supporting</option>
+                  <option>Conflicting</option>
+                  <option>Discarded (with reason)</option>
+                </select>
+              </div>
+            </div>
+
+            <label for="researchNotes">Annotation / reason</label>
+            <textarea
+              id="researchNotes"
+              rows="3"
+              placeholder="Explain acceptance, conflict, or discard rationale"
+            ></textarea>
+
+            <label for="researchCornerNotes">Corner or line notes</label>
+            <textarea
+              id="researchCornerNotes"
+              rows="2"
+              placeholder="e.g., Controls NE corner of Sec 12"
+            ></textarea>
+
+            <div class="form-grid">
+              <div>
+                <label for="researchTraverseLinks">Traverse / record links</label>
+                <input
+                  id="researchTraverseLinks"
+                  type="text"
+                  placeholder="Related traverses or record sets"
+                />
+              </div>
+              <div>
+                <label for="researchEvidenceSelect">Linked evidence</label>
+                <select id="researchEvidenceSelect" multiple></select>
+                <small class="app-hint">
+                  Hold Ctrl/Command to link evidence items cited by this source.
+                </small>
+              </div>
+            </div>
+
+            <div
+              style="
+                margin-top: 12px;
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+              "
+            >
+              <button type="button" class="success" id="saveResearchButton">
+                Save Research Entry
+              </button>
+              <button type="button" id="resetResearchButton">Reset Form</button>
+              <button type="button" id="exportResearchButton">
+                Export Research Packet
+              </button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Research Register</h3>
+            <p class="subtitle" id="researchSummary" style="margin-top: 0"></p>
+            <div id="researchList"></div>
           </div>
         </div>
 

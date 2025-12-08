@@ -14,6 +14,16 @@ export default class CornerEvidence {
     cornerStatus = "",
     status = "Draft",
     condition = "",
+    basisOfBearing = "",
+    monumentType = "",
+    monumentMaterial = "",
+    monumentSize = "",
+    surveyorName = "",
+    surveyorLicense = "",
+    surveyorFirm = "",
+    surveyDates = "",
+    surveyCounty = "",
+    recordingInfo = "",
     notes = "",
     ties = [],
     photo = null,
@@ -34,6 +44,16 @@ export default class CornerEvidence {
     this.cornerStatus = cornerStatus;
     this.status = status;
     this.condition = condition;
+    this.basisOfBearing = basisOfBearing;
+    this.monumentType = monumentType;
+    this.monumentMaterial = monumentMaterial;
+    this.monumentSize = monumentSize;
+    this.surveyorName = surveyorName;
+    this.surveyorLicense = surveyorLicense;
+    this.surveyorFirm = surveyorFirm;
+    this.surveyDates = surveyDates;
+    this.surveyCounty = surveyCounty;
+    this.recordingInfo = recordingInfo;
     this.notes = notes;
     this.ties = ties.map((tie) =>
       tie instanceof EvidenceTie ? tie : EvidenceTie.fromObject(tie)
@@ -63,6 +83,16 @@ export default class CornerEvidence {
       cornerStatus: this.cornerStatus,
       status: this.status,
       condition: this.condition,
+      basisOfBearing: this.basisOfBearing,
+      monumentType: this.monumentType,
+      monumentMaterial: this.monumentMaterial,
+      monumentSize: this.monumentSize,
+      surveyorName: this.surveyorName,
+      surveyorLicense: this.surveyorLicense,
+      surveyorFirm: this.surveyorFirm,
+      surveyDates: this.surveyDates,
+      surveyCounty: this.surveyCounty,
+      recordingInfo: this.recordingInfo,
       notes: this.notes,
       ties: this.ties.map((tie) => tie.toObject()),
       photo: this.photo,
