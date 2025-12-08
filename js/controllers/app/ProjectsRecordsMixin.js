@@ -1,6 +1,19 @@
 import Project from "../../models/Project.js";
 import SurveyRecord from "../../models/SurveyRecord.js";
 import Point from "../../models/Point.js";
+import ChainEvidenceAppController from "../apps/ChainEvidenceAppController.js";
+import EquipmentAppController from "../apps/EquipmentAppController.js";
+import EvidenceAppController from "../apps/EvidenceAppController.js";
+import HelpAppController from "../apps/HelpAppController.js";
+import LevelingAppController from "../apps/LevelingAppController.js";
+import NavigationAppController from "../apps/NavigationAppController.js";
+import PointsAppController from "../apps/PointsAppController.js";
+import QcAppController from "../apps/QcAppController.js";
+import ResearchAppController from "../apps/ResearchAppController.js";
+import SettingsAppController from "../apps/SettingsAppController.js";
+import SpringboardAppController from "../apps/SpringboardAppController.js";
+import TraverseAppController from "../apps/TraverseAppController.js";
+import VicinityMapAppController from "../apps/VicinityMapAppController.js";
 
 const ProjectsRecordsMixin = (Base) =>
   class extends Base {
