@@ -537,6 +537,7 @@ const GlobalSettingsMixin = (Base) =>
     this.renderEquipmentSetupByOptions();
     this.renderEquipmentPickerOptions();
     this.renderRollingBackupControls();
+    this.renderProfessionalProfile();
   }
 
   renderPointCodes() {
@@ -667,6 +668,64 @@ const GlobalSettingsMixin = (Base) =>
     }
 
     this.renderRollingBackupList();
+  }
+
+  sanitizeProfessionalProfile(profile = {}) {
+    return {
+      surveyorName: profile.surveyorName?.trim() || "",
+      licenseNumber: profile.licenseNumber?.trim() || "",
+      firmName: profile.firmName?.trim() || "",
+      contactPhone: profile.contactPhone?.trim() || "",
+      contactEmail: profile.contactEmail?.trim() || "",
+      county: profile.county?.trim() || "",
+    };
+  }
+
+  getProfessionalProfile() {
+    return this.sanitizeProfessionalProfile(
+      this.globalSettings.professionalProfile || {}
+    );
+  }
+
+  saveProfessionalProfile() {
+    const profile = this.sanitizeProfessionalProfile({
+      surveyorName: this.elements.professionalSurveyorName?.value,
+      licenseNumber: this.elements.professionalLicense?.value,
+      firmName: this.elements.professionalFirm?.value,
+      contactPhone: this.elements.professionalContactPhone?.value,
+      contactEmail: this.elements.professionalContactEmail?.value,
+      county: this.elements.professionalCounty?.value,
+    });
+    this.globalSettings.professionalProfile = profile;
+    this.saveGlobalSettings();
+    if (this.elements.professionalProfileStatus) {
+      this.elements.professionalProfileStatus.textContent =
+        "Professional profile saved";
+      setTimeout(() => {
+        if (this.elements.professionalProfileStatus)
+          this.elements.professionalProfileStatus.textContent = "";
+      }, 2500);
+    }
+  }
+
+  resetProfessionalProfileForm() {
+    const profile = this.getProfessionalProfile();
+    if (this.elements.professionalSurveyorName)
+      this.elements.professionalSurveyorName.value = profile.surveyorName;
+    if (this.elements.professionalLicense)
+      this.elements.professionalLicense.value = profile.licenseNumber;
+    if (this.elements.professionalFirm)
+      this.elements.professionalFirm.value = profile.firmName;
+    if (this.elements.professionalContactPhone)
+      this.elements.professionalContactPhone.value = profile.contactPhone;
+    if (this.elements.professionalContactEmail)
+      this.elements.professionalContactEmail.value = profile.contactEmail;
+    if (this.elements.professionalCounty)
+      this.elements.professionalCounty.value = profile.county;
+  }
+
+  renderProfessionalProfile() {
+    this.resetProfessionalProfileForm();
   }
 
   toggleRollingBackups(enabled) {

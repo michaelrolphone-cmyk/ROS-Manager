@@ -174,6 +174,7 @@ class AppControllerBase {
       saveProjects: () => this.saveProjects(),
       getProjectName: () =>
         this.currentProjectId ? this.projects[this.currentProjectId]?.name || "" : "",
+      getProfessionalProfile: () => this.getProfessionalProfile(),
     });
     this.appControllers = this.createAppControllers();
     this.bindStaticEvents();
@@ -281,7 +282,6 @@ class AppControllerBase {
       springboardProjectDescription: document.getElementById(
         "springboardProjectDescription"
       ),
-      springboardStatusChip: document.getElementById("springboardStatusChip"),
       springboardCompositeCanvas: document.getElementById(
         "springboardCompositeCanvas"
       ),
@@ -611,6 +611,27 @@ class AppControllerBase {
       rollingBackupList: document.getElementById("rollingBackupList"),
       refreshBackupList: document.getElementById("refreshBackupList"),
       clearProjectBackups: document.getElementById("clearProjectBackups"),
+      professionalSurveyorName: document.getElementById(
+        "professionalSurveyorName"
+      ),
+      professionalLicense: document.getElementById("professionalLicense"),
+      professionalFirm: document.getElementById("professionalFirm"),
+      professionalContactPhone: document.getElementById(
+        "professionalContactPhone"
+      ),
+      professionalContactEmail: document.getElementById(
+        "professionalContactEmail"
+      ),
+      professionalCounty: document.getElementById("professionalCounty"),
+      saveProfessionalProfileButton: document.getElementById(
+        "saveProfessionalProfileButton"
+      ),
+      resetProfessionalProfileButton: document.getElementById(
+        "resetProfessionalProfileButton"
+      ),
+      professionalProfileStatus: document.getElementById(
+        "professionalProfileStatus"
+      ),
       importAllDataInput: document.getElementById("importAllDataInput"),
       auditFileInput: document.getElementById("auditFileInput"),
       createAuditSnapshotButton: document.getElementById(
@@ -830,6 +851,14 @@ class AppControllerBase {
     );
     this.elements.refreshBackupList?.addEventListener("click", () =>
       this.renderRollingBackupList()
+    );
+    this.elements.saveProfessionalProfileButton?.addEventListener(
+      "click",
+      () => this.saveProfessionalProfile()
+    );
+    this.elements.resetProfessionalProfileButton?.addEventListener(
+      "click",
+      () => this.resetProfessionalProfileForm()
     );
     this.elements.clearProjectBackups?.addEventListener("click", () =>
       this.clearRollingBackupsForProject()
@@ -1422,6 +1451,25 @@ class AppControllerBase {
                   : 3,
             }
           : this.globalSettingsService.defaultSettings().backupSettings,
+      professionalProfile:
+        settings.professionalProfile &&
+        typeof settings.professionalProfile === "object"
+          ? {
+              surveyorName: settings.professionalProfile.surveyorName || "",
+              licenseNumber: settings.professionalProfile.licenseNumber || "",
+              firmName: settings.professionalProfile.firmName || "",
+              contactPhone: settings.professionalProfile.contactPhone || "",
+              contactEmail: settings.professionalProfile.contactEmail || "",
+              county: settings.professionalProfile.county || "",
+            }
+          : {
+              surveyorName: "",
+              licenseNumber: "",
+              firmName: "",
+              contactPhone: "",
+              contactEmail: "",
+              county: "",
+            },
     };
     return { ...settings, ...sanitized };
   }

@@ -112,6 +112,7 @@ const EquipmentSetupMixin = (Base) =>
         .filter((doc) =>
           doc.linkedEvidence?.some((ev) => (ev.id || ev) === entry.id)
         );
+      const profile = this.getProfessionalProfile?.() || {};
       const html = this.buildCpfLayout(entry, {
         projectName,
         record,
@@ -119,6 +120,7 @@ const EquipmentSetupMixin = (Base) =>
         researchRefs,
         normalizedStatus,
         completeness,
+        profile,
       });
       const fileBase = (entry.pointLabel || "corner")
         .replace(/[^\w\-]+/g, "_")
@@ -134,12 +136,16 @@ const EquipmentSetupMixin = (Base) =>
         researchRefs = [],
         normalizedStatus,
         completeness,
+        profile = {},
       } = options;
       const headerStatus = exportLabel?.title || "Preliminary — In Progress";
       const showWatermark =
         normalizedStatus !== "final" || !completeness?.complete;
       const statusNote =
         exportLabel?.note || (showWatermark ? "Incomplete — subject to revision." : "");
+      const contactInfo = [profile.contactPhone, profile.contactEmail]
+        .filter(Boolean)
+        .join(" | ");
       const monumentParts = [
         entry.monumentType,
         entry.monumentMaterial,
@@ -321,10 +327,15 @@ const EquipmentSetupMixin = (Base) =>
             entry.surveyorLicense || ""
           )}</div>
           <div><strong>Firm</strong><br />${this.escapeHtml(entry.surveyorFirm || "")}</div>
+        <div><strong>Contact</strong><br />${this.escapeHtml(
+          contactInfo || "Not provided"
+        )}</div>
           <div><strong>Survey Date(s)</strong><br />${this.escapeHtml(
             entry.surveyDates || ""
           )}</div>
-          <div><strong>County</strong><br />${this.escapeHtml(entry.surveyCounty || "")}</div>
+          <div><strong>County</strong><br />${this.escapeHtml(
+            entry.surveyCounty || profile.county || ""
+          )}</div>
           <div><strong>Recording Info</strong><br />${this.escapeHtml(
             entry.recordingInfo || ""
           )}</div>
