@@ -6,6 +6,7 @@ import GlobalSettingsService from "../js/services/GlobalSettingsService.js";
 import VersioningService from "../js/services/VersioningService.js";
 import CornerEvidenceService from "../js/services/CornerEvidenceService.js";
 import SyncService from "../js/services/SyncService.js";
+import { buildMapboxStaticUrl, getMapboxToken } from "../js/services/MapboxService.js";
 import AuditTrailService from "../js/services/AuditTrailService.js";
 import ExportImportMixin from "../js/controllers/app/ExportImportMixin.js";
 import { buildAnnotatedPhotoHtml } from "../js/services/PhotoAnnotationRenderer.js";
@@ -420,6 +421,44 @@ describe("SyncService", () => {
     assert.equal(fetchCalls[0].url, "http://localhost:3000/api/sync");
     assert.equal(fetchCalls[0].options.method, "POST");
     assert.match(fetchCalls[0].options.body, /"elk-ridge-boundary"/);
+  });
+
+  it("normalizes base urls and surfaces HTTP errors", async () => {
+    const responses = [
+      { ok: false, status: 503 },
+      { ok: true, status: 200, async json() {} },
+    ];
+
+    globalThis.fetch = async (url) => {
+      fetchCalls.push(url);
+      return responses.shift();
+    };
+
+    const svc = new SyncService({ baseUrl: "https://sync.example.com/api/" });
+    assert.equal(svc.getStreamUrl(), "https://sync.example.com/api/stream");
+
+    await assert.rejects(() => svc.sync({}), /503/);
+  });
+});
+
+describe("MapboxService", () => {
+  it("builds static map URLs with clamped dimensions", () => {
+    const url = buildMapboxStaticUrl(43.615, -116.2023, {
+      zoom: 12,
+      width: 2000,
+      height: 5,
+      markerColor: "ff0000",
+    });
+
+    assert.ok(url.includes("43.615000"));
+    assert.ok(url.includes("-116.202300"));
+    assert.ok(url.includes("1280x5"));
+    assert.ok(url.includes(getMapboxToken()));
+  });
+
+  it("returns null when coordinates are invalid", () => {
+    assert.equal(buildMapboxStaticUrl(null, -116.2), null);
+    assert.equal(buildMapboxStaticUrl(43.6, "bad"), null);
   });
 });
 

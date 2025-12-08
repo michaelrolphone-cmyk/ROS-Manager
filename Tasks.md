@@ -20,7 +20,7 @@
 
 **Goal:** Provide a complete, legally defensible research trail for every project.
 
-* ✅ Create a **Historical Research / Source Documentation mini-app** for cataloging all documents that inform survey decisions, including:
+* ✅ 🧪 Create a **Historical Research / Source Documentation mini-app** for cataloging all documents that inform survey decisions, including:
   * Government Land Office (GLO) plats and field notes  
   * Record of Survey (ROS) filings  
   * Subdivision plats and annexations  
@@ -29,7 +29,7 @@
   * BLM cadastral corner data summaries and reports  
   * Other agency correspondence or survey notes  
 
-* ✅ For each document, store:
+* ✅ 🧪 For each document, store:
   * Document type (GLO plat, deed, ROS, CP&F, plat, easement, etc.)
   * Jurisdiction (County, BLM, Federal, Private)
   * Recording/filing information (Instrument number, Book/Page, Document number)
@@ -37,7 +37,7 @@
   * Source reference (URL, scanner source, photo, local file import, or manual entry)
   * Date reviewed and reviewer (surveying party)
 
-* ✅ Add structured annotation on each document:
+* ✅ 🧪 Add structured annotation on each document:
   * Mark portions as:
     * **Controlling**
     * **Supporting**
@@ -47,7 +47,7 @@
     * “Controls NE corner of Sec 12”
     * “Conflicts with GLO notes; rejected due to later corrected plat”
 
-* ✅ Link documents to:
+* ✅ 🧪 Link documents to:
   * Specific evidence entries / monuments
   * Traverses or record sets
   * Stakeout entries
@@ -87,7 +87,7 @@
     * New monument set
     * Witness corner set
 
-* ✅ Add Idaho CP&F–specific fields to evidence/CP&F export:
+* ✅ 🧪 Add Idaho CP&F–specific fields to evidence/CP&F export:
   * Basis of bearing statement
   * Detailed monument description:
     * Type
@@ -102,7 +102,7 @@
   * Date(s) of survey
   * County and relevant recording information
 
-* ✅ Implement **CP&F document validation**:
+* ✅ 🧪 Implement **CP&F document validation**:
   * Before allowing CP&F export:
     * Validate that all required CP&F fields are filled.
     * Highlight missing fields and provide navigation directly to each missing item.
@@ -122,7 +122,7 @@
 
 ### 2.1 Application Framework & Sync Stability
 
-* ✅ Fix the sync bug where, with application sync features enabled, the app is **duplicating traverse bearing and distance entries over and over again even when only one user is connected**.
+* ✅ 🧪 Fix the sync bug where, with application sync features enabled, the app is **duplicating traverse bearing and distance entries over and over again even when only one user is connected**.
 * ✅ Remove the **help.md refresh button**.
 * ✅ Replace the existing footer/help text with this copyright/behavior notice:
   **“All data saved locally in your browser • No server • Works offline”**
@@ -133,7 +133,7 @@
 
 **Goal:** Make it impossible to silently alter a project’s history without detection.
 
-* ✅ Create an **Immutable Audit Trail mini-app** that:
+* ✅ 🧪 Create an **Immutable Audit Trail mini-app** that:
   * ✅ Serializes all project data and key events (creations, edits, deletions, imports).
   * ✅ Computes a checksum or cryptographic hash for each export snapshot.
   * ✅ Stores:
@@ -158,8 +158,8 @@
 
 **Goal:** Reduce risk of losing field records due to local storage wipes or device failure.
 
-* ✅ At project level, display **“Last Export Date”** (for that project).
-* ✅ Trigger warnings when:
+* ✅ 🧪 At project level, display **“Last Export Date”** (for that project).
+* ✅ 🧪 Trigger warnings when:
   * ✅ The project has not been exported in **more than 7 days**; or
   * ✅ Major changes have occurred (e.g., new evidence, new traverses, CP&F-ready data), and no export has occurred since.
 
@@ -167,7 +167,7 @@
   * Appear clearly in the springboard and/or project overview.
   * Provide an **“Export Now”** button.
 
-* ✅ Optional: Implement **local rolling backups** (user opt-in):
+* ✅ 🧪 Optional: Implement **local rolling backups** (user opt-in):
   * Maintain the last 3 exports per project (rotating) in a chosen directory or filename pattern.
   * Never upload data externally without explicit user action.
 
