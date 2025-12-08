@@ -2258,8 +2258,7 @@ export default class AppController {
                 ev.trs ? ` — ${this.escapeHtml(ev.trs)}` : ""
               } (${this.escapeHtml(ev.status)})</li>`
                 )
-                .join("
-          ")}</ul>`
+                .join("\n")}</ul>`
             : `<p class="muted">No evidence linked to this traverse.</p>`;
         return `<div class="section">
           <h3>${this.escapeHtml(item.traverseName)}</h3>
