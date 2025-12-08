@@ -96,6 +96,8 @@ export default class AppController {
         offsetLabel: this.elements.navigationOffset,
         statusLabel: this.elements.navigationStatus,
         bookmarkName: this.elements.navigationBookmarkName,
+        cornerType: this.elements.navigationCornerType,
+        cornerStatus: this.elements.navigationCornerStatus,
         saveBookmarkButton: this.elements.saveNavigationBookmark,
         bookmarkStatus: this.elements.navigationBookmarkStatus,
         targetSelect: this.elements.navigationTargetSelect,
@@ -274,6 +276,9 @@ export default class AppController {
       springboardExportWarning: document.getElementById(
         "springboardExportWarning"
       ),
+      springboardExportNowButton: document.getElementById(
+        "springboardExportNowButton"
+      ),
       vicinityMapImage: document.getElementById("vicinityMapImage"),
       vicinityMapPlaceholder: document.getElementById("vicinityMapPlaceholder"),
       vicinityMapStatus: document.getElementById("vicinityMapStatus"),
@@ -283,6 +288,7 @@ export default class AppController {
       recordList: document.getElementById("recordList"),
       editor: document.getElementById("editor"),
       currentRecordName: document.getElementById("currentRecordName"),
+      recordStatus: document.getElementById("recordStatus"),
       startPtNum: document.getElementById("startPtNum"),
       northing: document.getElementById("northing"),
       easting: document.getElementById("easting"),
@@ -422,6 +428,8 @@ export default class AppController {
       navigationOffset: document.getElementById("navigationOffset"),
       navigationStatus: document.getElementById("navigationStatus"),
       navigationBookmarkName: document.getElementById("navigationBookmarkName"),
+      navigationCornerType: document.getElementById("navigationCornerType"),
+      navigationCornerStatus: document.getElementById("navigationCornerStatus"),
       saveNavigationBookmark: document.getElementById("saveNavigationBookmark"),
       navigationBookmarkStatus: document.getElementById(
         "navigationBookmarkStatus"
@@ -505,10 +513,13 @@ export default class AppController {
       researchSource: document.getElementById("researchSource"),
       researchDateReviewed: document.getElementById("researchDateReviewed"),
       researchReviewer: document.getElementById("researchReviewer"),
+      researchStatus: document.getElementById("researchStatus"),
       researchClassification: document.getElementById("researchClassification"),
       researchNotes: document.getElementById("researchNotes"),
       researchCornerNotes: document.getElementById("researchCornerNotes"),
       researchTraverseLinks: document.getElementById("researchTraverseLinks"),
+      researchStakeoutLinks: document.getElementById("researchStakeoutLinks"),
+      researchCornerIds: document.getElementById("researchCornerIds"),
       researchEvidenceSelect: document.getElementById("researchEvidenceSelect"),
       saveResearchButton: document.getElementById("saveResearchButton"),
       resetResearchButton: document.getElementById("resetResearchButton"),
@@ -529,6 +540,10 @@ export default class AppController {
     document
       .getElementById("exportCurrentButton")
       ?.addEventListener("click", () => this.exportCurrentProject());
+    this.elements.springboardExportNowButton?.addEventListener(
+      "click",
+      () => this.exportCurrentProject()
+    );
     document
       .getElementById("exportAllButton")
       ?.addEventListener("click", () => this.exportAllProjects());
@@ -666,6 +681,10 @@ export default class AppController {
         this.generateCommands();
       });
     });
+
+    this.elements.recordStatus?.addEventListener("change", () =>
+      this.saveCurrentRecord()
+    );
 
     this.elements.addCallButton?.addEventListener("click", () => {
       this.addCallRow();
@@ -1218,6 +1237,18 @@ export default class AppController {
     URL.revokeObjectURL(url);
   }
 
+  downloadHtml(content, filename) {
+    const blob = new Blob([content], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   triggerImport() {
     if (this.elements.importFileInput) {
       this.elements.importFileInput.value = "";
@@ -1561,6 +1592,8 @@ export default class AppController {
       titleSpan.className = "record-title";
       titleSpan.textContent = record.name;
 
+      const statusChip = this.buildStatusChip(record.status || "Draft");
+
       const canvasWrapper = document.createElement("div");
       canvasWrapper.className = "record-canvas";
       const miniCanvas = document.createElement("canvas");
@@ -1569,6 +1602,7 @@ export default class AppController {
       canvasWrapper.appendChild(miniCanvas);
 
       div.appendChild(titleSpan);
+      div.appendChild(statusChip);
       div.appendChild(canvasWrapper);
 
       div.addEventListener("click", () => this.loadRecord(id));
@@ -1687,6 +1721,9 @@ export default class AppController {
     this.currentRecordId = id;
     const record = this.projects[this.currentProjectId].records[id];
     this.elements.currentRecordName.textContent = record.name;
+    if (this.elements.recordStatus) {
+      this.elements.recordStatus.value = record.status || "Draft";
+    }
     this.elements.startPtNum.value = record.startPtNum || "1";
     this.elements.northing.value = record.northing || "5000";
     this.elements.easting.value = record.easting || "5000";
@@ -1913,6 +1950,11 @@ export default class AppController {
       this.elements.springboardExportWarning.style.display = warning
         ? "block"
         : "none";
+    }
+    if (this.elements.springboardExportNowButton) {
+      this.elements.springboardExportNowButton.style.display =
+        warning && hasProject ? "inline-block" : "none";
+      this.elements.springboardExportNowButton.disabled = !hasProject;
     }
 
     const hasComposite =
@@ -2881,12 +2923,15 @@ export default class AppController {
       source: this.elements.researchSource?.value.trim() || "",
       dateReviewed: this.elements.researchDateReviewed?.value.trim() || "",
       reviewer: this.elements.researchReviewer?.value.trim() || "",
+      status: this.elements.researchStatus?.value.trim() || "Draft",
       classification:
         this.elements.researchClassification?.value.trim() || "",
       notes: this.elements.researchNotes?.value.trim() || "",
       cornerNotes: this.elements.researchCornerNotes?.value.trim() || "",
       linkedEvidence: selectedEvidence,
       traverseLinks: this.elements.researchTraverseLinks?.value.trim() || "",
+      stakeoutLinks: this.elements.researchStakeoutLinks?.value.trim() || "",
+      cornerIds: this.elements.researchCornerIds?.value.trim() || "",
     });
 
     this.researchDocumentService.addEntry(doc);
@@ -2908,13 +2953,19 @@ export default class AppController {
       this.elements.researchSource,
       this.elements.researchDateReviewed,
       this.elements.researchReviewer,
+      this.elements.researchStatus,
       this.elements.researchClassification,
       this.elements.researchNotes,
       this.elements.researchCornerNotes,
       this.elements.researchTraverseLinks,
+      this.elements.researchStakeoutLinks,
+      this.elements.researchCornerIds,
     ].forEach((el) => {
       if (el) el.value = "";
     });
+    if (this.elements.researchStatus) {
+      this.elements.researchStatus.value = "Draft";
+    }
     if (this.elements.researchEvidenceSelect) {
       Array.from(this.elements.researchEvidenceSelect.options).forEach((opt) => {
         opt.selected = false;
@@ -2963,10 +3014,15 @@ export default class AppController {
           .filter(Boolean)
           .join(" ");
         subtitle.textContent = trsParts || "Location not set";
+        const badgeRow = document.createElement("div");
+        badgeRow.style.display = "flex";
+        badgeRow.style.gap = "8px";
+        const statusChip = this.buildStatusChip(doc.status || "Draft");
         const badge = document.createElement("span");
         badge.className = "status-chip info";
         badge.textContent = doc.classification || "Unclassified";
-        card.append(title, subtitle, badge);
+        badgeRow.append(statusChip, badge);
+        card.append(title, subtitle, badgeRow);
 
         const meta = document.createElement("div");
         const recordParts = [
@@ -3007,6 +3063,16 @@ export default class AppController {
           tv.textContent = `Traverse links: ${doc.traverseLinks}`;
           card.appendChild(tv);
         }
+        if (doc.stakeoutLinks) {
+          const st = document.createElement("div");
+          st.textContent = `Stakeout links: ${doc.stakeoutLinks}`;
+          card.appendChild(st);
+        }
+        if (doc.cornerIds) {
+          const cid = document.createElement("div");
+          cid.textContent = `TRS corner IDs: ${doc.cornerIds}`;
+          card.appendChild(cid);
+        }
         if (doc.notes) {
           const notes = document.createElement("div");
           notes.textContent = doc.notes;
@@ -3039,12 +3105,32 @@ export default class AppController {
       return;
     }
     const projectName = this.projects[this.currentProjectId]?.name || "Project";
-    const meta = this.buildExportMetadata("Draft");
-    const label = this.getExportStatusLabel("Draft");
+    const normalizedStatuses = docs.map((doc) =>
+      (doc.status || "Draft").toLowerCase()
+    );
+    const exportStatus = normalizedStatuses.every((status) => status === "final")
+      ? "Final"
+      : normalizedStatuses.some((status) => status === "ready for review")
+      ? "Ready for Review"
+      : normalizedStatuses.some((status) => status === "in progress")
+      ? "In Progress"
+      : "Draft";
+    const meta = this.buildExportMetadata(exportStatus);
+    const label = this.getExportStatusLabel(exportStatus);
+    const exportNote = meta.note || label.note;
     const lines = [
       "Research and Source Documentation Packet",
       meta.status || label.title,
-      meta.note || label.note || "Incomplete — subject to revision.",
+    ];
+    if (exportStatus.toLowerCase() !== "final") {
+      lines.push("PRELIMINARY — NOT FOR RECORDATION");
+    }
+    if (exportNote) {
+      lines.push(exportNote);
+    } else if (exportStatus.toLowerCase() !== "final") {
+      lines.push("Incomplete — subject to revision.");
+    }
+    lines.push(
       `Project: ${projectName}`,
       `Generated: ${meta.generatedAt || new Date().toISOString()}`,
       "",
@@ -3067,12 +3153,16 @@ export default class AppController {
           .filter(Boolean)
           .join(" · ");
         if (recParts) lines.push(`   Recording: ${recParts}`);
+        lines.push(`   Status: ${doc.status || "Draft"}`);
         lines.push(
           `   Reviewed ${doc.dateReviewed || ""} by ${doc.reviewer || ""} (${doc.classification || ""})`
         );
         if (doc.source) lines.push(`   Source: ${doc.source}`);
         if (doc.cornerNotes) lines.push(`   Notes: ${doc.cornerNotes}`);
         if (doc.traverseLinks) lines.push(`   Traverse links: ${doc.traverseLinks}`);
+        if (doc.stakeoutLinks)
+          lines.push(`   Stakeout links: ${doc.stakeoutLinks}`);
+        if (doc.cornerIds) lines.push(`   TRS corner IDs: ${doc.cornerIds}`);
         if (doc.notes) lines.push(`   Annotation: ${doc.notes}`);
         if (doc.linkedEvidence?.length) {
           lines.push(
@@ -3297,12 +3387,16 @@ export default class AppController {
       });
   }
 
-  getEvidenceStatusClass(status) {
+  getStatusClass(status) {
     const normalized = (status || "draft").toLowerCase();
     if (normalized === "in progress") return "in-progress";
     if (normalized === "ready for review") return "ready";
     if (normalized === "final") return "final";
     return "draft";
+  }
+
+  getEvidenceStatusClass(status) {
+    return this.getStatusClass(status);
   }
 
   getExportStatusLabel(status) {
@@ -3803,88 +3897,232 @@ export default class AppController {
     const exportLabel = completeness.complete
       ? this.getExportStatusLabel(statusLabel)
       : this.getExportStatusLabel("in progress");
-    const lines = [];
-    lines.push("Corner Perpetuation Filing");
-    if (exportLabel?.title) lines.push(exportLabel.title);
-    if (normalizedStatus !== "final" || !completeness.complete) {
-      lines.push("PRELIMINARY — NOT FOR RECORDATION");
-    }
-    if (exportLabel?.note) lines.push(exportLabel.note);
-    lines.push(`Project: ${projectName}`);
-    lines.push(`Record: ${entry.recordName || "Record"}`);
-    lines.push(`Traverse Point: ${entry.pointLabel || "Traverse point"}`);
-    lines.push(`Status: ${statusLabel}`);
-    if (entry.cornerType) lines.push(`Corner Type: ${entry.cornerType}`);
-    if (entry.cornerStatus) lines.push(`Corner Status: ${entry.cornerStatus}`);
-    if (entry.basisOfBearing)
-      lines.push(`Basis of Bearing: ${entry.basisOfBearing}`);
+    const record = this.projects[entry.projectId]?.records?.[entry.recordId];
+    const researchRefs = this.researchDocumentService
+      .getProjectDocuments(entry.projectId)
+      .filter((doc) =>
+        doc.linkedEvidence?.some((ev) => (ev.id || ev) === entry.id)
+      );
+    const html = this.buildCpfLayout(entry, {
+      projectName,
+      record,
+      exportLabel,
+      researchRefs,
+      normalizedStatus,
+      completeness,
+    });
+    const fileBase = (entry.pointLabel || "corner")
+      .replace(/[^\w\-]+/g, "_")
+      .toLowerCase();
+    this.downloadHtml(html, `${fileBase}-cpf.html`);
+  }
+
+  buildCpfLayout(entry, options = {}) {
+    const {
+      projectName,
+      record,
+      exportLabel,
+      researchRefs = [],
+      normalizedStatus,
+      completeness,
+    } = options;
+    const headerStatus = exportLabel?.title || "Preliminary — In Progress";
+    const showWatermark =
+      normalizedStatus !== "final" || !completeness?.complete;
+    const statusNote =
+      exportLabel?.note || (showWatermark ? "Incomplete — subject to revision." : "");
     const monumentParts = [
       entry.monumentType,
       entry.monumentMaterial,
       entry.monumentSize,
-    ].filter(Boolean);
-    if (monumentParts.length)
-      lines.push(`Monument: ${monumentParts.join(" · ")}`);
-    lines.push(`Created: ${new Date(entry.createdAt).toLocaleString()}`);
-    if (entry.coords) {
-      lines.push(
-        `Coordinates: Easting ${entry.coords.x.toFixed(
-          2
-        )}, Northing ${entry.coords.y.toFixed(2)}`
-      );
-    }
-    const surveyorParts = [
-      entry.surveyorName,
-      entry.surveyorLicense ? `Idaho PLS ${entry.surveyorLicense}` : null,
-      entry.surveyorFirm,
-    ].filter(Boolean);
-    if (surveyorParts.length) {
-      lines.push(`Responsible Surveyor: ${surveyorParts.join(" · ")}`);
-    }
-    const recordParts = [
-      entry.surveyDates ? `Survey date(s): ${entry.surveyDates}` : null,
-      entry.surveyCounty ? `County: ${entry.surveyCounty}` : null,
-      entry.recordingInfo ? `Recording: ${entry.recordingInfo}` : null,
-    ].filter(Boolean);
-    if (recordParts.length) lines.push(...recordParts);
-    if (entry.location) {
-      lines.push(
-        `GPS: Lat ${entry.location.lat.toFixed(
-          6
-        )}, Lon ${entry.location.lon.toFixed(
-          6
-        )} (±${entry.location.accuracy.toFixed(1)} m)`
-      );
-    }
-    if (entry.type) lines.push(`Evidence Type: ${entry.type}`);
-    if (entry.condition) lines.push(`Condition: ${entry.condition}`);
-    if (entry.notes) {
-      lines.push("Notes:");
-      lines.push(entry.notes);
-    }
-    if (entry.ties?.length) {
-      lines.push("Ties:");
-      entry.ties.forEach((tie, idx) => {
+    ]
+      .filter(Boolean)
+      .map((part) => this.escapeHtml(part))
+      .join(" · ");
+
+    const tieRows = (entry.ties || [])
+      .map((tie, idx) => {
         const pieces = [
           tie.distance || "",
           tie.bearing || "",
           tie.description || "",
         ]
           .filter(Boolean)
+          .map((piece) => this.escapeHtml(piece))
           .join(" · ");
         const photoLabel = tie.photos?.length
-          ? ` (Photos attached: ${tie.photos.length})`
+          ? `<span class="muted">Photos: ${tie.photos.length}</span>`
           : "";
-        lines.push(`  ${idx + 1}. ${pieces}${photoLabel}`);
-      });
-    }
-    if (entry.photo) {
-      lines.push("Monument Photo: Captured (image stored with exports)");
-    }
-    const fileBase = (entry.pointLabel || "corner")
-      .replace(/[^\w\-]+/g, "_")
-      .toLowerCase();
-    this.downloadText(lines.join("\n"), `${fileBase}-cpf.txt`);
+        return `<tr><td>${idx + 1}</td><td>${pieces || "&nbsp;"}</td><td>${
+          this.escapeHtml(tie.occupation || "") || "&nbsp;"
+        }</td><td>${photoLabel}</td></tr>`;
+      })
+      .join("");
+
+    const researchList =
+      researchRefs.length > 0
+        ? researchRefs
+            .map((doc) => {
+              const trs = [
+                doc.township,
+                doc.range,
+                doc.sections,
+                doc.aliquots,
+              ]
+                .filter(Boolean)
+                .join(" ");
+              const docLine = [
+                doc.type || "Document",
+                doc.classification || "",
+              ]
+                .filter(Boolean)
+                .join(" — ");
+              const refLine = [
+                doc.jurisdiction,
+                doc.instrumentNumber,
+                doc.bookPage,
+                doc.documentNumber,
+              ]
+                .filter(Boolean)
+                .join(" · ");
+              return `<li><strong>${this.escapeHtml(docLine)}</strong><div class="muted">${
+                this.escapeHtml(trs || "")
+              }</div><div class="muted">${this.escapeHtml(refLine || "")}</div></li>`;
+            })
+            .join("")
+        : '<li class="muted">No linked research documents recorded for this evidence.</li>';
+
+    const recordLine = record
+      ? `${record.name || "Record"} (basis: ${
+          record.basis || "Not set"
+        })`
+      : entry.recordName || "Record";
+
+    const watermark = showWatermark
+      ? `<div class="watermark">PRELIMINARY — NOT FOR RECORDATION</div>`
+      : "";
+
+    return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Corner Perpetuation and Filing</title>
+    <style>
+      body { font-family: "Segoe UI", Tahoma, sans-serif; color: #1c1c1c; margin: 32px; line-height: 1.45; }
+      h1 { margin: 0 0 6px; font-size: 24px; }
+      h2 { margin-top: 22px; font-size: 16px; letter-spacing: 0.2px; }
+      .meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px 18px; margin-top: 10px; }
+      .meta div { padding: 6px 8px; background: #f5f7fb; border-radius: 6px; }
+      .section { border: 1px solid #d7dce5; border-radius: 8px; padding: 14px 16px; margin-top: 14px; }
+      .chip { display: inline-block; padding: 4px 10px; border-radius: 12px; background: #eef2ff; color: #2a3a8f; font-weight: 600; font-size: 12px; }
+      .watermark { margin: 10px 0; color: #8c1d18; font-weight: 700; text-transform: uppercase; }
+      .table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+      .table th, .table td { border: 1px solid #d7dce5; padding: 6px 8px; text-align: left; }
+      .signature-row { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-top: 10px; align-items: stretch; }
+      .sig-box { border: 1px dashed #a3a9b8; padding: 12px; min-height: 90px; }
+      .seal-box { border: 2px solid #1c1c1c; min-height: 120px; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+      .muted { color: #5b6475; font-size: 12px; }
+      ul { margin: 6px 0 0 20px; padding: 0; }
+      li { margin-bottom: 6px; }
+    </style>
+  </head>
+  <body>
+    <h1>Idaho Corner Perpetuation and Filing (CP&F)</h1>
+    <div class="chip">${this.escapeHtml(headerStatus)}</div>
+    ${watermark}
+    ${statusNote ? `<div class="muted">${this.escapeHtml(statusNote)}</div>` : ""}
+    <div class="meta">
+      <div><strong>Project</strong><br />${this.escapeHtml(projectName || "Project")}</div>
+      <div><strong>Traverse / Record</strong><br />${this.escapeHtml(
+        recordLine || "Traverse point"
+      )}</div>
+      <div><strong>Traverse Point</strong><br />${this.escapeHtml(
+        entry.pointLabel || "Traverse point"
+      )}</div>
+      <div><strong>Status</strong><br />${this.escapeHtml(entry.status || "Draft")}</div>
+      <div><strong>Generated</strong><br />${this.escapeHtml(
+        new Date(entry.createdAt).toLocaleString()
+      )}</div>
+    </div>
+
+    <div class="section">
+      <h2>Corner Identification</h2>
+      <div><strong>Corner Type:</strong> ${this.escapeHtml(entry.cornerType || "")}</div>
+      <div><strong>Corner Status:</strong> ${this.escapeHtml(
+        entry.cornerStatus || ""
+      )}</div>
+      <div><strong>Basis of Bearing:</strong> ${this.escapeHtml(
+        entry.basisOfBearing || ""
+      )}</div>
+      <div><strong>Evidence Type:</strong> ${this.escapeHtml(entry.type || "")}</div>
+      <div><strong>Condition / Occupation Evidence:</strong> ${this.escapeHtml(
+        entry.condition || ""
+      )}</div>
+      ${entry.coords ? `<div><strong>Coordinates:</strong> Easting ${this.escapeHtml(
+        entry.coords.x.toFixed(2)
+      )}, Northing ${this.escapeHtml(entry.coords.y.toFixed(2))}</div>` : ""}
+      ${entry.location ? `<div><strong>GPS:</strong> Lat ${this.escapeHtml(
+        entry.location.lat.toFixed(6)
+      )}, Lon ${this.escapeHtml(entry.location.lon.toFixed(6))} (±${this.escapeHtml(
+        entry.location.accuracy.toFixed(1)
+      )} m)</div>` : ""}
+    </div>
+
+    <div class="section">
+      <h2>Monument Description</h2>
+      <div><strong>Monument:</strong> ${monumentParts || "Not provided"}</div>
+      ${entry.notes ? `<div style="margin-top:6px;">${this.escapeHtml(
+        entry.notes
+      )}</div>` : ""}
+    </div>
+
+    <div class="section">
+      <h2>Reference Ties</h2>
+      <table class="table">
+        <thead><tr><th>#</th><th>Reference</th><th>Occupation Evidence</th><th>Photos</th></tr></thead>
+        <tbody>${tieRows || '<tr><td colspan="4">No ties recorded.</td></tr>'}</tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>Cross References</h2>
+      <ul>
+        <li><strong>Evidence Entry ID:</strong> ${this.escapeHtml(entry.id || "")}</li>
+        <li><strong>Traverse / Record set:</strong> ${this.escapeHtml(recordLine || "")}</li>
+        <li><strong>Linked research documents:</strong><ul>${researchList}</ul></li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>Surveyor of Record</h2>
+      <div class="meta" style="margin-top:0;">
+        <div><strong>Name</strong><br />${this.escapeHtml(entry.surveyorName || "")}</div>
+        <div><strong>Idaho PLS License</strong><br />${this.escapeHtml(
+          entry.surveyorLicense || ""
+        )}</div>
+        <div><strong>Firm</strong><br />${this.escapeHtml(entry.surveyorFirm || "")}</div>
+        <div><strong>Survey Date(s)</strong><br />${this.escapeHtml(
+          entry.surveyDates || ""
+        )}</div>
+        <div><strong>County</strong><br />${this.escapeHtml(entry.surveyCounty || "")}</div>
+        <div><strong>Recording Info</strong><br />${this.escapeHtml(
+          entry.recordingInfo || ""
+        )}</div>
+      </div>
+      <div class="signature-row">
+        <div class="sig-box">
+          <strong>Professional Declaration</strong>
+          <div class="muted" style="margin-top:6px;">I affirm this work is prepared under my direction, complies with applicable surveying standards and Idaho law, and is suitable for filing or reliance.</div>
+          <div style="margin-top:16px;">
+            <div>Signature: __________________________</div>
+            <div style="margin-top:6px;">Signed date/time: __________________</div>
+          </div>
+        </div>
+        <div class="seal-box">Place Surveyor Seal</div>
+      </div>
+    </div>
+  </body>
+</html>`;
   }
 
   resetEvidenceForm() {
@@ -3937,6 +4175,14 @@ export default class AppController {
       .replace(/>/g, "&gt;");
   }
 
+  buildStatusChip(statusLabel = "Draft") {
+    const chip = document.createElement("span");
+    chip.className = `status-chip ${this.getStatusClass(statusLabel)}`;
+    chip.setAttribute("aria-label", statusLabel || "Draft");
+    chip.textContent = statusLabel || "Draft";
+    return chip;
+  }
+
   saveCurrentRecord() {
     if (!this.currentRecordId) return;
     const record =
@@ -3948,6 +4194,7 @@ export default class AppController {
     record.bsAzimuth = this.elements.bsAzimuth.value.trim();
     record.basis = this.elements.basis.value.trim();
     record.firstDist = this.elements.firstDist.value.trim();
+    record.status = this.elements.recordStatus?.value || "Draft";
 
     record.calls = this.serializeCallsFromContainer(this.elements.callsTableBody);
 

@@ -11,6 +11,7 @@ export default class SurveyRecord {
     bsAzimuth = "0.0000",
     basis = "",
     firstDist = "",
+    status = "Draft",
     calls = [],
     startFromRecordId = null,
     createdAt = null,
@@ -27,6 +28,7 @@ export default class SurveyRecord {
     this.bsAzimuth = bsAzimuth;
     this.basis = basis;
     this.firstDist = firstDist;
+    this.status = status;
     this.calls = calls.map((call) =>
       call instanceof TraverseInstruction
         ? call
@@ -57,6 +59,7 @@ export default class SurveyRecord {
       bsAzimuth: this.bsAzimuth,
       basis: this.basis,
       firstDist: this.firstDist,
+      status: this.status,
       calls: this.calls.map((call) => call.toObject()),
       startFromRecordId: this.startFromRecordId,
       id: this.id,

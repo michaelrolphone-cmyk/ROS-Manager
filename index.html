@@ -169,6 +169,13 @@
                     class="mini-note warning"
                     id="springboardExportWarning"
                   ></span>
+                  <button
+                    type="button"
+                    class="secondary"
+                    id="springboardExportNowButton"
+                  >
+                    Export Now
+                  </button>
                 </div>
               </div>
             </div>
@@ -419,6 +426,18 @@
             <button class="danger" style="float: right" id="deleteRecordButton">
               Delete Record
             </button>
+
+            <div class="form-grid">
+              <div>
+                <label for="recordStatus">Record Status</label>
+                <select id="recordStatus">
+                  <option value="Draft">Draft</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Ready for Review">Ready for Review</option>
+                  <option value="Final">Final</option>
+                </select>
+              </div>
+            </div>
 
             <h3>Starting Point Setup</h3>
             <div class="form-grid">
@@ -1181,6 +1200,15 @@
                 />
               </div>
               <div>
+                <label for="researchStatus">Status</label>
+                <select id="researchStatus">
+                  <option value="Draft">Draft</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Ready for Review">Ready for Review</option>
+                  <option value="Final">Final</option>
+                </select>
+              </div>
+              <div>
                 <label for="researchClassification">Classification</label>
                 <select id="researchClassification">
                   <option value="">Select…</option>
@@ -1216,10 +1244,29 @@
                 />
               </div>
               <div>
+                <label for="researchStakeoutLinks">Stakeout links</label>
+                <input
+                  id="researchStakeoutLinks"
+                  type="text"
+                  placeholder="Stakeout entries referenced by this document"
+                />
+              </div>
+              <div>
                 <label for="researchEvidenceSelect">Linked evidence</label>
                 <select id="researchEvidenceSelect" multiple></select>
                 <small class="app-hint">
                   Hold Ctrl/Command to link evidence items cited by this source.
+                </small>
+              </div>
+              <div>
+                <label for="researchCornerIds">TRS corner IDs</label>
+                <input
+                  id="researchCornerIds"
+                  type="text"
+                  placeholder="Corner IDs or monuments covered"
+                />
+                <small class="app-hint">
+                  List specific corners or lines this document controls/conflicts.
                 </small>
               </div>
             </div>
@@ -1503,6 +1550,33 @@
                   id="navigationBookmarkName"
                   placeholder="E.g., Truck, Property corner, Cache"
                 />
+                <div class="form-grid">
+                  <div>
+                    <label for="navigationCornerType">Corner Type (PLSS)</label>
+                    <select id="navigationCornerType">
+                      <option value="">Select…</option>
+                      <option>Section corner</option>
+                      <option>Quarter corner</option>
+                      <option>Sixteenth corner</option>
+                      <option>Lot corner</option>
+                      <option>Meander corner</option>
+                      <option>Witness corner</option>
+                      <option>Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="navigationCornerStatus">Corner Status</label>
+                    <select id="navigationCornerStatus">
+                      <option value="">Select…</option>
+                      <option>Original monument found</option>
+                      <option>Perpetuation monument found</option>
+                      <option>Obliterated/restored by collateral evidence</option>
+                      <option>Lost/proportionally restored</option>
+                      <option>New monument set</option>
+                      <option>Witness corner set</option>
+                    </select>
+                  </div>
+                </div>
                 <button id="saveNavigationBookmark">
                   Save current location
                 </button>
