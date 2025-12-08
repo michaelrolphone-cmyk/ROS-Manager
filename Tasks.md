@@ -498,7 +498,7 @@
 
 > **Goal:** Never block field progress, but prevent substandard “Final” deliverables.
 
-#### Export Status Labels (Mandatory)
+#### Export Status Labels (Mandatory) ✅
 * Every export must be labeled:
   - `Preliminary — In Progress`
   - `Draft — Partial or Incomplete`
@@ -591,7 +591,7 @@ This protects surveyors professionally by documenting due diligence.
   - Footer note:
     > “Incomplete — subject to revision.”
 
-* CP&F exports must automatically enforce:
+* CP&F exports must automatically enforce: ✅
   - If any required fields are missing → **stamp as Preliminary**
 
 * Smart Pack must include status labels for every included document.
