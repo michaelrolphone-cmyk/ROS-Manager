@@ -122,7 +122,7 @@
 
 ### 2.1 Application Framework & Sync Stability
 
-* Fix the sync bug where, with application sync features enabled, the app is **duplicating traverse bearing and distance entries over and over again even when only one user is connected**.
+* ✅ Fix the sync bug where, with application sync features enabled, the app is **duplicating traverse bearing and distance entries over and over again even when only one user is connected**.
 * ✅ Remove the **help.md refresh button**.
 * ✅ Replace the existing footer/help text with this copyright/behavior notice:
   **“All data saved locally in your browser • No server • Works offline”**

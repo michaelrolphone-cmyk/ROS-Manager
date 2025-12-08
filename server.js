@@ -25,9 +25,30 @@ const isPlainObject = (val) =>
 const isVersioned = (val) =>
   isPlainObject(val) && "version" in val && "updatedAt" in val;
 
+const makeCallSignature = (item = {}) => {
+  if (!item || typeof item !== "object") return null;
+  const parts = [
+    item.bearing,
+    item.distance,
+    item.curveRadius,
+    item.curveDirection,
+    item.curveArcLength,
+    item.curveChordLength,
+    item.curveChordBearing,
+    item.curveDeltaAngle,
+    item.curveTangent,
+  ]
+    .filter((val) => val !== undefined && val !== null)
+    .map((val) => `${val}`.trim());
+
+  const signature = parts.join("|").trim();
+  return signature ? `call:${signature}` : null;
+};
+
 const getArrayKey = (item) => {
   if (item && typeof item === "object") {
-    return item.id || item.pointNumber || JSON.stringify(item);
+    const callSignature = makeCallSignature(item);
+    return item.id || item.pointNumber || callSignature || JSON.stringify(item);
   }
   return item;
 };
