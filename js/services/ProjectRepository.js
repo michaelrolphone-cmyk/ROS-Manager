@@ -29,6 +29,12 @@ export default class ProjectRepository {
     Object.entries(projects).forEach(([id, project]) => {
       obj[id] = project.toObject();
     });
-    localStorage.setItem(this.storageKey, JSON.stringify(obj));
+    try {
+      localStorage.setItem(this.storageKey, JSON.stringify(obj));
+      return true;
+    } catch (err) {
+      console.warn("Failed to persist projects to localStorage", err);
+      return false;
+    }
   }
 }
