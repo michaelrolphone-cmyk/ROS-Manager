@@ -122,7 +122,7 @@
 
 ### 2.1 Application Framework & Sync Stability
 
-* Fix the sync bug where, with application sync features enabled, the app is **duplicating traverse bearing and distance entries over and over again even when only one user is connected**.
+* ✅ Fix the sync bug where, with application sync features enabled, the app is **duplicating traverse bearing and distance entries over and over again even when only one user is connected**.
 * ✅ Remove the **help.md refresh button**.
 * ✅ Replace the existing footer/help text with this copyright/behavior notice:
   **“All data saved locally in your browser • No server • Works offline”**
@@ -232,8 +232,8 @@
 
 ### 4.1 Evidence Capture (Core Behavior)
 
-* Evidence capture **must not pre-select** a record or traverse point:
-  * The user must be free to record evidence that is not directly tied to existing traverse geometry or point files.
+* ✅ Evidence capture **must not pre-select** a record or traverse point:
+  * ✅ The user must be free to record evidence that is not directly tied to existing traverse geometry or point files.
 * Evidence capture must allow specifying:
   * Monument type
   * Township
@@ -381,8 +381,8 @@
 
 ### 7.1 Equipment Setup (UI & Map Enhancements)
 
-* Equipment Setup form:
-  * Add padding between form elements so they do not overflow or overlap, especially in desktop landscape views with long text inputs.
+* ✅ Equipment Setup form:
+  * ✅ Add padding between form elements so they do not overflow or overlap, especially in desktop landscape views with long text inputs.
 
 * Base station geolocation:
   * Use geolocation to fetch an appropriate **map tile** and show a **marker** where the equipment is set up.
