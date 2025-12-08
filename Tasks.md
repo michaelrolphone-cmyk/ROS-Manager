@@ -197,34 +197,34 @@
     * The traverse or level run,
     * The affected corners/evidence.
 
-* Enable export of a **Quality Control Summary**:
-  * Include all traverses and loops with closure and PASS/FAIL.
-  * Include tolerances and any overrides.
-  * Include a list of affected corners/evidence for any failures.
-  * Automatically include in Document Smart Pack and Audit Trail exports.
+* ✅ Enable export of a **Quality Control Summary**:
+  * ✅ Include all traverses and loops with closure and PASS/FAIL.
+  * ✅ Include tolerances and any overrides.
+  * ✅ Include a list of affected corners/evidence for any failures.
+  * ✅ Automatically include in Document Smart Pack and Audit Trail exports.
 
 ---
 
 ### 3.2 Adjustment Transparency (Raw vs Adjusted Geometry)
 
-* When performing any traverse adjustment:
-  * Store the **raw coordinates** (unadjusted) permanently.
-  * Store **adjusted coordinates** separately.
-  * Never overwrite raw values.
+* ✅ When performing any traverse adjustment:
+  * ✅ Store the **raw coordinates** (unadjusted) permanently.
+  * ✅ Store **adjusted coordinates** separately.
+  * ✅ Never overwrite raw values.
 
-* Record:
-  * Which adjustment algorithm was used (Compass rule, Transit rule, etc.).
-  * Per-point adjustment deltas (how much each point moved).
+* ✅ Record:
+  * ✅ Which adjustment algorithm was used (Compass rule, Transit rule, etc.).
+  * ✅ Per-point adjustment deltas (how much each point moved).
 
-* UI expectations:
-  * Allow switching between:
-    * Viewing raw vs adjusted coordinates.
-  * Clearly label RAW vs ADJ in any tabular displays and exports.
+* ✅ UI expectations:
+  * ✅ Allow switching between:
+    * ✅ Viewing raw vs adjusted coordinates.
+  * ✅ Clearly label RAW vs ADJ in any tabular displays and exports.
 
-* Ensure that:
-  * Any point file or export that uses adjusted coordinates either:
-    * clearly marks them as adjusted; or
-    * offers an option to export raw vs adjusted.
+* ✅ Ensure that:
+  * ✅ Any point file or export that uses adjusted coordinates either:
+    * ✅ clearly marks them as adjusted; or
+    * ✅ offers an option to export raw vs adjusted.
 
 ---
 
@@ -234,15 +234,15 @@
 
 * ✅ Evidence capture **must not pre-select** a record or traverse point:
   * ✅ The user must be free to record evidence that is not directly tied to existing traverse geometry or point files.
-* Evidence capture must allow specifying:
-  * Monument type
-  * Township
-  * Range
-  * Section
-  * Section breakdown (aliquots, lots, etc.)
+* ✅ Evidence capture must allow specifying:
+  * ✅ Monument type
+  * ✅ Township
+  * ✅ Range
+  * ✅ Section
+  * ✅ Section breakdown (aliquots, lots, etc.)
 * Evidence entries must:
   * Be fully editable and deletable (subject to archival rules if referenced).
-* Each evidence entry should have a **title generated** from TRS info (e.g., “Corner Evidence – T5N R2E Sec 12 NE Cor”).
+* ✅ Each evidence entry should have a **title generated** from TRS info (e.g., “Corner Evidence – T5N R2E Sec 12 NE Cor”).
 * Evidence monuments must support:
   * Joining multiple sections (e.g., common corners)
   * Bordering multiple townships where applicable.
@@ -251,17 +251,17 @@
 
 ### 4.2 Chain of Evidence Mini-App
 
-* Create a **Chain of Evidence mini-app** for each project that:
-  * Shows all evidence entries in a structured list (by TRS, corner type, status).
-  * Links evidence entries to:
+* ✅ Create a **Chain of Evidence mini-app** for each project that:
+  * ✅ Shows all evidence entries in a structured list (by TRS, corner type, status).
+  * ✅ Links evidence entries to:
     * photo attachments,
     * CP&F exports,
     * research documents,
     * traverses and stakeout logs.
 
-* Features:
-  * Filter by TRS, corner type, status, date, or project phase.
-  * Export a **Corner Evidence Packet** per corner:
+* ✅ Features:
+  * ✅ Filter by TRS, corner type, status, date, or project phase.
+  * ✅ Export a **Corner Evidence Packet** per corner:
     * evidence notes,
     * ties,
     * photos,

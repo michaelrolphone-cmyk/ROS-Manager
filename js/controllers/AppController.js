@@ -58,6 +58,14 @@ export default class AppController {
     this.currentMapUrl = null;
     this.pendingMapRequestId = 0;
     this.vicinityMapRequestId = 0;
+    this.chainFilters = {
+      trs: "",
+      cornerType: "",
+      cornerStatus: "",
+      status: "",
+      startDate: "",
+      endDate: "",
+    };
     this.helpLoaded = false;
     this.helpLoading = false;
     this.liveUpdatesSource = null;
@@ -92,6 +100,11 @@ export default class AppController {
         newPointFileButton: this.elements.newPointFileButton,
         renamePointFileButton: this.elements.renamePointFileButton,
         downloadPointsButton: this.elements.downloadPointsButton,
+        pointViewModeSelect: this.elements.pointViewModeSelect,
+        adjustmentAlgorithm: this.elements.adjustmentAlgorithm,
+        adjustmentNotes: this.elements.adjustmentNotes,
+        adjustmentSaveButton: this.elements.adjustmentSaveButton,
+        adjustmentSummary: this.elements.adjustmentSummary,
       },
       getCurrentProject: () =>
         this.currentProjectId ? this.projects[this.currentProjectId] : null,
@@ -320,6 +333,11 @@ export default class AppController {
       newPointFileButton: document.getElementById("newPointFileButton"),
       renamePointFileButton: document.getElementById("renamePointFileButton"),
       downloadPointsButton: document.getElementById("downloadPointsButton"),
+      pointViewModeSelect: document.getElementById("pointViewModeSelect"),
+      adjustmentAlgorithm: document.getElementById("adjustmentAlgorithm"),
+      adjustmentNotes: document.getElementById("adjustmentNotes"),
+      adjustmentSaveButton: document.getElementById("adjustmentSaveButton"),
+      adjustmentSummary: document.getElementById("adjustmentSummary"),
       pointsFromRecordSelect: document.getElementById("pointsFromRecordSelect"),
       generatePointsFromTraverseButton: document.getElementById(
         "generatePointsFromTraverseButton"
@@ -348,6 +366,7 @@ export default class AppController {
       pointsSection: document.getElementById("pointsSection"),
       settingsSection: document.getElementById("settingsSection"),
       evidenceSection: document.getElementById("evidenceSection"),
+      chainEvidenceSection: document.getElementById("chainEvidenceSection"),
       equipmentSection: document.getElementById("equipmentSection"),
       helpSection: document.getElementById("helpSection"),
       helpContent: document.getElementById("helpContent"),
@@ -367,6 +386,12 @@ export default class AppController {
       evidenceRecordSelect: document.getElementById("evidenceRecordSelect"),
       evidencePointSelect: document.getElementById("evidencePointSelect"),
       evidenceType: document.getElementById("evidenceType"),
+      evidenceTownship: document.getElementById("evidenceTownship"),
+      evidenceRange: document.getElementById("evidenceRange"),
+      evidenceSection: document.getElementById("evidenceSection"),
+      evidenceSectionBreakdown: document.getElementById(
+        "evidenceSectionBreakdown"
+      ),
       evidenceCornerType: document.getElementById("evidenceCornerType"),
       evidenceCornerStatus: document.getElementById("evidenceCornerStatus"),
       evidenceStatus: document.getElementById("evidenceStatus"),
@@ -403,6 +428,19 @@ export default class AppController {
       resetEvidenceButton: document.getElementById("resetEvidenceButton"),
       evidenceList: document.getElementById("evidenceList"),
       evidenceSummary: document.getElementById("evidenceSummary"),
+      chainTrsFilter: document.getElementById("chainTrsFilter"),
+      chainCornerTypeFilter: document.getElementById("chainCornerTypeFilter"),
+      chainCornerStatusFilter: document.getElementById(
+        "chainCornerStatusFilter"
+      ),
+      chainStatusFilter: document.getElementById("chainStatusFilter"),
+      chainStartDate: document.getElementById("chainStartDate"),
+      chainEndDate: document.getElementById("chainEndDate"),
+      chainApplyFilters: document.getElementById("chainApplyFilters"),
+      chainResetFilters: document.getElementById("chainResetFilters"),
+      chainEvidenceList: document.getElementById("chainEvidenceList"),
+      chainEvidenceSummary: document.getElementById("chainEvidenceSummary"),
+      chainExportAll: document.getElementById("chainExportAll"),
       equipmentSetupAt: document.getElementById("equipmentSetupAt"),
       equipmentTearDownAt: document.getElementById("equipmentTearDownAt"),
       equipmentBaseHeight: document.getElementById("equipmentBaseHeight"),
@@ -551,6 +589,7 @@ export default class AppController {
       qcSummary: document.getElementById("qcSummary"),
       qcTraverseList: document.getElementById("qcTraverseList"),
       qcLevelList: document.getElementById("qcLevelList"),
+      exportQcSummaryButton: document.getElementById("exportQcSummaryButton"),
       saveQcSettingsButton: document.getElementById("saveQcSettingsButton"),
       researchSection: document.getElementById("researchSection"),
       researchList: document.getElementById("researchList"),
@@ -838,6 +877,27 @@ export default class AppController {
       this.resetEvidenceForm()
     );
 
+    [
+      this.elements.chainTrsFilter,
+      this.elements.chainCornerTypeFilter,
+      this.elements.chainCornerStatusFilter,
+      this.elements.chainStatusFilter,
+      this.elements.chainStartDate,
+      this.elements.chainEndDate,
+    ].forEach((el) => {
+      const eventName = el?.tagName === "SELECT" ? "change" : "input";
+      el?.addEventListener(eventName, () => this.applyChainFiltersFromInputs());
+    });
+    this.elements.chainApplyFilters?.addEventListener("click", () =>
+      this.applyChainFiltersFromInputs()
+    );
+    this.elements.chainResetFilters?.addEventListener("click", () =>
+      this.resetChainFilters()
+    );
+    this.elements.chainExportAll?.addEventListener("click", () =>
+      this.exportChainEvidenceSelection()
+    );
+
     this.elements.cpfValidationStatus?.addEventListener("click", (evt) => {
       const target = evt.target.closest("[data-cpf-field]");
       if (!target) return;
@@ -857,6 +917,9 @@ export default class AppController {
 
     this.elements.saveQcSettingsButton?.addEventListener("click", () =>
       this.saveQcSettings()
+    );
+    this.elements.exportQcSummaryButton?.addEventListener("click", () =>
+      this.exportQualityControlSummary()
     );
     this.elements.qcTraverseList?.addEventListener("click", (evt) =>
       this.handleQcListClick(evt)
@@ -1354,6 +1417,7 @@ export default class AppController {
     const research = this.researchDocumentService.serializeProject(
       this.currentProjectId
     );
+    const qcSummary = this.buildQualityControlSummaryData(this.currentProjectId);
     const payload = {
       type: "CarlsonSurveyManagerProjects",
       version: 2,
@@ -1367,6 +1431,9 @@ export default class AppController {
       research: {
         [this.currentProjectId]: research,
       },
+      qcSummaries: qcSummary
+        ? { [this.currentProjectId]: qcSummary }
+        : {},
     };
     this.downloadJson(
       payload,
@@ -1387,6 +1454,7 @@ export default class AppController {
       projects: this.serializeProjects(),
       evidence: this.cornerEvidenceService.serializeAllEvidence(),
       research: this.researchDocumentService.serializeAll(),
+      qcSummaries: this.buildAllQualityControlSummaries(),
     };
     this.downloadJson(payload, "carlson-all-projects.json");
     this.markProjectsExported(Object.keys(this.projects || {}));
@@ -1456,6 +1524,7 @@ export default class AppController {
       evidence: this.cornerEvidenceService.serializeAllEvidence(),
       research: this.researchDocumentService.serializeAll(),
       globalSettings: this.globalSettings,
+      qcSummaries: this.buildAllQualityControlSummaries(),
     };
     this.downloadJson(payload, "carlson-app-data.json");
     this.markProjectsExported(Object.keys(this.projects || {}));
@@ -1586,6 +1655,7 @@ export default class AppController {
         research: this.researchDocumentService.serializeAll(),
         globalSettings: this.globalSettings,
         exportMetadata: this.buildExportMetadata("Audit"),
+        qcSummary: this.buildQualityControlSummaryData(),
       },
       {
         deviceId: this.deviceId,
@@ -1728,6 +1798,7 @@ export default class AppController {
       this.levelingController?.onProjectChanged();
       this.populateQcSettings(null);
       this.renderQualityDashboard();
+      this.resetChainFilters();
       return;
     }
 
@@ -1741,6 +1812,7 @@ export default class AppController {
     if (!this.currentRecordId && this.elements.editor)
       this.elements.editor.style.display = "none";
 
+    this.resetChainFilters();
     this.renderRecordList();
     this.updateProjectList();
     this.drawProjectOverview();
@@ -1930,10 +2002,8 @@ export default class AppController {
     }
   }
 
-  computeQualityResults() {
-    const project = this.currentProjectId
-      ? this.projects[this.currentProjectId]
-      : null;
+  computeQualityResults(projectId = this.currentProjectId) {
+    const project = projectId ? this.projects[projectId] : null;
 
     const results = {
       traverses: [],
@@ -1948,10 +2018,7 @@ export default class AppController {
     const qcSettings = this.getProjectQcSettings(project);
     const records = project.records || {};
     Object.entries(records).forEach(([id, record], idx) => {
-      const geometry = this.computeTraversePointsForRecord(
-        this.currentProjectId,
-        id
-      );
+      const geometry = this.computeTraversePointsForRecord(projectId, id);
       const mainLine = geometry?.polylines?.[0] || geometry?.points || [];
       let totalLength = 0;
       let linearMisclosure = null;
@@ -2241,9 +2308,229 @@ export default class AppController {
       this.switchTab("levelingSection");
       if (this.levelingController) {
         this.levelingController.currentLevelRunId = levelBtn.dataset.levelId;
-        this.levelingController.renderLevelRuns();
-      }
+      this.levelingController.renderLevelRuns();
     }
+  }
+
+  buildQualityControlSummaryData(projectId = this.currentProjectId) {
+    if (!projectId) return null;
+    const project = this.projects[projectId];
+    if (!project) return null;
+
+    const results = this.computeQualityResults(projectId);
+    const settings = this.getProjectQcSettings(project);
+    const evidence = this.cornerEvidenceService.getProjectEvidence(projectId);
+
+    const failures = results.traverses.filter((t) => t.status === "fail");
+    const affectedEvidence = failures.map((fail) => {
+      const linked = evidence.filter((ev) => ev.recordId === fail.id);
+      return {
+        traverseId: fail.id,
+        traverseName: fail.name,
+        evidence:
+          linked.length > 0
+            ? linked.map((ev) => ({
+                id: ev.id,
+                title:
+                  ev.title || this.buildEvidenceTitle(ev) || "Untitled evidence",
+                trs: this.buildEvidenceTrs(ev) || null,
+                status: ev.status || "Draft",
+              }))
+            : [],
+      };
+    });
+
+    return {
+      project: {
+        id: projectId,
+        name: project.name || "Project",
+      },
+      generatedAt: new Date().toISOString(),
+      settings: {
+        traverseAngularTolerance: settings.traverseAngularTolerance,
+        traverseLinearTolerance: settings.traverseLinearTolerance,
+        levelMisclosurePerDistance: settings.levelMisclosurePerDistance,
+      },
+      overrides: project.qcOverrides || [],
+      results,
+      affectedEvidence,
+    };
+  }
+
+  buildQualityControlSummaryHtml(summary, exportStatus = "Draft") {
+    const label = this.getExportStatusLabel(exportStatus);
+    const formatNumber = (value, digits = 3) =>
+      Number.isFinite(value) ? value.toFixed(digits) : "—";
+    const formatRatio = (misclosure, length) =>
+      this.formatRatio(misclosure, length) || "—";
+
+    const traverseRows = summary.results.traverses
+      .map(
+        (t) => `
+        <tr>
+          <td>${this.escapeHtml(t.name)}</td>
+          <td>${this.escapeHtml(this.formatLevelNumber(t.linearMisclosure))}</td>
+          <td>${this.escapeHtml(formatRatio(t.linearMisclosure, t.totalLength))}</td>
+          <td>${this.escapeHtml(this.formatDegrees(t.angularMisclosure))}</td>
+          <td>${this.escapeHtml(t.message)}</td>
+        </tr>`
+      )
+      .join("");
+
+    const levelRows = summary.results.levels
+      .map(
+        (l) => `
+        <tr>
+          <td>${this.escapeHtml(l.name)}</td>
+          <td>${this.escapeHtml(this.formatLevelNumber(l.misclosure))}</td>
+          <td>${this.escapeHtml(this.formatLevelNumber(l.allowed))}</td>
+          <td>${this.escapeHtml(l.message)}</td>
+        </tr>`
+      )
+      .join("");
+
+    const evidenceBlocks = summary.affectedEvidence
+      .map((item) => {
+        const evList =
+          item.evidence.length > 0
+            ? `<ul>${item.evidence
+                .map(
+                  (ev) => `
+              <li><strong>${this.escapeHtml(ev.title)}</strong>${
+                ev.trs ? ` — ${this.escapeHtml(ev.trs)}` : ""
+              } (${this.escapeHtml(ev.status)})</li>`
+                )
+                .join("
+          ")}</ul>`
+            : `<p class="muted">No evidence linked to this traverse.</p>`;
+        return `<div class="section">
+          <h3>${this.escapeHtml(item.traverseName)}</h3>
+          ${evList}
+        </div>`;
+      })
+      .join("");
+
+    return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Quality Control Summary</title>
+    <style>
+      body { font-family: "Segoe UI", Tahoma, sans-serif; color: #1c1c1c; margin: 28px; line-height: 1.5; }
+      h1 { margin: 0 0 6px; font-size: 22px; }
+      h2 { margin: 18px 0 8px; font-size: 16px; letter-spacing: 0.2px; }
+      h3 { margin: 12px 0 6px; font-size: 14px; }
+      .chip { display: inline-block; padding: 4px 10px; border-radius: 12px; background: #eef2ff; color: #2a3a8f; font-weight: 600; font-size: 12px; }
+      .meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px 14px; margin-top: 10px; }
+      .meta div { padding: 6px 8px; background: #f5f7fb; border-radius: 6px; }
+      .section { border: 1px solid #d7dce5; border-radius: 8px; padding: 10px 12px; margin-top: 14px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+      th, td { border: 1px solid #d7dce5; padding: 6px 8px; text-align: left; }
+      th { background: #f1f5f9; }
+      .muted { color: #5b6475; font-size: 12px; margin-top: 4px; }
+    </style>
+  </head>
+  <body>
+    <h1>Quality Control Summary</h1>
+    <div class="chip">${this.escapeHtml(label.title)}</div>
+    ${label.note ? `<div class="muted">${this.escapeHtml(label.note)}</div>` : ""}
+    <div class="meta">
+      <div><strong>Project</strong><br />${this.escapeHtml(
+        summary.project.name
+      )}</div>
+      <div><strong>Generated</strong><br />${this.escapeHtml(
+        new Date(summary.generatedAt).toLocaleString()
+      )}</div>
+      <div><strong>Overall status</strong><br />${this.escapeHtml(
+        summary.results.overallLabel || "No checks yet"
+      )}</div>
+    </div>
+
+    <div class="section">
+      <h2>Tolerances</h2>
+      <p class="muted">Overrides: ${summary.overrides.length || 0}
+        recorded${summary.overrides.length ? " (not yet surfaced in UI)" : ""}.</p>
+      <ul>
+        <li>Traverse angular: ${this.escapeHtml(
+          formatNumber(summary.settings.traverseAngularTolerance, 2)
+        )}°</li>
+        <li>Traverse linear misclosure per distance: ${this.escapeHtml(
+          summary.settings.traverseLinearTolerance || "—"
+        )}</li>
+        <li>Level misclosure factor (× √K): ${this.escapeHtml(
+          formatNumber(summary.settings.levelMisclosurePerDistance, 3)
+        )}</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>Traverse checks</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Traverse</th>
+            <th>Linear misclosure</th>
+            <th>Misclosure ratio</th>
+            <th>Angular misclosure</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${traverseRows || '<tr><td colspan="5">No traverses evaluated.</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>Level loop checks</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Level run</th>
+            <th>Misclosure</th>
+            <th>Allowed</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${levelRows || '<tr><td colspan="4">No level loops evaluated.</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>Affected evidence for failed checks</h2>
+      ${
+        evidenceBlocks ||
+        '<p class="muted">All traverses are passing or no evidence is linked to failed traverses.</p>'
+      }
+    </div>
+  </body>
+</html>`;
+  }
+
+  buildAllQualityControlSummaries() {
+    const summaries = {};
+    Object.keys(this.projects || {}).forEach((projectId) => {
+      const summary = this.buildQualityControlSummaryData(projectId);
+      if (summary) summaries[projectId] = summary;
+    });
+    return summaries;
+  }
+
+  exportQualityControlSummary() {
+    const summary = this.buildQualityControlSummaryData();
+    if (!summary) {
+      alert("Select a project to export QC results.");
+      return;
+    }
+
+    const filename = `qc-summary-${(summary.project.name || "project")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")}-${Date.now()}.html`;
+    const html = this.buildQualityControlSummaryHtml(summary, "Draft");
+    this.downloadHtml(html, filename);
+  }
   }
 
   formatRatio(misclosure, length) {
@@ -2809,6 +3096,28 @@ export default class AppController {
     }
   }
 
+  buildTileMapPreview(lat, lon, zoom = 14) {
+    const parsedLat = parseFloat(lat);
+    const parsedLon = parseFloat(lon);
+    if (!Number.isFinite(parsedLat) || !Number.isFinite(parsedLon)) return null;
+    const n = 2 ** zoom;
+    const xtile = Math.floor(((parsedLon + 180) / 360) * n);
+    const latRad = (parsedLat * Math.PI) / 180;
+    const ytile = Math.floor(
+      ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) *
+        n
+    );
+    const bounds = {
+      xmin: Math.max(xtile - 1, 0),
+      xmax: Math.min(xtile + 1, n - 1),
+      ymin: Math.max(ytile - 1, 0),
+      ymax: Math.min(ytile + 1, n - 1),
+    };
+    return `https://bigmap.osmz.ru/bigmap.php?zoom=${zoom}&xmin=${bounds.xmin}&ymin=${bounds.ymin}&xmax=${bounds.xmax}&ymax=${bounds.ymax}&tiles=mapnik&width=1200&height=600&showscale=1&markers=${parsedLat.toFixed(
+      6
+    )},${parsedLon.toFixed(6)},red-pushpin`;
+  }
+
   async resolveAddressToMap(address) {
     const normalized = address.trim().toLowerCase();
     if (this.geocodeCache[normalized] !== undefined) {
@@ -2834,7 +3143,10 @@ export default class AppController {
       const data = await response.json();
       if (Array.isArray(data) && data.length) {
         const { lat, lon } = data[0];
-        const mapUrl = `https://nominatim.openstreetmap.org/ui/staticmap.php?center=${lat},${lon}&zoom=14&size=1200x600&markers=${lat},${lon},red-pushpin`;
+        const tileMap = this.buildTileMapPreview(lat, lon, 13);
+        const mapUrl =
+          tileMap ||
+          `https://nominatim.openstreetmap.org/ui/staticmap.php?center=${lat},${lon}&zoom=14&size=1200x600&markers=${lat},${lon},red-pushpin`;
         this.geocodeCache[normalized] = mapUrl;
         return mapUrl;
       }
@@ -2994,6 +3306,8 @@ export default class AppController {
 
     if (targetId === "evidenceSection") {
       this.refreshEvidenceUI();
+    } else if (resolvedTarget === "chainEvidenceSection") {
+      this.refreshChainEvidence();
     } else if (resolvedTarget === "researchSection") {
       this.refreshResearchUI();
     } else if (resolvedTarget === "equipmentSection") {
@@ -3342,6 +3656,11 @@ export default class AppController {
     const pointMeta = hasPointSelection
       ? this.currentTraversePointOptions.find((p) => p.index === pointIndex)
       : null;
+    const township = this.elements.evidenceTownship?.value.trim() || "";
+    const range = this.elements.evidenceRange?.value.trim() || "";
+    const section = this.elements.evidenceSection?.value.trim() || "";
+    const sectionBreakdown =
+      this.elements.evidenceSectionBreakdown?.value.trim() || "";
     const record = recordId
       ? this.projects[this.currentProjectId]?.records?.[recordId]
       : null;
@@ -3353,6 +3672,10 @@ export default class AppController {
       pointIndex: hasPointSelection ? pointIndex : null,
       pointLabel: pointMeta?.label || (hasPointSelection ? "Traverse point" : ""),
       coords: pointMeta?.coords || null,
+      township,
+      range,
+      section,
+      sectionBreakdown,
       type: this.elements.evidenceType?.value || "",
       cornerType: this.elements.evidenceCornerType?.value || "",
       cornerStatus: this.elements.evidenceCornerStatus?.value || "",
@@ -3378,6 +3701,8 @@ export default class AppController {
       location: this.currentEvidenceLocation || null,
       createdAt: new Date().toISOString(),
     });
+
+    entry.title = this.buildEvidenceTitle(entry);
 
     this.versioningService.touchEntity(entry, { prefix: "evidence" });
     entry.ties = this.versioningService.touchArray(entry.ties || [], "tie");
@@ -3420,7 +3745,8 @@ export default class AppController {
         const card = document.createElement("div");
         card.className = "card";
         const title = document.createElement("strong");
-        title.textContent = ev.pointLabel || "Untied evidence entry";
+        title.textContent =
+          ev.title || this.buildEvidenceTitle(ev) || "Untied evidence entry";
         const meta = document.createElement("div");
         meta.className = "subtitle";
         meta.style.marginTop = "4px";
@@ -3457,6 +3783,12 @@ export default class AppController {
           const type = document.createElement("div");
           type.textContent = `Type: ${ev.type}`;
           card.appendChild(type);
+        }
+        const trs = this.buildEvidenceTrs(ev);
+        if (trs) {
+          const trsLine = document.createElement("div");
+          trsLine.textContent = `TRS: ${trs}`;
+          card.appendChild(trsLine);
         }
         if (ev.cornerType || ev.cornerStatus) {
           const cornerMeta = document.createElement("div");
@@ -3575,7 +3907,491 @@ export default class AppController {
         container.appendChild(card);
       });
 
+    this.renderChainEvidenceList();
     this.populateResearchEvidenceOptions();
+  }
+
+  buildEvidenceTrs(entry = {}) {
+    const parts = [];
+    if (entry.township) parts.push(entry.township.trim());
+    if (entry.range) parts.push(entry.range.trim());
+    if (entry.section) parts.push(`Sec ${entry.section}`.trim());
+    if (entry.sectionBreakdown) parts.push(entry.sectionBreakdown.trim());
+    return parts.join(" ").trim();
+  }
+
+  buildEvidenceTitle(entry = {}) {
+    const trs = this.buildEvidenceTrs(entry);
+    if (trs) return `Corner Evidence – ${trs}`;
+    return entry.pointLabel || entry.recordName || "Corner Evidence";
+  }
+
+  refreshChainEvidence() {
+    this.populateChainFilters();
+    this.applyChainFiltersFromInputs(false);
+    this.renderChainEvidenceList();
+  }
+
+  populateChainFilters() {
+    const evidence = this.cornerEvidenceService.getProjectEvidence(
+      this.currentProjectId
+    );
+    const types = [
+      ...new Set((evidence || []).map((ev) => ev.cornerType).filter(Boolean)),
+    ];
+    const statuses = [
+      ...new Set((evidence || []).map((ev) => ev.cornerStatus).filter(Boolean)),
+    ];
+
+    const applyOptions = (select, values, label, selectedValue = "") => {
+      if (!select) return;
+      const current = selectedValue || select.value;
+      select.innerHTML = "";
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = label;
+      select.appendChild(placeholder);
+      values.forEach((val) => {
+        const opt = document.createElement("option");
+        opt.value = val;
+        opt.textContent = val;
+        opt.selected = val === current;
+        select.appendChild(opt);
+      });
+      if (select.value !== current && current) {
+        select.value = current;
+      }
+    };
+
+    applyOptions(
+      this.elements.chainCornerTypeFilter,
+      types,
+      "All corner types",
+      this.chainFilters.cornerType
+    );
+    applyOptions(
+      this.elements.chainCornerStatusFilter,
+      statuses,
+      "All corner statuses",
+      this.chainFilters.cornerStatus
+    );
+  }
+
+  applyChainFiltersFromInputs(render = true) {
+    this.chainFilters.trs = this.elements.chainTrsFilter?.value.trim() || "";
+    this.chainFilters.cornerType =
+      this.elements.chainCornerTypeFilter?.value || "";
+    this.chainFilters.cornerStatus =
+      this.elements.chainCornerStatusFilter?.value || "";
+    this.chainFilters.status =
+      this.elements.chainStatusFilter?.value || "";
+    this.chainFilters.startDate = this.elements.chainStartDate?.value || "";
+    this.chainFilters.endDate = this.elements.chainEndDate?.value || "";
+    if (render) this.renderChainEvidenceList();
+  }
+
+  resetChainFilters() {
+    this.chainFilters = {
+      trs: "",
+      cornerType: "",
+      cornerStatus: "",
+      status: "",
+      startDate: "",
+      endDate: "",
+    };
+    if (this.elements.chainTrsFilter) this.elements.chainTrsFilter.value = "";
+    if (this.elements.chainCornerTypeFilter)
+      this.elements.chainCornerTypeFilter.value = "";
+    if (this.elements.chainCornerStatusFilter)
+      this.elements.chainCornerStatusFilter.value = "";
+    if (this.elements.chainStatusFilter)
+      this.elements.chainStatusFilter.value = "";
+    if (this.elements.chainStartDate) this.elements.chainStartDate.value = "";
+    if (this.elements.chainEndDate) this.elements.chainEndDate.value = "";
+    this.renderChainEvidenceList();
+  }
+
+  normalizeFilterDate(value, isEnd = false) {
+    if (!value) return null;
+    const date = new Date(value);
+    if (!Number.isFinite(date.getTime())) return null;
+    if (isEnd) {
+      date.setHours(23, 59, 59, 999);
+    } else {
+      date.setHours(0, 0, 0, 0);
+    }
+    return date;
+  }
+
+  getChainFilteredEvidence() {
+    const evidence = this.cornerEvidenceService.getProjectEvidence(
+      this.currentProjectId
+    );
+    const trsFilter = this.chainFilters.trs.toLowerCase();
+    const startDate = this.normalizeFilterDate(this.chainFilters.startDate);
+    const endDate = this.normalizeFilterDate(this.chainFilters.endDate, true);
+
+    const filtered = evidence.filter((ev) => {
+      const trs = (this.buildEvidenceTrs(ev) || "").toLowerCase();
+      if (trsFilter && !trs.includes(trsFilter)) return false;
+      if (this.chainFilters.cornerType && ev.cornerType !== this.chainFilters.cornerType)
+        return false;
+      if (
+        this.chainFilters.cornerStatus &&
+        ev.cornerStatus !== this.chainFilters.cornerStatus
+      )
+        return false;
+      if (this.chainFilters.status && ev.status !== this.chainFilters.status)
+        return false;
+      const created = ev.createdAt ? new Date(ev.createdAt) : null;
+      if (startDate && created && created < startDate) return false;
+      if (endDate && created && created > endDate) return false;
+      return true;
+    });
+
+    return filtered.sort(
+      (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+    );
+  }
+
+  renderChainEvidenceList() {
+    const container = this.elements.chainEvidenceList;
+    const summary = this.elements.chainEvidenceSummary;
+    if (!container || !summary) return;
+
+    this.populateChainFilters();
+    container.innerHTML = "";
+
+    if (!this.currentProjectId) {
+      summary.textContent = "Select a project to view evidence.";
+      return;
+    }
+
+    const allEvidence = this.cornerEvidenceService.getProjectEvidence(
+      this.currentProjectId
+    );
+    if (!allEvidence.length) {
+      summary.textContent = "No evidence logged yet.";
+      return;
+    }
+
+    const filtered = this.getChainFilteredEvidence();
+    const total = allEvidence.length;
+    const matchedWord = filtered.length === 1 ? "entry" : "entries";
+    const totalWord = total === 1 ? "entry" : "entries";
+    summary.textContent =
+      filtered.length === total
+        ? `${total} evidence ${totalWord} documented.`
+        : `${filtered.length} ${matchedWord} of ${total} evidence ${totalWord} match the filters.`;
+
+    if (!filtered.length) {
+      const empty = document.createElement("div");
+      empty.className = "subtitle";
+      empty.textContent = "No evidence matched the selected filters.";
+      container.appendChild(empty);
+      return;
+    }
+
+    const qcResults = this.latestQcResults || this.computeQualityResults();
+    const researchDocs = this.researchDocumentService.getProjectDocuments(
+      this.currentProjectId
+    );
+
+    const groups = new Map();
+    filtered.forEach((ev) => {
+      const trs = this.buildEvidenceTrs(ev) || "Unspecified TRS";
+      if (!groups.has(trs)) groups.set(trs, []);
+      groups.get(trs).push(ev);
+    });
+
+    Array.from(groups.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .forEach(([trs, entries]) => {
+        const group = document.createElement("div");
+        group.className = "chain-group";
+        const header = document.createElement("div");
+        header.className = "chain-group-header";
+        const title = document.createElement("strong");
+        title.textContent = trs;
+        const count = document.createElement("span");
+        count.className = "subtitle";
+        count.textContent = `${entries.length} entr${
+          entries.length === 1 ? "y" : "ies"
+        }`;
+        header.append(title, count);
+        group.appendChild(header);
+
+        entries
+          .slice()
+          .sort(
+            (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+          )
+          .forEach((entry) => {
+            group.appendChild(
+              this.buildChainEvidenceCard(entry, qcResults, researchDocs)
+            );
+          });
+
+        container.appendChild(group);
+      });
+  }
+
+  buildChainEvidenceCard(entry, qcResults, researchDocs) {
+    const card = document.createElement("div");
+    card.className = "chain-entry";
+
+    const header = document.createElement("div");
+    header.style.display = "flex";
+    header.style.alignItems = "center";
+    header.style.justifyContent = "space-between";
+    header.style.gap = "10px";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.title || this.buildEvidenceTitle(entry);
+    header.appendChild(title);
+
+    const chipRow = document.createElement("div");
+    chipRow.className = "chip-row";
+    chipRow.appendChild(this.buildStatusChip(entry.status || "Draft"));
+    if (entry.cornerType) {
+      const typeChip = document.createElement("span");
+      typeChip.className = "status-chip info";
+      typeChip.textContent = entry.cornerType;
+      chipRow.appendChild(typeChip);
+    }
+    if (entry.cornerStatus) {
+      const statusChip = document.createElement("span");
+      statusChip.className = "status-chip in-progress";
+      statusChip.textContent = entry.cornerStatus;
+      chipRow.appendChild(statusChip);
+    }
+    const qcState = this.describeEvidenceQc(entry, qcResults);
+    const qcChip = this.buildQcChip(qcState);
+    if (qcChip) chipRow.appendChild(qcChip);
+    header.appendChild(chipRow);
+    card.appendChild(header);
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    const recordLabel = entry.recordName || "Unlinked";
+    const createdLabel = entry.createdAt
+      ? new Date(entry.createdAt).toLocaleString()
+      : "";
+    meta.textContent = `${recordLabel} · Saved ${createdLabel}`;
+    card.appendChild(meta);
+
+    const trsLine = this.buildEvidenceTrs(entry);
+    if (trsLine) {
+      const trs = document.createElement("div");
+      trs.textContent = `TRS: ${trsLine}`;
+      card.appendChild(trs);
+    }
+
+    if (entry.notes) {
+      const notes = document.createElement("div");
+      notes.textContent = entry.notes;
+      card.appendChild(notes);
+    }
+
+    if (entry.ties?.length) {
+      const ties = document.createElement("div");
+      ties.className = "subtitle";
+      ties.textContent = `${entry.ties.length} tie${
+        entry.ties.length === 1 ? "" : "s"
+      } recorded.`;
+      card.appendChild(ties);
+    }
+
+    const completeness = this.getCpfCompleteness(entry);
+    const missingFields = completeness?.missing || [];
+    const cpStatus = document.createElement("div");
+    cpStatus.className = "mini-note";
+    cpStatus.textContent = completeness.complete
+      ? "CP&F-ready"
+      : `CP&F validation outstanding: ${missingFields.join(", ") || "Items not documented"}`;
+    card.appendChild(cpStatus);
+
+    const researchRefs = this.getResearchReferencesForEvidence(
+      entry,
+      researchDocs
+    );
+    if (researchRefs.length) {
+      const refBlock = document.createElement("div");
+      const refTitle = document.createElement("strong");
+      refTitle.textContent = "Linked research";
+      const list = document.createElement("ul");
+      researchRefs.forEach((doc) => {
+        const li = document.createElement("li");
+        const line = [doc.type, doc.classification].filter(Boolean).join(" · ");
+        li.textContent = line || doc.type || "Research document";
+        list.appendChild(li);
+      });
+      refBlock.append(refTitle, list);
+      card.appendChild(refBlock);
+    }
+
+    const actions = document.createElement("div");
+    actions.style.display = "flex";
+    actions.style.gap = "8px";
+    actions.style.marginTop = "8px";
+    const cpfBtn = document.createElement("button");
+    cpfBtn.type = "button";
+    cpfBtn.textContent = "Export CP&F";
+    cpfBtn.addEventListener("click", () => this.exportCornerFiling(entry));
+    const packetBtn = document.createElement("button");
+    packetBtn.type = "button";
+    packetBtn.className = "secondary";
+    packetBtn.textContent = "Evidence Packet";
+    packetBtn.addEventListener("click", () =>
+      this.exportChainEvidencePacket(entry, qcState, researchRefs)
+    );
+    actions.append(cpfBtn, packetBtn);
+    card.appendChild(actions);
+
+    return card;
+  }
+
+  describeEvidenceQc(entry, qcResults = {}) {
+    const defaultState = { label: "No traverse link", level: "info" };
+    if (!entry?.recordId) return defaultState;
+    const traverse = qcResults.traverses?.find((t) => t.id === entry.recordId);
+    if (!traverse) return { label: "Traverse not evaluated", level: "warn" };
+    if (traverse.status === "fail")
+      return { label: "Fails tolerance", level: "fail" };
+    if (traverse.status === "pass")
+      return { label: "Passes tolerance", level: "pass" };
+    return { label: traverse.message || "QC pending", level: "warn" };
+  }
+
+  buildQcChip(state = { label: "", level: "info" }) {
+    const chip = document.createElement("span");
+    chip.className = "status-chip";
+    chip.textContent = `QC: ${state.label || "Not evaluated"}`;
+    if (state.level === "fail") chip.classList.add("draft");
+    else if (state.level === "pass") chip.classList.add("ready");
+    else if (state.level === "warn") chip.classList.add("in-progress");
+    else chip.classList.add("info");
+    return chip;
+  }
+
+  getResearchReferencesForEvidence(entry, docs = []) {
+    return (docs || []).filter((doc) =>
+      doc.linkedEvidence?.some((ev) => (ev.id || ev) === entry.id)
+    );
+  }
+
+  exportChainEvidencePacket(entry, qcState, researchRefs = []) {
+    if (!entry) return;
+    const qcResults = this.latestQcResults || this.computeQualityResults();
+    const packetQcState = qcState || this.describeEvidenceQc(entry, qcResults);
+    const completeness = this.getCpfCompleteness(entry);
+    const refs =
+      researchRefs.length > 0
+        ? researchRefs
+        : this.getResearchReferencesForEvidence(
+            entry,
+            this.researchDocumentService.getProjectDocuments(entry.projectId)
+          );
+    const html = this.buildEvidencePacketLayout(entry, {
+      qcState: packetQcState,
+      researchRefs: refs,
+      completeness,
+    });
+    const fileBase = (entry.title || this.buildEvidenceTitle(entry) || "corner")
+      .replace(/[^\w\-]+/g, "_")
+      .toLowerCase();
+    this.downloadHtml(html, `${fileBase}-evidence-packet.html`);
+  }
+
+  exportChainEvidenceSelection() {
+    if (!this.currentProjectId) return;
+    const filtered = this.getChainFilteredEvidence();
+    if (!filtered.length) return;
+    const qcResults = this.latestQcResults || this.computeQualityResults();
+    const researchDocs = this.researchDocumentService.getProjectDocuments(
+      this.currentProjectId
+    );
+    const sections = filtered
+      .map((entry) =>
+        this.buildEvidencePacketLayout(entry, {
+          qcState: this.describeEvidenceQc(entry, qcResults),
+          researchRefs: this.getResearchReferencesForEvidence(
+            entry,
+            researchDocs
+          ),
+          completeness: this.getCpfCompleteness(entry),
+          includeHeader: false,
+        })
+      )
+      .join("<hr />");
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8" /><title>Corner Evidence Packet</title></head><body><h1>Corner Evidence Packet</h1>${sections}</body></html>`;
+    this.downloadHtml(html, "corner-evidence-packet.html");
+  }
+
+  buildEvidencePacketLayout(entry, options = {}) {
+    const {
+      qcState = { label: "Not evaluated", level: "info" },
+      researchRefs = [],
+      completeness = { complete: false, missing: [] },
+      includeHeader = true,
+    } = options;
+    const trs = this.buildEvidenceTrs(entry) || "Unspecified";
+    const photoBlock = entry.photo
+      ? `<div style="margin-top:8px;"><strong>Photo</strong><br /><img src="${entry.photo}" alt="Evidence photo" style="max-width:100%;height:auto;border-radius:8px;border:1px solid #e5e7eb;" /></div>`
+      : "";
+    const ties = (entry.ties || [])
+      .map((tie, idx) => {
+        const parts = [tie.distance, tie.bearing, tie.description]
+          .filter(Boolean)
+          .map((p) => this.escapeHtml(p))
+          .join(" · ");
+        return `<li><strong>Tie ${idx + 1}:</strong> ${parts || "No details"}</li>`;
+      })
+      .join("");
+    const researchList = researchRefs
+      .map(
+        (doc) =>
+          `<li><strong>${this.escapeHtml(doc.type || "Research")}</strong> — ${
+            this.escapeHtml(doc.classification || "Unclassified")
+          }</li>`
+      )
+      .join("");
+    const qcLabel = qcState.label || "Not evaluated";
+    const cpStatus = completeness.complete
+      ? "Complete"
+      : `Missing: ${completeness.missing.join(", ")}`;
+    const header = includeHeader
+      ? `<h1>${this.escapeHtml(entry.title || this.buildEvidenceTitle(entry))}</h1>`
+      : "";
+    const body = `${header}<div><strong>TRS:</strong> ${this.escapeHtml(
+      trs
+    )}</div><div><strong>Corner type:</strong> ${this.escapeHtml(
+      entry.cornerType || ""
+    )}</div><div><strong>Corner status:</strong> ${this.escapeHtml(
+      entry.cornerStatus || ""
+    )}</div><div><strong>Evidence status:</strong> ${this.escapeHtml(
+      entry.status || "Draft"
+    )}</div><div><strong>QC:</strong> ${this.escapeHtml(
+      qcLabel
+    )}</div><div><strong>CP&F readiness:</strong> ${this.escapeHtml(
+      cpStatus
+    )}</div><div><strong>Record:</strong> ${this.escapeHtml(
+      entry.recordName || "Unlinked"
+    )}</div><div><strong>Notes:</strong> ${this.escapeHtml(
+      entry.notes || "No notes recorded"
+    )}</div>${photoBlock}${ties ? `<div style="margin-top:6px;"><strong>Ties</strong><ul>${ties}</ul></div>` : ""}${
+      researchList
+        ? `<div style="margin-top:6px;"><strong>Research References</strong><ul>${researchList}</ul></div>`
+        : ""
+    }`;
+
+    if (!includeHeader) {
+      return `<section>${body}</section>`;
+    }
+
+    return `<!DOCTYPE html><html><head><meta charset="UTF-8" /><title>${this.escapeHtml(
+      entry.title || "Evidence Packet"
+    )}</title></head><body>${body}</body></html>`;
   }
 
   /* ===================== Research & Source Documentation ===================== */
@@ -3825,6 +4641,8 @@ export default class AppController {
         }
         container.appendChild(card);
       });
+
+    this.renderChainEvidenceList();
   }
 
   exportResearchPacket() {
@@ -4775,6 +5593,9 @@ export default class AppController {
       <div><strong>Traverse Point</strong><br />${this.escapeHtml(
         entry.pointLabel || "Traverse point"
       )}</div>
+      <div><strong>TRS</strong><br />${this.escapeHtml(
+        this.buildEvidenceTrs(entry) || "Not set"
+      )}</div>
       <div><strong>Status</strong><br />${this.escapeHtml(entry.status || "Draft")}</div>
       <div><strong>Generated</strong><br />${this.escapeHtml(
         new Date(entry.createdAt).toLocaleString()
@@ -4864,6 +5685,11 @@ export default class AppController {
   resetEvidenceForm() {
     this.clearCpfValidationState();
     if (this.elements.evidenceType) this.elements.evidenceType.value = "";
+    if (this.elements.evidenceTownship) this.elements.evidenceTownship.value = "";
+    if (this.elements.evidenceRange) this.elements.evidenceRange.value = "";
+    if (this.elements.evidenceSection) this.elements.evidenceSection.value = "";
+    if (this.elements.evidenceSectionBreakdown)
+      this.elements.evidenceSectionBreakdown.value = "";
     if (this.elements.evidenceCornerType)
       this.elements.evidenceCornerType.value = "";
     if (this.elements.evidenceCornerStatus)

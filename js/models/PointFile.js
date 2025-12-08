@@ -6,6 +6,7 @@ export default class PointFile {
     name = "",
     points = [],
     originalPoints = [],
+    adjustmentMeta = {},
     createdAt = null,
     updatedAt = null,
     version = 1,
@@ -21,6 +22,14 @@ export default class PointFile {
           pt instanceof Point ? pt : Point.fromObject(pt)
         )
       : this.points.map((pt) => Point.fromObject(pt));
+    this.adjustmentMeta = {
+      algorithm: adjustmentMeta.algorithm || "",
+      notes: adjustmentMeta.notes || "",
+      lastAdjustedAt: adjustmentMeta.lastAdjustedAt || null,
+      deltas: Array.isArray(adjustmentMeta.deltas)
+        ? adjustmentMeta.deltas
+        : [],
+    };
     this.createdAt = createdAt || stamp;
     this.updatedAt = updatedAt || this.createdAt;
     this.version = version ?? 1;
@@ -40,6 +49,7 @@ export default class PointFile {
       originalPoints: this.originalPoints.map((pt) =>
         pt instanceof Point ? pt.toObject() : Point.fromObject(pt).toObject()
       ),
+      adjustmentMeta: this.adjustmentMeta,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
       version: this.version,
