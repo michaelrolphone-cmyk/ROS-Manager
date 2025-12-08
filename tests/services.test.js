@@ -153,6 +153,26 @@ describe("ProjectRepository", () => {
     assert.equal(storedRecord.startPtNum, "101");
     assert.equal(hydrated[project.id].pointFiles[0].points[1].description, "Iron pin found at fence corner");
   });
+
+  it("gracefully handles browsers that block storage writes", () => {
+    let attempts = 0;
+    globalThis.localStorage = {
+      getItem: () => null,
+      setItem: () => {
+        attempts += 1;
+        throw new Error("QuotaExceededError");
+      },
+      removeItem: () => {},
+      clear: () => {},
+    };
+
+    const repository = new ProjectRepository("projects-under-test");
+    const project = makeProject();
+    const saved = repository.saveProjects({ [project.id]: project });
+
+    assert.equal(saved, false);
+    assert.equal(attempts, 1);
+  });
 });
 
 describe("GlobalSettingsService", () => {
