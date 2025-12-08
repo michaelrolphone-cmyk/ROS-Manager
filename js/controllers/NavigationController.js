@@ -1,4 +1,5 @@
 import NavigationBookmark from "../models/NavigationBookmark.js";
+import { buildMapboxStaticUrl } from "../services/MapboxService.js";
 
 export default class NavigationController {
   constructor({
@@ -417,14 +418,25 @@ export default class NavigationController {
       return;
     }
 
-    const spanLat = 0.0025;
-    const spanLon = 0.0025;
-    const bbox = `${target.lon - spanLon},${target.lat - spanLat},${target.lon + spanLon},${target.lat + spanLat}`;
-    const src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${target.lat},${target.lon}`;
+    const src = buildMapboxStaticUrl(target.lat, target.lon, {
+      zoom: 16,
+      width: 800,
+      height: 320,
+      markerColor: "ef4444",
+    });
 
     mapPanel.classList.remove("hidden");
     compassPanel.classList.add("hidden");
     if (mapStatus) mapStatus.textContent = "Loading map preview…";
+
+    if (!src) {
+      this.mapFailed = true;
+      mapPanel.classList.add("hidden");
+      compassPanel.classList.remove("hidden");
+      if (mapStatus)
+        mapStatus.textContent = "Map unavailable, falling back to compass.";
+      return;
+    }
 
     mapFrame.onload = () => {
       this.mapFailed = false;
