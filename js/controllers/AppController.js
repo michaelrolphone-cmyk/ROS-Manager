@@ -329,6 +329,9 @@ export default class AppController {
       evidenceRecordSelect: document.getElementById("evidenceRecordSelect"),
       evidencePointSelect: document.getElementById("evidencePointSelect"),
       evidenceType: document.getElementById("evidenceType"),
+      evidenceCornerType: document.getElementById("evidenceCornerType"),
+      evidenceCornerStatus: document.getElementById("evidenceCornerStatus"),
+      evidenceStatus: document.getElementById("evidenceStatus"),
       evidenceCondition: document.getElementById("evidenceCondition"),
       evidenceNotes: document.getElementById("evidenceNotes"),
       evidenceTieDistance: document.getElementById("evidenceTieDistance"),
@@ -688,6 +691,15 @@ export default class AppController {
     this.elements.evidenceType?.addEventListener("change", () =>
       this.updateEvidenceSaveState()
     );
+    this.elements.evidenceCornerType?.addEventListener("change", () =>
+      this.updateEvidenceSaveState()
+    );
+    this.elements.evidenceCornerStatus?.addEventListener("change", () =>
+      this.updateEvidenceSaveState()
+    );
+    this.elements.evidenceStatus?.addEventListener("change", () =>
+      this.updateEvidenceSaveState()
+    );
     this.elements.evidenceCondition?.addEventListener("change", () =>
       this.updateEvidenceSaveState()
     );
@@ -1030,6 +1042,15 @@ export default class AppController {
   }
 
   /* ===================== Export / Import ===================== */
+  buildExportMetadata(status = "Draft") {
+    const label = this.getExportStatusLabel(status);
+    return {
+      generatedAt: new Date().toISOString(),
+      status: label.title,
+      note: label.note,
+    };
+  }
+
   exportCurrentProject() {
     if (!this.currentProjectId || !this.projects[this.currentProjectId]) {
       alert("No current project to export.");
@@ -1042,6 +1063,7 @@ export default class AppController {
     const payload = {
       type: "CarlsonSurveyManagerProjects",
       version: 2,
+      export: this.buildExportMetadata("Draft"),
       projects: {
         [this.currentProjectId]: proj.toObject(),
       },
@@ -1063,6 +1085,7 @@ export default class AppController {
     const payload = {
       type: "CarlsonSurveyManagerProjects",
       version: 2,
+      export: this.buildExportMetadata("Draft"),
       projects: this.serializeProjects(),
       evidence: this.cornerEvidenceService.serializeAllEvidence(),
     };
@@ -1105,6 +1128,7 @@ export default class AppController {
     const payload = {
       type: "CarlsonSurveyManagerData",
       version: 3,
+      export: this.buildExportMetadata("Draft"),
       projects: this.serializeProjects(),
       evidence: this.cornerEvidenceService.serializeAllEvidence(),
       globalSettings: this.globalSettings,
@@ -2223,12 +2247,18 @@ export default class AppController {
     const recordId = this.elements.evidenceRecordSelect?.value || "";
     const pointVal = this.elements.evidencePointSelect?.value || "";
     const type = this.elements.evidenceType?.value || "";
+    const cornerType = this.elements.evidenceCornerType?.value || "";
+    const cornerStatus = this.elements.evidenceCornerStatus?.value || "";
+    const status = this.elements.evidenceStatus?.value || "";
     const condition = this.elements.evidenceCondition?.value || "";
     const canSave =
       !!this.currentProjectId &&
       !!recordId &&
       pointVal !== "" &&
       !!type &&
+      !!cornerType &&
+      !!cornerStatus &&
+      !!status &&
       !!condition;
     this.elements.saveEvidenceButton.disabled = !canSave;
   }
@@ -2252,6 +2282,9 @@ export default class AppController {
       pointLabel: pointMeta?.label || "Traverse point",
       coords: pointMeta?.coords || null,
       type: this.elements.evidenceType?.value || "",
+      cornerType: this.elements.evidenceCornerType?.value || "",
+      cornerStatus: this.elements.evidenceCornerStatus?.value || "",
+      status: this.elements.evidenceStatus?.value || "Draft",
       condition: this.elements.evidenceCondition?.value || "",
       notes: this.elements.evidenceNotes?.value.trim() || "",
       ties: this.currentEvidenceTies.map((tie) =>
@@ -2306,7 +2339,14 @@ export default class AppController {
         meta.textContent = `${ev.recordName || "Record"} · Saved ${new Date(
           ev.createdAt
         ).toLocaleString()}`;
-        card.append(title, meta);
+        const status = document.createElement("span");
+        status.textContent = ev.status || "Draft";
+        status.className = `status-chip ${this.getEvidenceStatusClass(
+          ev.status
+        )}`;
+        status.setAttribute("aria-label", ev.status || "Draft");
+        status.style.marginTop = "6px";
+        card.append(title, meta, status);
 
         if (ev.coords) {
           const coords = document.createElement("div");
@@ -2319,6 +2359,12 @@ export default class AppController {
           const type = document.createElement("div");
           type.textContent = `Type: ${ev.type}`;
           card.appendChild(type);
+        }
+        if (ev.cornerType || ev.cornerStatus) {
+          const cornerMeta = document.createElement("div");
+          const parts = [ev.cornerType, ev.cornerStatus].filter(Boolean);
+          cornerMeta.textContent = `Corner classification: ${parts.join(" · ")}`;
+          card.appendChild(cornerMeta);
         }
         if (ev.condition) {
           const condition = document.createElement("div");
@@ -2601,8 +2647,55 @@ export default class AppController {
         fallback.textContent = name;
         fallback.selected = true;
         select.appendChild(fallback);
-      }
-    });
+        }
+      });
+  }
+
+  getEvidenceStatusClass(status) {
+    const normalized = (status || "draft").toLowerCase();
+    if (normalized === "in progress") return "in-progress";
+    if (normalized === "ready for review") return "ready";
+    if (normalized === "final") return "final";
+    return "draft";
+  }
+
+  getExportStatusLabel(status) {
+    const normalized = (status || "").toLowerCase();
+    if (normalized === "draft") {
+      return {
+        title: "Draft — Partial or Incomplete",
+        note: "Incomplete — subject to revision.",
+      };
+    }
+    if (normalized === "final") {
+      return {
+        title: "Final — Professional Declaration Signed",
+        note: null,
+      };
+    }
+    return {
+      title: "Preliminary — In Progress",
+      note: "Incomplete — subject to revision.",
+    };
+  }
+
+  getCpfCompleteness(entry) {
+    if (!entry) {
+      return { missing: ["evidence record missing"], complete: false };
+    }
+    const missing = [];
+    if (!entry.cornerType) missing.push("corner type");
+    if (!entry.cornerStatus) missing.push("corner status");
+    if (!entry.type) missing.push("evidence type");
+    if (!entry.condition) missing.push("condition / occupation evidence");
+    if (!entry.ties || entry.ties.length === 0)
+      missing.push("reference ties");
+
+    const normalizedStatus = (entry.status || "").toLowerCase();
+    const statusAllowsFinal = normalizedStatus === "final";
+    const complete = statusAllowsFinal && missing.length === 0;
+
+    return { missing, complete };
   }
 
   handleReferencePointSelection(event) {
@@ -2966,11 +3059,32 @@ export default class AppController {
   exportCornerFiling(entry) {
     if (!entry) return;
     const projectName = this.projects[entry.projectId]?.name || "Project";
+    const statusLabel = entry.status || "Draft";
+    const normalizedStatus = statusLabel.toLowerCase();
+    const completeness = this.getCpfCompleteness(entry);
+    const exportLabel = completeness.complete
+      ? this.getExportStatusLabel(statusLabel)
+      : this.getExportStatusLabel("in progress");
     const lines = [];
     lines.push("Corner Perpetuation Filing");
+    if (exportLabel?.title) lines.push(exportLabel.title);
+    if (normalizedStatus !== "final" || !completeness.complete) {
+      lines.push("PRELIMINARY — NOT FOR RECORDATION");
+    }
+    if (exportLabel?.note) lines.push(exportLabel.note);
+    if (completeness.missing.length) {
+      lines.push(
+        `Missing CP&F fields: ${completeness.missing
+          .map((field) => field.toLowerCase())
+          .join(", ")}`
+      );
+    }
     lines.push(`Project: ${projectName}`);
     lines.push(`Record: ${entry.recordName || "Record"}`);
     lines.push(`Traverse Point: ${entry.pointLabel || "Traverse point"}`);
+    lines.push(`Status: ${statusLabel}`);
+    if (entry.cornerType) lines.push(`Corner Type: ${entry.cornerType}`);
+    if (entry.cornerStatus) lines.push(`Corner Status: ${entry.cornerStatus}`);
     lines.push(`Created: ${new Date(entry.createdAt).toLocaleString()}`);
     if (entry.coords) {
       lines.push(
@@ -3021,6 +3135,11 @@ export default class AppController {
 
   resetEvidenceForm() {
     if (this.elements.evidenceType) this.elements.evidenceType.value = "";
+    if (this.elements.evidenceCornerType)
+      this.elements.evidenceCornerType.value = "";
+    if (this.elements.evidenceCornerStatus)
+      this.elements.evidenceCornerStatus.value = "";
+    if (this.elements.evidenceStatus) this.elements.evidenceStatus.value = "Draft";
     if (this.elements.evidenceCondition)
       this.elements.evidenceCondition.value = "";
     if (this.elements.evidenceNotes) this.elements.evidenceNotes.value = "";

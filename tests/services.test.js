@@ -162,10 +162,22 @@ describe("GlobalSettingsService", () => {
 
   it("returns default settings when storage is empty or corrupted", () => {
     const service = new GlobalSettingsService("settings-test");
-    assert.deepEqual(service.load(), { equipment: [], teamMembers: [], pointCodes: [] });
+    assert.deepEqual(service.load(), {
+      equipment: [],
+      teamMembers: [],
+      pointCodes: [],
+      deviceProfiles: {},
+      liveLocations: {},
+    });
 
     localStorage.setItem("settings-test", "not-json");
-    assert.deepEqual(service.load(), { equipment: [], teamMembers: [], pointCodes: [] });
+    assert.deepEqual(service.load(), {
+      equipment: [],
+      teamMembers: [],
+      pointCodes: [],
+      deviceProfiles: {},
+      liveLocations: {},
+    });
   });
 
   it("persists and retrieves field crew and equipment lists", () => {
@@ -177,7 +189,11 @@ describe("GlobalSettingsService", () => {
     };
     service.save(roster);
     assert.deepEqual(JSON.parse(localStorage.getItem("settings-test")), roster);
-    assert.deepEqual(service.load(), roster);
+    assert.deepEqual(service.load(), {
+      ...roster,
+      deviceProfiles: {},
+      liveLocations: {},
+    });
   });
 });
 
@@ -253,6 +269,8 @@ describe("CornerEvidenceService", () => {
       pointLabel: "101",
       coords: { x: 1854320.55, y: 612345.21 },
       type: "Brass cap",
+      cornerType: "Section corner",
+      cornerStatus: "Original monument found",
       condition: "Good",
       notes: "Monument matches deed call",
       ties,
@@ -267,6 +285,8 @@ describe("CornerEvidenceService", () => {
 
     assert.equal(reloaded[0].ties[0].description, "To blazed ponderosa");
     assert.equal(reloaded[0].type, "Brass cap");
+    assert.equal(reloaded[0].cornerType, "Section corner");
+    assert.equal(reloaded[0].cornerStatus, "Original monument found");
     assert.equal(reloaded[0].pointLabel, "101");
   });
 });
