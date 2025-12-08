@@ -284,6 +284,9 @@ const ProjectsRecordsMixin = (Base) =>
         let totalLength = 0;
         let linearMisclosure = null;
         let angularMisclosure = null;
+        let ratio = null;
+        let misclosureDirection = null;
+        let misclosureBearing = null;
         let status = "warn";
         let message = "Add traverse calls to compute closure.";
 
@@ -317,8 +320,7 @@ const ProjectsRecordsMixin = (Base) =>
             this.normalizeAngleDiff(endAz - startAz)
           );
 
-          const ratio =
-            totalLength > 0 ? linearMisclosure / totalLength : Number.POSITIVE_INFINITY;
+          ratio = totalLength > 0 ? linearMisclosure / totalLength : Number.POSITIVE_INFINITY;
           const angularPass = Number.isFinite(qcSettings.traverseAngularTolerance)
             ? angularMisclosure <= qcSettings.traverseAngularTolerance
             : null;
@@ -326,10 +328,10 @@ const ProjectsRecordsMixin = (Base) =>
             ? ratio <= qcSettings.traverseLinearTolerance
             : null;
           const misclosureAzimuth = (Math.atan2(dx, dy) * 180) / Math.PI;
-          const misclosureBearing = this.azimuthToQuadrantBearing(
+          misclosureBearing = this.azimuthToQuadrantBearing(
             this.normalizeAzimuth(misclosureAzimuth)
           );
-          const misclosureDirection = misclosureBearing?.quadrant
+          misclosureDirection = misclosureBearing?.quadrant
             ? `${misclosureBearing.quadrant}-${misclosureBearing.formatted}`
             : this.formatDegrees(this.normalizeAzimuth(misclosureAzimuth));
 
