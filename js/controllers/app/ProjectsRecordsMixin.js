@@ -182,7 +182,7 @@ const ProjectsRecordsMixin = (Base) =>
     normalizeTrsComponent(value = "", padLength = 2) {
       const digits = (value.match(/\d+/g) || []).join("");
       if (!digits) return "";
-      return digits.padStart(padLength, "0");
+      return padLength > 0 ? digits.padStart(padLength, "0") : digits;
     }
 
     normalizeBookOrPage(value = "") {
@@ -203,8 +203,8 @@ const ProjectsRecordsMixin = (Base) =>
 
     buildProjectIndexNumber(project) {
       if (!project) return "";
-      const township = this.normalizeTrsComponent(project.townships?.[0]);
-      const range = this.normalizeTrsComponent(project.ranges?.[0]);
+      const township = this.normalizeTrsComponent(project.townships?.[0], 0);
+      const range = this.normalizeTrsComponent(project.ranges?.[0], 0);
       const section = this.normalizeTrsComponent(project.sections?.[0]);
       const quadrant = this.aliquotToCode(project.sectionQuadrant);
       const aliquotCodes = this.buildAliquotCodes(project.aliquots);

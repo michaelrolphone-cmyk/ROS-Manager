@@ -135,6 +135,8 @@ class VicinityHarness extends ProjectsRecordsMixin(class {}) {
   }
 }
 
+class IndexHarness extends ProjectsRecordsMixin(class {}) {}
+
 describe("Springboard composite thumbnail", () => {
   it("draws composite geometry when a project has traverse polylines", () => {
     const harness = new GeometryHarness();
@@ -159,7 +161,7 @@ describe("Springboard composite thumbnail", () => {
   });
 });
 
-describe("Vicinity map app", () => {
+describe("Vicinity map app", () => { 
   it("shows address guidance when no address is configured", async () => {
     const harness = new VicinityHarness();
 
@@ -196,5 +198,23 @@ describe("Vicinity map app", () => {
       harness.elements.vicinityMapLink.href,
       "https://www.google.com/maps/search/?api=1&query=123%20Main%20St"
     );
+  });
+});
+
+describe("Project index number", () => {
+  it("omits padding for township and range digits", () => {
+    const harness = new IndexHarness();
+
+    const index = harness.buildProjectIndexNumber({
+      townships: ["T3N"],
+      ranges: ["R2E"],
+      sections: ["10"],
+      sectionQuadrant: "SW",
+      aliquots: [],
+      platBook: "5",
+      platPageStart: "12",
+    });
+
+    assert.equal(index, "323-10-000-5-12");
   });
 });
