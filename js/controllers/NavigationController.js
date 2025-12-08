@@ -450,10 +450,15 @@ export default class NavigationController {
       return;
     }
 
+    const cornerType = (this.elements.cornerType?.value || "").trim();
+    const cornerStatus = (this.elements.cornerStatus?.value || "").trim();
+
     const entry = new NavigationBookmark({
       name,
       latitude: this.currentPosition.lat,
       longitude: this.currentPosition.lon,
+      cornerType,
+      cornerStatus,
       recordedAt: new Date().toISOString(),
     });
 
@@ -462,6 +467,8 @@ export default class NavigationController {
     this.saveProjects?.();
     this.setBookmarkStatus(`Saved ${name}.`);
     this.elements.bookmarkName.value = "";
+    if (this.elements.cornerType) this.elements.cornerType.value = "";
+    if (this.elements.cornerStatus) this.elements.cornerStatus.value = "";
     this.renderTargetOptions();
     this.updateBookmarksList();
   }
@@ -659,6 +666,16 @@ export default class NavigationController {
           <div class="subtitle" style="margin-top:4px">Saved ${time}</div>
           <div class="subtitle">${bookmark.latitude.toFixed(6)}, ${bookmark.longitude.toFixed(6)}</div>
         `;
+        const details = document.createElement("div");
+        details.className = "subtitle";
+        const parts = [];
+        if (bookmark.cornerType) parts.push(bookmark.cornerType);
+        if (bookmark.cornerStatus) parts.push(bookmark.cornerStatus);
+        if (parts.length) {
+          details.textContent = parts.join(" • ");
+          details.style.marginTop = "4px";
+          card.appendChild(details);
+        }
         list.appendChild(card);
       });
   }

@@ -14,11 +14,14 @@ export default class ResearchDocument {
     source = "",
     dateReviewed = "",
     reviewer = "",
+    status = "Draft",
     classification = "",
     notes = "",
     cornerNotes = "",
     linkedEvidence = [],
     traverseLinks = "",
+    stakeoutLinks = "",
+    cornerIds = "",
     createdAt = new Date().toISOString(),
     updatedAt = null,
   } = {}) {
@@ -36,6 +39,7 @@ export default class ResearchDocument {
     this.source = source;
     this.dateReviewed = dateReviewed;
     this.reviewer = reviewer;
+    this.status = status;
     this.classification = classification;
     this.notes = notes;
     this.cornerNotes = cornerNotes;
@@ -43,6 +47,8 @@ export default class ResearchDocument {
       ? linkedEvidence
       : [];
     this.traverseLinks = traverseLinks;
+    this.stakeoutLinks = stakeoutLinks;
+    this.cornerIds = cornerIds;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt || createdAt;
   }
@@ -67,11 +73,14 @@ export default class ResearchDocument {
       source: this.source,
       dateReviewed: this.dateReviewed,
       reviewer: this.reviewer,
+      status: this.status,
       classification: this.classification,
       notes: this.notes,
       cornerNotes: this.cornerNotes,
       linkedEvidence: this.linkedEvidence,
       traverseLinks: this.traverseLinks,
+      stakeoutLinks: this.stakeoutLinks,
+      cornerIds: this.cornerIds,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };

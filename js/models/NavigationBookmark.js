@@ -7,6 +7,8 @@ export default class NavigationBookmark {
     name = "",
     latitude = 0,
     longitude = 0,
+    cornerType = "",
+    cornerStatus = "",
     recordedAt = new Date().toISOString(),
     createdAt = null,
     updatedAt = null,
@@ -16,6 +18,8 @@ export default class NavigationBookmark {
     this.name = name;
     this.latitude = latitude;
     this.longitude = longitude;
+    this.cornerType = cornerType;
+    this.cornerStatus = cornerStatus;
     this.recordedAt = recordedAt;
     this.createdAt = createdAt || recordedAt || new Date().toISOString();
     this.updatedAt = updatedAt || this.createdAt;
@@ -32,6 +36,8 @@ export default class NavigationBookmark {
       name: this.name,
       latitude: this.latitude,
       longitude: this.longitude,
+      cornerType: this.cornerType,
+      cornerStatus: this.cornerStatus,
       recordedAt: this.recordedAt,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,

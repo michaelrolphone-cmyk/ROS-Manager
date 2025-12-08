@@ -29,7 +29,7 @@
   * BLM cadastral corner data summaries and reports  
   * Other agency correspondence or survey notes  
 
-* For each document, store:
+* ✅ For each document, store:
   * Document type (GLO plat, deed, ROS, CP&F, plat, easement, etc.)
   * Jurisdiction (County, BLM, Federal, Private)
   * Recording/filing information (Instrument number, Book/Page, Document number)
@@ -37,7 +37,7 @@
   * Source reference (URL, scanner source, photo, local file import, or manual entry)
   * Date reviewed and reviewer (surveying party)
 
-* Add structured annotation on each document:
+* ✅ Add structured annotation on each document:
   * Mark portions as:
     * **Controlling**
     * **Supporting**
@@ -47,7 +47,7 @@
     * “Controls NE corner of Sec 12”
     * “Conflicts with GLO notes; rejected due to later corrected plat”
 
-* Link documents to:
+* ✅ Link documents to:
   * Specific evidence entries / monuments
   * Traverses or record sets
   * Stakeout entries
@@ -70,7 +70,7 @@
 
 **Goal:** Ensure all corners are classified, documented, and exportable in a way that satisfies Idaho statutory requirements and PLSS standards.
 
-* Expand Evidence and Stakeout data models to include:
+* ✅ Expand Evidence and Stakeout data models to include:
   * **Corner Type** (select list):
     * Section corner
     * Quarter corner
@@ -108,7 +108,7 @@
     * Highlight missing fields and provide navigation directly to each missing item.
   * Prevent “CP&F-ready” export until all mandatory items pass validation.
 
-* Ensure CP&F PDF layout:
+* ✅ Ensure CP&F PDF layout:
   * Has Idaho-appropriate structure and headings.
   * Includes space for seal/signature.
   * Cross-references:
@@ -163,7 +163,7 @@
   * ✅ The project has not been exported in **more than 7 days**; or
   * ✅ Major changes have occurred (e.g., new evidence, new traverses, CP&F-ready data), and no export has occurred since.
 
-* Warnings should:
+* ✅ Warnings should:
   * Appear clearly in the springboard and/or project overview.
   * Provide an **“Export Now”** button.
 
@@ -580,7 +580,7 @@ This protects surveyors professionally by documenting due diligence.
 
 > **Goal:** Preserve field flexibility and accountability.
 
-* Every evidence, traverse, stakeout, record, and document must track a `status`:
+* ✅ Every evidence, traverse, stakeout, record, and document must track a `status`:
   - `Draft`
   - `In Progress`
   - `Ready for Review`
