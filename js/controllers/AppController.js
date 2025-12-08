@@ -2388,7 +2388,6 @@ export default class AppController {
     const html = this.buildQualityControlSummaryHtml(summary, "Draft");
     this.downloadHtml(html, filename);
   }
-  }
 
   formatRatio(misclosure, length) {
     if (!Number.isFinite(misclosure) || !Number.isFinite(length) || length === 0)
