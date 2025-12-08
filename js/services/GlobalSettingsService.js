@@ -37,7 +37,11 @@ export default class GlobalSettingsService {
   }
 
   save(settings) {
-    localStorage.setItem(this.storageKey, JSON.stringify(settings));
+    try {
+      localStorage.setItem(this.storageKey, JSON.stringify(settings));
+    } catch (err) {
+      console.warn("Failed to persist global settings", err);
+    }
   }
 
   defaultSettings() {
