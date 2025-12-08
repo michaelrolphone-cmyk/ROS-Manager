@@ -1555,6 +1555,38 @@ body {
         pointer-events: auto;
       }
 
+      .annotated-photo {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+      }
+
+      .annotated-photo img {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 8px;
+        border: 1px solid #cbd5f5;
+        background: #fff;
+      }
+
+      .annotation-overlay {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        stroke: #f97316;
+        fill: #f97316;
+        stroke-width: 1.2;
+      }
+
+      .annotation-meta {
+        margin-top: 4px;
+        font-size: 12px;
+        color: #475569;
+      }
+
       .tie-photos {
         display: flex;
         gap: 6px;
