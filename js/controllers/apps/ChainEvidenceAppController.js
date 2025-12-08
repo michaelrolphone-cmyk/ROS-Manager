@@ -1,4 +1,5 @@
 import MiniAppController from "./MiniAppController.js";
+import { buildAnnotatedPhotoHtml } from "../../services/PhotoAnnotationRenderer.js";
 
 export default class ChainEvidenceAppController extends MiniAppController {
   constructor(options = {}) {
@@ -320,6 +321,18 @@ export default class ChainEvidenceAppController extends MiniAppController {
       card.appendChild(notes);
     }
 
+    if (entry.photo) {
+      const photoBlock = document.createElement("div");
+      photoBlock.className = "chain-photo-block";
+      photoBlock.innerHTML = buildAnnotatedPhotoHtml({
+        photo: entry.photo,
+        annotations: entry.photoAnnotations || [],
+        metadata: entry.photoMetadata,
+        maxWidth: "360px",
+      });
+      card.appendChild(photoBlock);
+    }
+
     if (entry.ties?.length) {
       const ties = document.createElement("div");
       ties.className = "subtitle";
@@ -463,9 +476,12 @@ export default class ChainEvidenceAppController extends MiniAppController {
       includeHeader = true,
     } = options;
     const trs = this.buildEvidenceTrs(entry) || "Unspecified";
-    const photoBlock = entry.photo
-      ? `<div style="margin-top:8px;"><strong>Photo</strong><br /><img src="${entry.photo}" alt="Evidence photo" style="max-width:100%;height:auto;border-radius:8px;border:1px solid #e5e7eb;" /></div>`
-      : "";
+    const photoBlock = buildAnnotatedPhotoHtml({
+      photo: entry.photo,
+      annotations: entry.photoAnnotations,
+      metadata: entry.photoMetadata,
+      maxWidth: "420px",
+    });
     const ties = (entry.ties || [])
       .map((tie, idx) => {
         const parts = [tie.distance, tie.bearing, tie.description]

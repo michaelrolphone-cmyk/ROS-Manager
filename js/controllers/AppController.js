@@ -1405,7 +1405,7 @@ class AppControllerBase {
           : {},
       liveLocations:
         settings.liveLocations && typeof settings.liveLocations === "object"
-          ? settings.liveLocations
+          ? this.globalSettingsService.pruneLiveLocations(settings.liveLocations)
           : {},
       backupSettings:
         settings.backupSettings && typeof settings.backupSettings === "object"

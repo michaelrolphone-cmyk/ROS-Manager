@@ -244,6 +244,12 @@ const ExportImportMixin = (Base) =>
           <div class="muted">${this.escapeHtml(
             this.buildEvidenceTrs(ev) || ev.trs || "TRS not set"
           )}</div>
+          ${buildAnnotatedPhotoHtml({
+            photo: ev.photo,
+            annotations: ev.photoAnnotations,
+            metadata: ev.photoMetadata,
+            maxWidth: "520px",
+          })}
         </li>`
       )
       .join("");
@@ -599,6 +605,7 @@ const ExportImportMixin = (Base) =>
     }
 
     const user = this.getCurrentDeviceProfile?.()?.teamMember || null;
+    const qualityResults = this.computeQualityResults?.(project.id) || {};
     const snapshot = await this.auditTrailService.createSnapshot(
       {
         project,
@@ -607,6 +614,7 @@ const ExportImportMixin = (Base) =>
         globalSettings: this.globalSettings,
         exportMetadata: this.buildExportMetadata("Audit"),
         qcSummary: this.buildQualityControlSummaryData(),
+        qcLevels: qualityResults.levels || [],
       },
       {
         deviceId: this.deviceId,
@@ -720,3 +728,4 @@ const ExportImportMixin = (Base) =>
   };
 
 export default ExportImportMixin;
+import { buildAnnotatedPhotoHtml } from "../../services/PhotoAnnotationRenderer.js";

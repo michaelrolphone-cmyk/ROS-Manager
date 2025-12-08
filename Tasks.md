@@ -282,7 +282,7 @@
   * ✅ TRS (from the evidence entry).
   * ✅ Associated point/station if applicable.
 
-* Ensure annotated photos are:
+* ✅ Ensure annotated photos are:
   * Accessible from Evidence, Chain of Evidence, and Stakeout mini-apps.
   * Included in relevant PDF/document exports.
 
@@ -337,7 +337,7 @@
 * ✅ Fix Differential Levels export so that:
   * ✅ **FS (foresight)** and **BS (backsight)** values correctly appear in the generated PDF.
 
-* Ensure:
+* ✅ Ensure:
   * Level loop results (closure, adjustment if present) are:
     * captured in QC Dashboard,
     * included in Document Smart Pack and Audit Trail where appropriate.

@@ -1,5 +1,6 @@
 import StakeoutEntry from "../../models/StakeoutEntry.js";
 import MiniAppController from "./MiniAppController.js";
+import { buildAnnotatedPhotoHtml } from "../../services/PhotoAnnotationRenderer.js";
 
 export default class StakeoutAppController extends MiniAppController {
   constructor(options = {}) {
@@ -396,7 +397,25 @@ export default class StakeoutAppController extends MiniAppController {
         `<div class="stakeout-row"><span class="label">Evidence</span><span class="value">${evidenceLabel}</span></div>`
       );
 
+    const evidencePhoto = this.buildEvidencePhotoPreview(entry.evidenceId);
+    if (evidencePhoto)
+      parts.push(`<div class="stakeout-row photo-row">${evidencePhoto}</div>`);
+
     return parts.join("");
+  }
+
+  buildEvidencePhotoPreview(evidenceId) {
+    if (!evidenceId) return "";
+    const evidenceList = this.getProjectEvidence?.(this.getCurrentProjectId()) || [];
+    const evidence = evidenceList.find((ev) => ev.id === evidenceId);
+    if (!evidence?.photo) return "";
+
+    return buildAnnotatedPhotoHtml({
+      photo: evidence.photo,
+      annotations: evidence.photoAnnotations,
+      metadata: evidence.photoMetadata,
+      maxWidth: "320px",
+    });
   }
 
   getTraverseLabel(traverseId, failedTraverses = new Set()) {

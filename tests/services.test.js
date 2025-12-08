@@ -7,6 +7,8 @@ import VersioningService from "../js/services/VersioningService.js";
 import CornerEvidenceService from "../js/services/CornerEvidenceService.js";
 import SyncService from "../js/services/SyncService.js";
 import AuditTrailService from "../js/services/AuditTrailService.js";
+import ExportImportMixin from "../js/controllers/app/ExportImportMixin.js";
+import { buildAnnotatedPhotoHtml } from "../js/services/PhotoAnnotationRenderer.js";
 import Project from "../js/models/Project.js";
 import SurveyRecord from "../js/models/SurveyRecord.js";
 import TraverseInstruction from "../js/models/TraverseInstruction.js";
@@ -234,6 +236,44 @@ describe("GlobalSettingsService", () => {
       },
     });
   });
+
+  it("limits live location telemetry and drops noisy activity buffers", () => {
+    const service = new GlobalSettingsService("settings-test");
+    const now = Date.now();
+    const liveLocations = {};
+
+    for (let i = 0; i < 60; i += 1) {
+      liveLocations[`dev-${i}`] = {
+        lat: 43 + i,
+        lon: -116 - i,
+        accuracy: 3.2,
+        updatedAt: new Date(now - i * 60 * 1000).toISOString(),
+      };
+    }
+
+    liveLocations.stale = {
+      lat: 42.0,
+      lon: -115.0,
+      accuracy: 5,
+      updatedAt: new Date(now - 48 * 60 * 60 * 1000).toISOString(),
+    };
+
+    service.save({
+      liveLocations,
+      equipment: [],
+      activityBuffer: Array.from({ length: 200 }, (_, idx) => ({ ts: idx })),
+    });
+
+    const stored = JSON.parse(localStorage.getItem("settings-test"));
+    assert.equal(Object.keys(stored.liveLocations).length, 50);
+    assert.ok(!stored.liveLocations.stale);
+    assert.ok(!("activityBuffer" in stored));
+
+    const hydrated = service.load();
+    assert.equal(Object.keys(hydrated.liveLocations).length, 50);
+    assert.ok(!hydrated.liveLocations.stale);
+    assert.ok(hydrated.liveLocations["dev-0"]);
+  });
 });
 
 describe("VersioningService", () => {
@@ -380,5 +420,149 @@ describe("SyncService", () => {
     assert.equal(fetchCalls[0].url, "http://localhost:3000/api/sync");
     assert.equal(fetchCalls[0].options.method, "POST");
     assert.match(fetchCalls[0].options.body, /"elk-ridge-boundary"/);
+  });
+});
+
+describe("PhotoAnnotationRenderer", () => {
+  it("embeds overlays and metadata", () => {
+    const html = buildAnnotatedPhotoHtml({
+      photo: "data:image/png;base64,abc",
+      annotations: [
+        { type: "arrow", x1: 0.1, y1: 0.2, x2: 0.3, y2: 0.4 },
+        { type: "circle", x: 0.5, y: 0.5, radius: 0.1 },
+        { type: "text", x: 0.7, y: 0.7, text: "Corner" },
+      ],
+      metadata: {
+        capturedAt: "2024-01-01T00:00:00.000Z",
+        trs: "T1N R1E",
+        pointLabel: "101",
+      },
+      maxWidth: "320px",
+    });
+
+    assert.ok(html.includes("annotation-overlay"));
+    assert.ok(html.includes("polygon"));
+    assert.ok(html.includes("circle"));
+    assert.ok(html.includes("Corner"));
+    assert.ok(html.includes("Captured"));
+    assert.ok(html.includes("T1N R1E"));
+    assert.ok(html.includes("Point: 101"));
+  });
+});
+
+describe("ExportImportMixin level integration", () => {
+  class ExportHarness extends ExportImportMixin(class {}) {
+    constructor() {
+      super();
+      this.currentProjectId = "proj-1";
+      this.projects = {
+        "proj-1": new Project({
+          id: "proj-1",
+          name: "Level QA",
+          levelRuns: [new LevelRun({ id: "lvl-1", name: "Benchmark loop" })],
+        }),
+      };
+      this.cornerEvidenceService = {
+        serializeEvidenceForProject: () => [],
+        getProjectEvidence: () => [],
+        serializeAllEvidence: () => ({}),
+      };
+      this.researchDocumentService = {
+        serializeProject: () => [],
+        getProjectDocuments: () => [],
+        serializeAll: () => ({}),
+      };
+      this.auditTrailService = {
+        async createSnapshot(payload) {
+          this.lastPayload = payload;
+          return { id: "snap-1", bundle: payload };
+        },
+      };
+      this.globalSettings = {};
+      this.deviceId = "device-1";
+    }
+
+    getCurrentProject() {
+      return this.projects[this.currentProjectId];
+    }
+
+    getCurrentProjectId() {
+      return this.currentProjectId;
+    }
+
+    getCurrentDeviceProfile() {
+      return { teamMember: "Casey" };
+    }
+
+    getProjectEvidence() {
+      return [];
+    }
+
+    computeQualityResults() {
+      return {
+        traverses: [],
+        levels: [
+          {
+            id: "lvl-1",
+            name: "Benchmark loop",
+            misclosure: 0.05,
+            allowed: 0.1,
+            status: "pass",
+            message: "Passes tolerance",
+          },
+        ],
+      };
+    }
+
+    buildQualityControlSummaryData() {
+      return {
+        results: this.computeQualityResults(),
+        settings: {},
+      };
+    }
+
+    buildEvidenceTrs() {
+      return "";
+    }
+
+    formatRatio() {
+      return "1:5000";
+    }
+
+    formatLevelNumber(value) {
+      return Number.isFinite(value) ? value.toFixed(3) : "—";
+    }
+
+    formatDegrees() {
+      return "0-00-00";
+    }
+
+    escapeHtml(value) {
+      return String(value ?? "");
+    }
+
+    renderSmartPackStatus() {}
+
+    downloadHtml() {}
+
+    setAuditStatus() {}
+
+    renderAuditTrail() {}
+
+    saveProjects() {}
+  }
+
+  it("includes level loop results in Smart Pack and audit snapshots", async () => {
+    const harness = new ExportHarness();
+    const bundle = harness.buildSmartPackBundle();
+
+    assert.equal(bundle.levels[0].name, "Benchmark loop");
+    assert.equal(bundle.levels[0].misclosure, 0.05);
+    assert.equal(bundle.levelRuns.length, 1);
+
+    await harness.createAuditSnapshot();
+
+    assert.ok(harness.auditTrailService.lastPayload.qcLevels);
+    assert.equal(harness.auditTrailService.lastPayload.qcLevels[0].name, "Benchmark loop");
   });
 });
