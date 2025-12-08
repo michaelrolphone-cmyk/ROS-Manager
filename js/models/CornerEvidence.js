@@ -32,6 +32,8 @@ export default class CornerEvidence {
     title = "",
     ties = [],
     photo = null,
+    photoAnnotations = [],
+    photoMetadata = null,
     location = null,
     createdAt = new Date().toISOString(),
     updatedAt = null,
@@ -69,6 +71,8 @@ export default class CornerEvidence {
       tie instanceof EvidenceTie ? tie : EvidenceTie.fromObject(tie)
     );
     this.photo = photo;
+    this.photoAnnotations = photoAnnotations || [];
+    this.photoMetadata = photoMetadata;
     this.location = location;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt || createdAt;
@@ -111,6 +115,8 @@ export default class CornerEvidence {
       title: this.title,
       ties: this.ties.map((tie) => tie.toObject()),
       photo: this.photo,
+      photoAnnotations: this.photoAnnotations,
+      photoMetadata: this.photoMetadata,
       location: this.location,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,

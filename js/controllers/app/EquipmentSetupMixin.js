@@ -378,9 +378,25 @@ const EquipmentSetupMixin = (Base) =>
         this.elements.evidenceTiePhotos.value = "";
       if (this.elements.evidenceLocationStatus)
         this.elements.evidenceLocationStatus.textContent = "";
+      if (this.elements.saveEvidenceButton)
+        this.elements.saveEvidenceButton.textContent = "Save evidence";
+      if (this.elements.evidencePhotoPreview)
+        this.elements.evidencePhotoPreview.innerHTML = "";
+      if (this.elements.evidencePhotoMetadataNote)
+        this.elements.evidencePhotoMetadataNote.textContent = "";
+      if (this.elements.evidenceAnnotationCanvas) {
+        this.elements.evidenceAnnotationCanvas.width = 0;
+        this.elements.evidenceAnnotationCanvas.height = 0;
+      }
       this.currentEvidencePhoto = null;
+      this.currentEvidencePhotoAnnotations = [];
+      this.currentEvidencePhotoMetadata = null;
       this.currentEvidenceLocation = null;
       this.currentEvidenceTies = [];
+      this.editingEvidenceId = null;
+      this.currentAnnotationMode = null;
+      this.annotationDraftPoint = null;
+      this.setAnnotationMode?.("arrow");
       this.renderEvidenceTies();
       this.updateEvidenceSaveState();
     }

@@ -43,6 +43,37 @@ export default class CornerEvidenceService {
     this.saveEvidence();
   }
 
+  updateEntry(projectId, entryId, updater) {
+    const entries = this.evidenceByProject[projectId] || [];
+    const idx = entries.findIndex((ev) => ev.id === entryId);
+    if (idx === -1) return null;
+    const updated =
+      typeof updater === "function"
+        ? updater(entries[idx])
+        : updater instanceof CornerEvidence
+        ? updater
+        : CornerEvidence.fromObject({ ...entries[idx].toObject(), ...updater });
+    entries[idx] = updated;
+    this.saveEvidence();
+    return updated;
+  }
+
+  deleteEntry(projectId, entryId) {
+    if (!projectId) return false;
+    const entries = this.evidenceByProject[projectId] || [];
+    const newEntries = entries.filter((ev) => ev.id !== entryId);
+    this.evidenceByProject[projectId] = newEntries;
+    this.saveEvidence();
+    return newEntries.length !== entries.length;
+  }
+
+  getEntry(projectId, entryId) {
+    if (!projectId) return null;
+    return (this.evidenceByProject[projectId] || []).find(
+      (ev) => ev.id === entryId
+    );
+  }
+
   setEvidenceForProject(projectId, entries = []) {
     this.evidenceByProject[projectId] = entries.map((ev) =>
       ev instanceof CornerEvidence ? ev : CornerEvidence.fromObject(ev)

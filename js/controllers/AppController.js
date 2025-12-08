@@ -67,8 +67,11 @@ class AppControllerBase {
     this.cornerEvidenceService = new CornerEvidenceService();
     this.researchDocumentService = new ResearchDocumentService();
     this.currentEvidencePhoto = null;
+    this.currentEvidencePhotoAnnotations = [];
+    this.currentEvidencePhotoMetadata = null;
     this.currentEvidenceLocation = null;
     this.currentEvidenceTies = [];
+    this.editingEvidenceId = null;
     this.currentTraversePointOptions = [];
     this.currentEquipmentLocation = null;
     this.editingEquipmentId = null;
@@ -437,6 +440,17 @@ class AppControllerBase {
       evidenceTiesList: document.getElementById("evidenceTiesList"),
       evidenceTiesHint: document.getElementById("evidenceTiesHint"),
       evidencePhoto: document.getElementById("evidencePhoto"),
+      evidencePhotoPreview: document.getElementById("evidencePhotoPreview"),
+      evidenceAnnotationCanvas: document.getElementById(
+        "evidenceAnnotationCanvas"
+      ),
+      evidenceAnnotationModeButtons: document.querySelectorAll(
+        "[data-annotation-mode]"
+      ),
+      evidenceAnnotationClear: document.getElementById("evidenceAnnotationClear"),
+      evidencePhotoMetadataNote: document.getElementById(
+        "evidencePhotoMetadataNote"
+      ),
       evidenceLocationStatus: document.getElementById("evidenceLocationStatus"),
       captureLocation: document.getElementById("captureLocation"),
       saveEvidenceButton: document.getElementById("saveEvidenceButton"),
@@ -874,6 +888,18 @@ class AppControllerBase {
 
     this.elements.evidencePhoto?.addEventListener("change", (e) =>
       this.handleEvidencePhoto(e.target.files?.[0] || null)
+    );
+
+    this.elements.evidenceAnnotationModeButtons?.forEach((btn) =>
+      btn.addEventListener("click", () =>
+        this.setAnnotationMode(btn.dataset.annotationMode)
+      )
+    );
+    this.elements.evidenceAnnotationCanvas?.addEventListener("click", (evt) =>
+      this.handleAnnotationCanvasClick(evt)
+    );
+    this.elements.evidenceAnnotationClear?.addEventListener("click", () =>
+      this.clearEvidenceAnnotations()
     );
 
     this.elements.captureLocation?.addEventListener("click", () =>
