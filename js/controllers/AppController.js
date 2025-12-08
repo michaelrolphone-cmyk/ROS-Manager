@@ -329,6 +329,7 @@ export default class AppController {
       evidenceRecordSelect: document.getElementById("evidenceRecordSelect"),
       evidencePointSelect: document.getElementById("evidencePointSelect"),
       evidenceType: document.getElementById("evidenceType"),
+      evidenceStatus: document.getElementById("evidenceStatus"),
       evidenceCondition: document.getElementById("evidenceCondition"),
       evidenceNotes: document.getElementById("evidenceNotes"),
       evidenceTieDistance: document.getElementById("evidenceTieDistance"),
@@ -686,6 +687,9 @@ export default class AppController {
     );
 
     this.elements.evidenceType?.addEventListener("change", () =>
+      this.updateEvidenceSaveState()
+    );
+    this.elements.evidenceStatus?.addEventListener("change", () =>
       this.updateEvidenceSaveState()
     );
     this.elements.evidenceCondition?.addEventListener("change", () =>
@@ -2223,12 +2227,14 @@ export default class AppController {
     const recordId = this.elements.evidenceRecordSelect?.value || "";
     const pointVal = this.elements.evidencePointSelect?.value || "";
     const type = this.elements.evidenceType?.value || "";
+    const status = this.elements.evidenceStatus?.value || "";
     const condition = this.elements.evidenceCondition?.value || "";
     const canSave =
       !!this.currentProjectId &&
       !!recordId &&
       pointVal !== "" &&
       !!type &&
+      !!status &&
       !!condition;
     this.elements.saveEvidenceButton.disabled = !canSave;
   }
@@ -2252,6 +2258,7 @@ export default class AppController {
       pointLabel: pointMeta?.label || "Traverse point",
       coords: pointMeta?.coords || null,
       type: this.elements.evidenceType?.value || "",
+      status: this.elements.evidenceStatus?.value || "Draft",
       condition: this.elements.evidenceCondition?.value || "",
       notes: this.elements.evidenceNotes?.value.trim() || "",
       ties: this.currentEvidenceTies.map((tie) =>
@@ -2306,7 +2313,14 @@ export default class AppController {
         meta.textContent = `${ev.recordName || "Record"} · Saved ${new Date(
           ev.createdAt
         ).toLocaleString()}`;
-        card.append(title, meta);
+        const status = document.createElement("span");
+        status.textContent = ev.status || "Draft";
+        status.className = `status-chip ${this.getEvidenceStatusClass(
+          ev.status
+        )}`;
+        status.setAttribute("aria-label", ev.status || "Draft");
+        status.style.marginTop = "6px";
+        card.append(title, meta, status);
 
         if (ev.coords) {
           const coords = document.createElement("div");
@@ -2601,8 +2615,16 @@ export default class AppController {
         fallback.textContent = name;
         fallback.selected = true;
         select.appendChild(fallback);
-      }
-    });
+        }
+      });
+  }
+
+  getEvidenceStatusClass(status) {
+    const normalized = (status || "draft").toLowerCase();
+    if (normalized === "in progress") return "in-progress";
+    if (normalized === "ready for review") return "ready";
+    if (normalized === "final") return "final";
+    return "draft";
   }
 
   handleReferencePointSelection(event) {
@@ -2966,11 +2988,18 @@ export default class AppController {
   exportCornerFiling(entry) {
     if (!entry) return;
     const projectName = this.projects[entry.projectId]?.name || "Project";
+    const statusLabel = entry.status || "Draft";
+    const normalizedStatus = statusLabel.toLowerCase();
     const lines = [];
     lines.push("Corner Perpetuation Filing");
+    if (normalizedStatus !== "final") {
+      lines.push("PRELIMINARY — NOT FOR RECORDATION");
+      lines.push("Incomplete — subject to revision.");
+    }
     lines.push(`Project: ${projectName}`);
     lines.push(`Record: ${entry.recordName || "Record"}`);
     lines.push(`Traverse Point: ${entry.pointLabel || "Traverse point"}`);
+    lines.push(`Status: ${statusLabel}`);
     lines.push(`Created: ${new Date(entry.createdAt).toLocaleString()}`);
     if (entry.coords) {
       lines.push(
@@ -3021,6 +3050,7 @@ export default class AppController {
 
   resetEvidenceForm() {
     if (this.elements.evidenceType) this.elements.evidenceType.value = "";
+    if (this.elements.evidenceStatus) this.elements.evidenceStatus.value = "Draft";
     if (this.elements.evidenceCondition)
       this.elements.evidenceCondition.value = "";
     if (this.elements.evidenceNotes) this.elements.evidenceNotes.value = "";

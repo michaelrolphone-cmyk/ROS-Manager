@@ -10,6 +10,7 @@ export default class CornerEvidence {
     pointLabel = "",
     coords = null,
     type = "",
+    status = "Draft",
     condition = "",
     notes = "",
     ties = [],
@@ -27,6 +28,7 @@ export default class CornerEvidence {
     this.pointLabel = pointLabel;
     this.coords = coords;
     this.type = type;
+    this.status = status;
     this.condition = condition;
     this.notes = notes;
     this.ties = ties.map((tie) =>
@@ -53,6 +55,7 @@ export default class CornerEvidence {
       pointLabel: this.pointLabel,
       coords: this.coords,
       type: this.type,
+      status: this.status,
       condition: this.condition,
       notes: this.notes,
       ties: this.ties.map((tie) => tie.toObject()),

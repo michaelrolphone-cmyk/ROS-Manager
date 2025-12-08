@@ -162,10 +162,22 @@ describe("GlobalSettingsService", () => {
 
   it("returns default settings when storage is empty or corrupted", () => {
     const service = new GlobalSettingsService("settings-test");
-    assert.deepEqual(service.load(), { equipment: [], teamMembers: [], pointCodes: [] });
+    assert.deepEqual(service.load(), {
+      equipment: [],
+      teamMembers: [],
+      pointCodes: [],
+      deviceProfiles: {},
+      liveLocations: {},
+    });
 
     localStorage.setItem("settings-test", "not-json");
-    assert.deepEqual(service.load(), { equipment: [], teamMembers: [], pointCodes: [] });
+    assert.deepEqual(service.load(), {
+      equipment: [],
+      teamMembers: [],
+      pointCodes: [],
+      deviceProfiles: {},
+      liveLocations: {},
+    });
   });
 
   it("persists and retrieves field crew and equipment lists", () => {
@@ -177,7 +189,11 @@ describe("GlobalSettingsService", () => {
     };
     service.save(roster);
     assert.deepEqual(JSON.parse(localStorage.getItem("settings-test")), roster);
-    assert.deepEqual(service.load(), roster);
+    assert.deepEqual(service.load(), {
+      ...roster,
+      deviceProfiles: {},
+      liveLocations: {},
+    });
   });
 });
 
