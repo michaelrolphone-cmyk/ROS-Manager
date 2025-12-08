@@ -136,6 +136,10 @@ const ProjectsRecordsMixin = (Base) =>
           this.elements.projectSectionInput,
           project?.sections?.length ? project.sections.join(", ") : "",
         ],
+        [this.elements.projectSectionQuadrant, project?.sectionQuadrant || ""],
+        [this.elements.projectPlatBook, project?.platBook || ""],
+        [this.elements.projectPlatPageStart, project?.platPageStart || ""],
+        [this.elements.projectPlatPageEnd, project?.platPageEnd || ""],
         [this.elements.projectDescriptionInput, project?.description || ""],
       ];
 
@@ -146,6 +150,19 @@ const ProjectsRecordsMixin = (Base) =>
           el.value = value;
           el.disabled = !hasProject;
         }
+      });
+
+      const aliquots = Array.isArray(project?.aliquots) ? project.aliquots : [];
+      const aliquotInputs = [
+        this.elements.projectAliquot1,
+        this.elements.projectAliquot2,
+        this.elements.projectAliquot3,
+      ];
+
+      aliquotInputs.forEach((el, idx) => {
+        if (!el) return;
+        el.value = aliquots[idx] || "";
+        el.disabled = !hasProject;
       });
 
       if (this.elements.editProjectDetailsButton) {
@@ -160,6 +177,45 @@ const ProjectsRecordsMixin = (Base) =>
         .split(/[,;\n]/)
         .map((entry) => entry.trim())
         .filter(Boolean);
+    }
+
+    normalizeTrsComponent(value = "", padLength = 2) {
+      const digits = (value.match(/\d+/g) || []).join("");
+      if (!digits) return "";
+      return digits.padStart(padLength, "0");
+    }
+
+    normalizeBookOrPage(value = "") {
+      const digits = (value.match(/\d+/g) || []).join("");
+      return digits;
+    }
+
+    aliquotToCode(value = "") {
+      const map = { NE: "1", SE: "2", SW: "3", NW: "4" };
+      return map[value.toUpperCase?.() || ""] || "0";
+    }
+
+    buildAliquotCodes(aliquots = []) {
+      const codes = aliquots.slice(0, 3).map((a) => this.aliquotToCode(a));
+      while (codes.length < 3) codes.push("0");
+      return codes.join("");
+    }
+
+    buildProjectIndexNumber(project) {
+      if (!project) return "";
+      const township = this.normalizeTrsComponent(project.townships?.[0]);
+      const range = this.normalizeTrsComponent(project.ranges?.[0]);
+      const section = this.normalizeTrsComponent(project.sections?.[0]);
+      const quadrant = this.aliquotToCode(project.sectionQuadrant);
+      const aliquotCodes = this.buildAliquotCodes(project.aliquots);
+      const book = this.normalizeBookOrPage(project.platBook);
+      const pageStart = this.normalizeBookOrPage(project.platPageStart);
+      const pageEnd = this.normalizeBookOrPage(project.platPageEnd);
+
+      if (!township || !range || !section || !book || !pageStart) return "";
+
+      const base = `${township}${range}${quadrant}-${section}-${aliquotCodes}-${book}-${pageStart}`;
+      return pageEnd ? `${base}-${pageEnd}` : base;
     }
 
     setProjectDetailsEditing(isEditing) {
@@ -198,6 +254,18 @@ const ProjectsRecordsMixin = (Base) =>
       project.sections = this.parseDelimitedInput(
         this.elements.projectSectionInput?.value
       );
+      project.sectionQuadrant =
+        this.elements.projectSectionQuadrant?.value || "";
+      project.aliquots = [
+        this.elements.projectAliquot1?.value || "",
+        this.elements.projectAliquot2?.value || "",
+        this.elements.projectAliquot3?.value || "",
+      ].filter((entry) => entry && entry.trim().length > 0);
+      project.platBook = (this.elements.projectPlatBook?.value || "").trim();
+      project.platPageStart =
+        (this.elements.projectPlatPageStart?.value || "").trim();
+      project.platPageEnd =
+        (this.elements.projectPlatPageEnd?.value || "").trim();
       project.description = (
         this.elements.projectDescriptionInput?.value || ""
       ).trim();
@@ -1095,6 +1163,9 @@ const ProjectsRecordsMixin = (Base) =>
         this.elements.springboardTrsValue,
         trsParts.length ? trsParts.join(" • ") : "—"
       );
+
+      const indexNumber = this.buildProjectIndexNumber(project);
+      setValue(this.elements.springboardIndexValue, indexNumber || "—");
 
       const { warning, lastExport } = this.getExportAlert(project);
       setValue(

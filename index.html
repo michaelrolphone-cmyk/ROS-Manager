@@ -156,6 +156,10 @@
                   <span class="value" id="springboardTrsValue">—</span>
                 </div>
                 <div class="meta-card">
+                  <div class="label">Index Number</div>
+                  <span class="value" id="springboardIndexValue">—</span>
+                </div>
+                <div class="meta-card">
                   <div class="label">Last Export</div>
                   <span class="value" id="springboardLastExportValue">—</span>
                   <span
@@ -258,6 +262,68 @@
                   <small class="app-hint"
                     >Separate multiple entries with commas</small
                   >
+                </div>
+                <div>
+                  <label for="projectSectionQuadrant">Section Quadrant</label>
+                  <select id="projectSectionQuadrant">
+                    <option value="">Not set</option>
+                    <option value="NE">NE</option>
+                    <option value="SE">SE</option>
+                    <option value="SW">SW</option>
+                    <option value="NW">NW</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="projectAliquot1">Aliquots</label>
+                  <div class="inline-inputs">
+                    <select id="projectAliquot1">
+                      <option value="">—</option>
+                      <option value="NE">NE</option>
+                      <option value="SE">SE</option>
+                      <option value="SW">SW</option>
+                      <option value="NW">NW</option>
+                    </select>
+                    <select id="projectAliquot2">
+                      <option value="">—</option>
+                      <option value="NE">NE</option>
+                      <option value="SE">SE</option>
+                      <option value="SW">SW</option>
+                      <option value="NW">NW</option>
+                    </select>
+                    <select id="projectAliquot3">
+                      <option value="">—</option>
+                      <option value="NE">NE</option>
+                      <option value="SE">SE</option>
+                      <option value="SW">SW</option>
+                      <option value="NW">NW</option>
+                    </select>
+                  </div>
+                  <small class="app-hint"
+                    >Choose up to three nested aliquots (inner most on the right).</small
+                  >
+                </div>
+                <div>
+                  <label for="projectPlatBook">Plat Book</label>
+                  <input
+                    type="text"
+                    id="projectPlatBook"
+                    placeholder="Book number"
+                  />
+                </div>
+                <div>
+                  <label for="projectPlatPageStart">Plat Page(s)</label>
+                  <div class="inline-inputs">
+                    <input
+                      type="text"
+                      id="projectPlatPageStart"
+                      placeholder="Start"
+                    />
+                    <input
+                      type="text"
+                      id="projectPlatPageEnd"
+                      placeholder="End (optional)"
+                    />
+                  </div>
                 </div>
                 <div class="full-row">
                   <label for="projectDescriptionInput">Description</label>

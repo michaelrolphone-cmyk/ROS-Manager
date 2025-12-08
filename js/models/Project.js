@@ -19,6 +19,11 @@ export default class Project {
     townships = [],
     ranges = [],
     sections = [],
+    sectionQuadrant = "",
+    aliquots = [],
+    platBook = "",
+    platPageStart = "",
+    platPageEnd = "",
     records = {},
     equipmentLogs = [],
     stakeoutEntries = [],
@@ -48,6 +53,11 @@ export default class Project {
     this.townships = Array.isArray(townships) ? townships : [];
     this.ranges = Array.isArray(ranges) ? ranges : [];
     this.sections = Array.isArray(sections) ? sections : [];
+    this.sectionQuadrant = sectionQuadrant || "";
+    this.aliquots = Array.isArray(aliquots) ? aliquots : [];
+    this.platBook = platBook;
+    this.platPageStart = platPageStart;
+    this.platPageEnd = platPageEnd;
     this.records = {};
     this.pointFiles = Array.isArray(pointFiles)
       ? pointFiles.map((pf) =>
@@ -130,6 +140,11 @@ export default class Project {
       townships: this.townships,
       ranges: this.ranges,
       sections: this.sections,
+      sectionQuadrant: this.sectionQuadrant,
+      aliquots: this.aliquots,
+      platBook: this.platBook,
+      platPageStart: this.platPageStart,
+      platPageEnd: this.platPageEnd,
       records: Object.fromEntries(entries),
       equipmentLogs: this.equipmentLogs.map((entry) => entry.toObject()),
       stakeoutEntries: this.stakeoutEntries.map((entry) => entry.toObject()),
