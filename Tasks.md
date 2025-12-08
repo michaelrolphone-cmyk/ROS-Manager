@@ -20,7 +20,7 @@
 
 **Goal:** Provide a complete, legally defensible research trail for every project.
 
-* Create a **Historical Research / Source Documentation mini-app** for cataloging all documents that inform survey decisions, including:
+* ✅ Create a **Historical Research / Source Documentation mini-app** for cataloging all documents that inform survey decisions, including:
   * Government Land Office (GLO) plats and field notes  
   * Record of Survey (ROS) filings  
   * Subdivision plats and annexations  
@@ -53,7 +53,7 @@
   * Stakeout entries
   * TRS-based corner IDs
 
-* Export:
+* ✅ Export:
   * A **Research and Source Documentation Packet** indexed by:
     * TRS
     * Corner ID
@@ -87,7 +87,7 @@
     * New monument set
     * Witness corner set
 
-* Add Idaho CP&F–specific fields to evidence/CP&F export:
+* ✅ Add Idaho CP&F–specific fields to evidence/CP&F export:
   * Basis of bearing statement
   * Detailed monument description:
     * Type
@@ -102,7 +102,7 @@
   * Date(s) of survey
   * County and relevant recording information
 
-* Implement **CP&F document validation**:
+* ✅ Implement **CP&F document validation**:
   * Before allowing CP&F export:
     * Validate that all required CP&F fields are filled.
     * Highlight missing fields and provide navigation directly to each missing item.

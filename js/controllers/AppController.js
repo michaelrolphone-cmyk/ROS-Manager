@@ -5,6 +5,8 @@ import TraverseInstruction from "../models/TraverseInstruction.js";
 import CornerEvidence from "../models/CornerEvidence.js";
 import EvidenceTie from "../models/EvidenceTie.js";
 import CornerEvidenceService from "../services/CornerEvidenceService.js";
+import ResearchDocument from "../models/ResearchDocument.js";
+import ResearchDocumentService from "../services/ResearchDocumentService.js";
 import EquipmentLog from "../models/EquipmentLog.js";
 import Point from "../models/Point.js";
 import PointController from "./PointController.js";
@@ -38,6 +40,7 @@ export default class AppController {
       drawLines: "",
     };
     this.cornerEvidenceService = new CornerEvidenceService();
+    this.researchDocumentService = new ResearchDocumentService();
     this.currentEvidencePhoto = null;
     this.currentEvidenceLocation = null;
     this.currentEvidenceTies = [];
@@ -350,6 +353,23 @@ export default class AppController {
       evidenceCornerStatus: document.getElementById("evidenceCornerStatus"),
       evidenceStatus: document.getElementById("evidenceStatus"),
       evidenceCondition: document.getElementById("evidenceCondition"),
+      evidenceBasisOfBearing: document.getElementById(
+        "evidenceBasisOfBearing"
+      ),
+      evidenceMonumentType: document.getElementById("evidenceMonumentType"),
+      evidenceMonumentMaterial: document.getElementById(
+        "evidenceMonumentMaterial"
+      ),
+      evidenceMonumentSize: document.getElementById("evidenceMonumentSize"),
+      evidenceSurveyorName: document.getElementById("evidenceSurveyorName"),
+      evidenceSurveyorLicense: document.getElementById(
+        "evidenceSurveyorLicense"
+      ),
+      evidenceSurveyorFirm: document.getElementById("evidenceSurveyorFirm"),
+      evidenceSurveyDates: document.getElementById("evidenceSurveyDates"),
+      evidenceSurveyCounty: document.getElementById("evidenceSurveyCounty"),
+      evidenceRecordingInfo: document.getElementById("evidenceRecordingInfo"),
+      cpfValidationStatus: document.getElementById("cpfValidationStatus"),
       evidenceNotes: document.getElementById("evidenceNotes"),
       evidenceTieDistance: document.getElementById("evidenceTieDistance"),
       evidenceTieBearing: document.getElementById("evidenceTieBearing"),
@@ -470,6 +490,29 @@ export default class AppController {
       levelMisclosure: document.getElementById("levelMisclosure"),
       levelClosureNote: document.getElementById("levelClosureNote"),
       exportLevelRunButton: document.getElementById("exportLevelRunButton"),
+      researchSection: document.getElementById("researchSection"),
+      researchList: document.getElementById("researchList"),
+      researchSummary: document.getElementById("researchSummary"),
+      researchDocumentType: document.getElementById("researchDocumentType"),
+      researchJurisdiction: document.getElementById("researchJurisdiction"),
+      researchInstrument: document.getElementById("researchInstrument"),
+      researchBookPage: document.getElementById("researchBookPage"),
+      researchDocumentNumber: document.getElementById("researchDocumentNumber"),
+      researchTownship: document.getElementById("researchTownship"),
+      researchRange: document.getElementById("researchRange"),
+      researchSections: document.getElementById("researchSections"),
+      researchAliquots: document.getElementById("researchAliquots"),
+      researchSource: document.getElementById("researchSource"),
+      researchDateReviewed: document.getElementById("researchDateReviewed"),
+      researchReviewer: document.getElementById("researchReviewer"),
+      researchClassification: document.getElementById("researchClassification"),
+      researchNotes: document.getElementById("researchNotes"),
+      researchCornerNotes: document.getElementById("researchCornerNotes"),
+      researchTraverseLinks: document.getElementById("researchTraverseLinks"),
+      researchEvidenceSelect: document.getElementById("researchEvidenceSelect"),
+      saveResearchButton: document.getElementById("saveResearchButton"),
+      resetResearchButton: document.getElementById("resetResearchButton"),
+      exportResearchButton: document.getElementById("exportResearchButton"),
     };
   }
 
@@ -700,6 +743,42 @@ export default class AppController {
     this.elements.resetEvidenceButton?.addEventListener("click", () =>
       this.resetEvidenceForm()
     );
+
+    this.elements.cpfValidationStatus?.addEventListener("click", (evt) => {
+      const target = evt.target.closest("[data-cpf-field]");
+      if (!target) return;
+      evt.preventDefault();
+      this.focusCpfField(target.dataset.cpfField);
+    });
+
+    this.elements.saveResearchButton?.addEventListener("click", () =>
+      this.saveResearchDocument()
+    );
+    this.elements.resetResearchButton?.addEventListener("click", () =>
+      this.resetResearchForm()
+    );
+    this.elements.exportResearchButton?.addEventListener("click", () =>
+      this.exportResearchPacket()
+    );
+
+    [
+      this.elements.researchDocumentType,
+      this.elements.researchJurisdiction,
+      this.elements.researchInstrument,
+      this.elements.researchBookPage,
+      this.elements.researchDocumentNumber,
+      this.elements.researchTownship,
+      this.elements.researchRange,
+      this.elements.researchSections,
+      this.elements.researchClassification,
+      this.elements.researchDateReviewed,
+      this.elements.researchReviewer,
+    ].forEach((el) => {
+      el?.addEventListener("input", () => this.updateResearchSaveState());
+      if (el?.tagName === "SELECT") {
+        el.addEventListener("change", () => this.updateResearchSaveState());
+      }
+    });
 
     this.elements.evidenceType?.addEventListener("change", () =>
       this.updateEvidenceSaveState()
@@ -1073,6 +1152,9 @@ export default class AppController {
     const evidence = this.cornerEvidenceService.serializeEvidenceForProject(
       this.currentProjectId
     );
+    const research = this.researchDocumentService.serializeProject(
+      this.currentProjectId
+    );
     const payload = {
       type: "CarlsonSurveyManagerProjects",
       version: 2,
@@ -1082,6 +1164,9 @@ export default class AppController {
       },
       evidence: {
         [this.currentProjectId]: evidence,
+      },
+      research: {
+        [this.currentProjectId]: research,
       },
     };
     this.downloadJson(
@@ -1102,6 +1187,7 @@ export default class AppController {
       export: this.buildExportMetadata("Draft"),
       projects: this.serializeProjects(),
       evidence: this.cornerEvidenceService.serializeAllEvidence(),
+      research: this.researchDocumentService.serializeAll(),
     };
     this.downloadJson(payload, "carlson-all-projects.json");
     this.markProjectsExported(Object.keys(this.projects || {}));
@@ -1146,6 +1232,7 @@ export default class AppController {
       export: this.buildExportMetadata("Draft"),
       projects: this.serializeProjects(),
       evidence: this.cornerEvidenceService.serializeAllEvidence(),
+      research: this.researchDocumentService.serializeAll(),
       globalSettings: this.globalSettings,
     };
     this.downloadJson(payload, "carlson-app-data.json");
@@ -1192,6 +1279,11 @@ export default class AppController {
             ? data.evidence
             : {};
         this.cornerEvidenceService.replaceAllEvidence(evidenceMap);
+        const researchMap =
+          data.research && typeof data.research === "object"
+            ? data.research
+            : {};
+        this.researchDocumentService.replaceAllDocuments(researchMap);
         if (data.globalSettings) {
           this.globalSettings = this.normalizeGlobalSettings(
             data.globalSettings
@@ -1234,6 +1326,11 @@ export default class AppController {
             ? data.evidence
             : {};
         this.cornerEvidenceService.replaceAllEvidence(evidenceMap);
+        const researchMap =
+          data.research && typeof data.research === "object"
+            ? data.research
+            : {};
+        this.researchDocumentService.replaceAllDocuments(researchMap);
         this.saveProjects();
         this.updateProjectList();
         if (Object.keys(data.projects).length > 0) {
@@ -1265,6 +1362,7 @@ export default class AppController {
       this.drawProjectOverview();
       this.hideProjectForm();
       this.refreshEvidenceUI();
+      this.refreshResearchUI();
       this.resetEquipmentForm();
       this.refreshEquipmentUI();
       this.pointController.renderPointsTable();
@@ -1294,6 +1392,7 @@ export default class AppController {
     this.hideProjectForm();
     this.pointController.renderPointsTable();
     this.refreshEvidenceUI();
+    this.refreshResearchUI();
     this.resetEquipmentForm();
     this.refreshEquipmentUI();
     this.populateLocalizationSelectors();
@@ -1425,6 +1524,7 @@ export default class AppController {
       return;
     delete this.projects[this.currentProjectId];
     this.cornerEvidenceService.removeProjectEvidence(this.currentProjectId);
+    this.researchDocumentService.removeProjectDocuments(this.currentProjectId);
     this.saveProjects();
     this.currentProjectId = null;
     this.currentRecordId = null;
@@ -2077,6 +2177,7 @@ export default class AppController {
       this.elements.pointsSection,
       this.elements.settingsSection,
       this.elements.evidenceSection,
+      this.elements.researchSection,
       this.elements.levelingSection,
       this.elements.equipmentSection,
       this.elements.navigationSection,
@@ -2130,6 +2231,8 @@ export default class AppController {
 
     if (targetId === "evidenceSection") {
       this.refreshEvidenceUI();
+    } else if (resolvedTarget === "researchSection") {
+      this.refreshResearchUI();
     } else if (resolvedTarget === "equipmentSection") {
       this.refreshEquipmentUI();
     } else if (resolvedTarget === "traverseSection") {
@@ -2450,6 +2553,8 @@ export default class AppController {
     const pointIndexStr = this.elements.evidencePointSelect?.value;
     if (!this.currentProjectId || !recordId || !pointIndexStr) return;
 
+    this.clearCpfValidationState();
+
     const pointIndex = parseInt(pointIndexStr, 10);
     const pointMeta = this.currentTraversePointOptions.find(
       (p) => p.index === pointIndex
@@ -2468,6 +2573,18 @@ export default class AppController {
       cornerStatus: this.elements.evidenceCornerStatus?.value || "",
       status: this.elements.evidenceStatus?.value || "Draft",
       condition: this.elements.evidenceCondition?.value || "",
+      basisOfBearing: this.elements.evidenceBasisOfBearing?.value.trim() || "",
+      monumentType: this.elements.evidenceMonumentType?.value.trim() || "",
+      monumentMaterial:
+        this.elements.evidenceMonumentMaterial?.value.trim() || "",
+      monumentSize: this.elements.evidenceMonumentSize?.value.trim() || "",
+      surveyorName: this.elements.evidenceSurveyorName?.value.trim() || "",
+      surveyorLicense:
+        this.elements.evidenceSurveyorLicense?.value.trim() || "",
+      surveyorFirm: this.elements.evidenceSurveyorFirm?.value.trim() || "",
+      surveyDates: this.elements.evidenceSurveyDates?.value.trim() || "",
+      surveyCounty: this.elements.evidenceSurveyCounty?.value.trim() || "",
+      recordingInfo: this.elements.evidenceRecordingInfo?.value.trim() || "",
       notes: this.elements.evidenceNotes?.value.trim() || "",
       ties: this.currentEvidenceTies.map((tie) =>
         tie instanceof EvidenceTie ? tie : new EvidenceTie({ ...tie })
@@ -2553,6 +2670,43 @@ export default class AppController {
           condition.textContent = `Condition: ${ev.condition}`;
           card.appendChild(condition);
         }
+        if (
+          ev.monumentType ||
+          ev.monumentMaterial ||
+          ev.monumentSize
+        ) {
+          const monument = document.createElement("div");
+          const parts = [ev.monumentType, ev.monumentMaterial, ev.monumentSize]
+            .filter(Boolean)
+            .join(" · ");
+          monument.textContent = `Monument: ${parts}`;
+          card.appendChild(monument);
+        }
+        if (ev.basisOfBearing) {
+          const basis = document.createElement("div");
+          basis.textContent = `Basis of bearing: ${ev.basisOfBearing}`;
+          card.appendChild(basis);
+        }
+        if (ev.surveyorName || ev.surveyorLicense || ev.surveyorFirm) {
+          const surveyor = document.createElement("div");
+          const parts = [
+            ev.surveyorName,
+            ev.surveyorLicense ? `PLS ${ev.surveyorLicense}` : null,
+            ev.surveyorFirm,
+          ].filter(Boolean);
+          surveyor.textContent = `Responsible surveyor: ${parts.join(" · ")}`;
+          card.appendChild(surveyor);
+        }
+        if (ev.surveyDates || ev.surveyCounty || ev.recordingInfo) {
+          const recordMeta = document.createElement("div");
+          const parts = [
+            ev.surveyDates ? `Surveyed ${ev.surveyDates}` : null,
+            ev.surveyCounty ? `County: ${ev.surveyCounty}` : null,
+            ev.recordingInfo ? `Recording: ${ev.recordingInfo}` : null,
+          ].filter(Boolean);
+          recordMeta.textContent = parts.join(" · ");
+          card.appendChild(recordMeta);
+        }
         if (ev.notes) {
           const notes = document.createElement("div");
           notes.style.marginTop = "6px";
@@ -2621,6 +2775,291 @@ export default class AppController {
         card.appendChild(actionsRow);
         container.appendChild(card);
       });
+
+    this.populateResearchEvidenceOptions();
+  }
+
+  /* ===================== Research & Source Documentation ===================== */
+  refreshResearchUI() {
+    this.populateResearchEvidenceOptions();
+    this.renderResearchList();
+    this.updateResearchSaveState();
+  }
+
+  populateResearchEvidenceOptions() {
+    const select = this.elements.researchEvidenceSelect;
+    if (!select) return;
+    select.innerHTML = "";
+    const evidence = this.cornerEvidenceService.getProjectEvidence(
+      this.currentProjectId
+    );
+    if (!evidence.length) {
+      const opt = document.createElement("option");
+      opt.disabled = true;
+      opt.value = "";
+      opt.textContent = "No evidence logged";
+      select.appendChild(opt);
+      return;
+    }
+    evidence
+      .slice()
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .forEach((ev) => {
+        const opt = document.createElement("option");
+        opt.value = ev.id;
+        opt.dataset.label = `${ev.pointLabel || "Traverse point"} · ${
+          ev.recordName || "Record"
+        }`;
+        opt.textContent = `${ev.pointLabel || "Traverse point"} (${ev.recordName ||
+          "Record"})`;
+        select.appendChild(opt);
+      });
+  }
+
+  updateResearchSaveState() {
+    if (!this.elements.saveResearchButton) return;
+    const required = [
+      this.elements.researchDocumentType,
+      this.elements.researchJurisdiction,
+      this.elements.researchInstrument,
+      this.elements.researchBookPage,
+      this.elements.researchTownship,
+      this.elements.researchRange,
+      this.elements.researchSections,
+      this.elements.researchClassification,
+      this.elements.researchDateReviewed,
+      this.elements.researchReviewer,
+    ];
+    const canSave =
+      !!this.currentProjectId &&
+      required.every((el) => el && el.value.trim().length > 0);
+    this.elements.saveResearchButton.disabled = !canSave;
+  }
+
+  saveResearchDocument() {
+    if (!this.currentProjectId) return;
+    const selectedEvidence = Array.from(
+      this.elements.researchEvidenceSelect?.selectedOptions || []
+    ).map((opt) => ({ id: opt.value, label: opt.dataset.label || opt.textContent }));
+
+    const doc = new ResearchDocument({
+      projectId: this.currentProjectId,
+      type: this.elements.researchDocumentType?.value.trim() || "",
+      jurisdiction: this.elements.researchJurisdiction?.value.trim() || "",
+      instrumentNumber: this.elements.researchInstrument?.value.trim() || "",
+      bookPage: this.elements.researchBookPage?.value.trim() || "",
+      documentNumber: this.elements.researchDocumentNumber?.value.trim() || "",
+      township: this.elements.researchTownship?.value.trim() || "",
+      range: this.elements.researchRange?.value.trim() || "",
+      sections: this.elements.researchSections?.value.trim() || "",
+      aliquots: this.elements.researchAliquots?.value.trim() || "",
+      source: this.elements.researchSource?.value.trim() || "",
+      dateReviewed: this.elements.researchDateReviewed?.value.trim() || "",
+      reviewer: this.elements.researchReviewer?.value.trim() || "",
+      classification:
+        this.elements.researchClassification?.value.trim() || "",
+      notes: this.elements.researchNotes?.value.trim() || "",
+      cornerNotes: this.elements.researchCornerNotes?.value.trim() || "",
+      linkedEvidence: selectedEvidence,
+      traverseLinks: this.elements.researchTraverseLinks?.value.trim() || "",
+    });
+
+    this.researchDocumentService.addEntry(doc);
+    this.resetResearchForm();
+    this.renderResearchList();
+  }
+
+  resetResearchForm() {
+    [
+      this.elements.researchDocumentType,
+      this.elements.researchJurisdiction,
+      this.elements.researchInstrument,
+      this.elements.researchBookPage,
+      this.elements.researchDocumentNumber,
+      this.elements.researchTownship,
+      this.elements.researchRange,
+      this.elements.researchSections,
+      this.elements.researchAliquots,
+      this.elements.researchSource,
+      this.elements.researchDateReviewed,
+      this.elements.researchReviewer,
+      this.elements.researchClassification,
+      this.elements.researchNotes,
+      this.elements.researchCornerNotes,
+      this.elements.researchTraverseLinks,
+    ].forEach((el) => {
+      if (el) el.value = "";
+    });
+    if (this.elements.researchEvidenceSelect) {
+      Array.from(this.elements.researchEvidenceSelect.options).forEach((opt) => {
+        opt.selected = false;
+      });
+    }
+    this.updateResearchSaveState();
+  }
+
+  renderResearchList() {
+    if (!this.elements.researchList || !this.elements.researchSummary) return;
+    const docs = this.researchDocumentService.getProjectDocuments(
+      this.currentProjectId
+    );
+    const container = this.elements.researchList;
+    container.innerHTML = "";
+
+    if (!this.currentProjectId) {
+      this.elements.researchSummary.textContent =
+        "Select a project to view research.";
+      return;
+    }
+
+    if (!docs.length) {
+      this.elements.researchSummary.textContent =
+        "No research documents logged yet.";
+      return;
+    }
+
+    this.elements.researchSummary.textContent = `${docs.length} source${
+      docs.length === 1 ? "" : "s"
+    } documented.`;
+
+    const toDate = (doc) =>
+      doc.dateReviewed ? new Date(doc.dateReviewed) : new Date(doc.createdAt);
+    docs
+      .slice()
+      .sort((a, b) => toDate(b) - toDate(a))
+      .forEach((doc) => {
+        const card = document.createElement("div");
+        card.className = "card";
+        const title = document.createElement("strong");
+        title.textContent = doc.type || "Source document";
+        const subtitle = document.createElement("div");
+        subtitle.className = "subtitle";
+        const trsParts = [doc.township, doc.range, doc.sections]
+          .filter(Boolean)
+          .join(" ");
+        subtitle.textContent = trsParts || "Location not set";
+        const badge = document.createElement("span");
+        badge.className = "status-chip info";
+        badge.textContent = doc.classification || "Unclassified";
+        card.append(title, subtitle, badge);
+
+        const meta = document.createElement("div");
+        const recordParts = [
+          doc.jurisdiction,
+          doc.instrumentNumber,
+          doc.bookPage,
+          doc.documentNumber,
+        ]
+          .filter(Boolean)
+          .join(" · ");
+        if (recordParts) {
+          meta.textContent = recordParts;
+          card.appendChild(meta);
+        }
+        const reviewerLine = document.createElement("div");
+        reviewerLine.textContent = `Reviewed ${doc.dateReviewed || ""} by ${
+          doc.reviewer || ""
+        }`;
+        card.appendChild(reviewerLine);
+
+        if (doc.source) {
+          const src = document.createElement("div");
+          src.textContent = `Source: ${doc.source}`;
+          card.appendChild(src);
+        }
+        if (doc.aliquots) {
+          const ali = document.createElement("div");
+          ali.textContent = `Aliquots: ${doc.aliquots}`;
+          card.appendChild(ali);
+        }
+        if (doc.cornerNotes) {
+          const cn = document.createElement("div");
+          cn.textContent = `Corner/line notes: ${doc.cornerNotes}`;
+          card.appendChild(cn);
+        }
+        if (doc.traverseLinks) {
+          const tv = document.createElement("div");
+          tv.textContent = `Traverse links: ${doc.traverseLinks}`;
+          card.appendChild(tv);
+        }
+        if (doc.notes) {
+          const notes = document.createElement("div");
+          notes.textContent = doc.notes;
+          notes.style.marginTop = "6px";
+          card.appendChild(notes);
+        }
+        if (doc.linkedEvidence?.length) {
+          const list = document.createElement("ul");
+          list.className = "ties-list";
+          doc.linkedEvidence.forEach((ev) => {
+            const li = document.createElement("li");
+            li.textContent = ev.label || ev.id;
+            list.appendChild(li);
+          });
+          const heading = document.createElement("strong");
+          heading.textContent = "Linked evidence";
+          card.append(heading, list);
+        }
+        container.appendChild(card);
+      });
+  }
+
+  exportResearchPacket() {
+    if (!this.currentProjectId) return;
+    const docs = this.researchDocumentService.getProjectDocuments(
+      this.currentProjectId
+    );
+    if (!docs.length) {
+      alert("No research documents to export.");
+      return;
+    }
+    const projectName = this.projects[this.currentProjectId]?.name || "Project";
+    const meta = this.buildExportMetadata("Draft");
+    const label = this.getExportStatusLabel("Draft");
+    const lines = [
+      "Research and Source Documentation Packet",
+      meta.status || label.title,
+      meta.note || label.note || "Incomplete — subject to revision.",
+      `Project: ${projectName}`,
+      `Generated: ${meta.generatedAt || new Date().toISOString()}`,
+      "",
+    ];
+    docs
+      .slice()
+      .sort((a, b) => (a.township || "").localeCompare(b.township || ""))
+      .forEach((doc, idx) => {
+        lines.push(`${idx + 1}. ${doc.type || "Document"}`);
+        const trs = [doc.township, doc.range, doc.sections, doc.aliquots]
+          .filter(Boolean)
+          .join(" ");
+        if (trs) lines.push(`   TRS: ${trs}`);
+        const recParts = [
+          doc.jurisdiction,
+          doc.instrumentNumber,
+          doc.bookPage,
+          doc.documentNumber,
+        ]
+          .filter(Boolean)
+          .join(" · ");
+        if (recParts) lines.push(`   Recording: ${recParts}`);
+        lines.push(
+          `   Reviewed ${doc.dateReviewed || ""} by ${doc.reviewer || ""} (${doc.classification || ""})`
+        );
+        if (doc.source) lines.push(`   Source: ${doc.source}`);
+        if (doc.cornerNotes) lines.push(`   Notes: ${doc.cornerNotes}`);
+        if (doc.traverseLinks) lines.push(`   Traverse links: ${doc.traverseLinks}`);
+        if (doc.notes) lines.push(`   Annotation: ${doc.notes}`);
+        if (doc.linkedEvidence?.length) {
+          lines.push(
+            `   Linked evidence: ${doc.linkedEvidence
+              .map((ev) => ev.label || ev.id)
+              .join("; ")}`
+          );
+        }
+        lines.push("");
+      });
+    const safeName = projectName.replace(/[^\w\-]+/g, "_").toLowerCase();
+    this.downloadText(lines.join("\n"), `${safeName}-research-packet.txt`);
   }
 
   /* ===================== Equipment Setup ===================== */
@@ -2870,6 +3309,16 @@ export default class AppController {
     if (!entry.cornerStatus) missing.push("corner status");
     if (!entry.type) missing.push("evidence type");
     if (!entry.condition) missing.push("condition / occupation evidence");
+    if (!entry.basisOfBearing) missing.push("basis of bearing");
+    if (!entry.monumentType) missing.push("monument type");
+    if (!entry.monumentMaterial) missing.push("monument material");
+    if (!entry.monumentSize) missing.push("monument size");
+    if (!entry.surveyorName) missing.push("responsible surveyor name");
+    if (!entry.surveyorLicense)
+      missing.push("responsible surveyor license number");
+    if (!entry.surveyDates) missing.push("survey date(s)");
+    if (!entry.surveyCounty) missing.push("county");
+    if (!entry.recordingInfo) missing.push("recording information");
     if (!entry.ties || entry.ties.length === 0)
       missing.push("reference ties");
 
@@ -2878,6 +3327,81 @@ export default class AppController {
     const complete = statusAllowsFinal && missing.length === 0;
 
     return { missing, complete };
+  }
+
+  getCpfFieldElements() {
+    return {
+      "corner type": this.elements.evidenceCornerType,
+      "corner status": this.elements.evidenceCornerStatus,
+      "evidence type": this.elements.evidenceType,
+      "condition / occupation evidence": this.elements.evidenceCondition,
+      "basis of bearing": this.elements.evidenceBasisOfBearing,
+      "monument type": this.elements.evidenceMonumentType,
+      "monument material": this.elements.evidenceMonumentMaterial,
+      "monument size": this.elements.evidenceMonumentSize,
+      "responsible surveyor name": this.elements.evidenceSurveyorName,
+      "responsible surveyor license number":
+        this.elements.evidenceSurveyorLicense,
+      "survey date(s)": this.elements.evidenceSurveyDates,
+      county: this.elements.evidenceSurveyCounty,
+      "recording information": this.elements.evidenceRecordingInfo,
+      "reference ties":
+        this.elements.evidenceTiesList || this.elements.evidenceTiesHint,
+    };
+  }
+
+  clearCpfValidationState() {
+    const fields = this.getCpfFieldElements();
+    Object.values(fields).forEach((el) =>
+      el?.classList?.remove("field-missing")
+    );
+    if (this.elements.cpfValidationStatus) {
+      this.elements.cpfValidationStatus.classList.add("hidden");
+      this.elements.cpfValidationStatus
+        .querySelector(".cpf-chip-row")
+        ?.replaceChildren();
+    }
+  }
+
+  renderCpfValidationCallout(missing) {
+    const container = this.elements.cpfValidationStatus;
+    if (!container) return;
+    container.classList.remove("hidden");
+    const chipRow = container.querySelector(".cpf-chip-row");
+    if (!chipRow) return;
+    chipRow.innerHTML = "";
+    missing.forEach((label) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "cpf-chip";
+      chip.dataset.cpfField = label;
+      chip.textContent = label;
+      chipRow.appendChild(chip);
+    });
+  }
+
+  focusCpfField(fieldName) {
+    if (!fieldName) return;
+    this.switchTab("evidenceSection");
+    const target = this.getCpfFieldElements()[fieldName];
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (typeof target.focus === "function") target.focus({ preventScroll: true });
+      target.classList.add("field-missing");
+    }
+  }
+
+  highlightMissingCpfFields(missing) {
+    const fields = this.getCpfFieldElements();
+    missing.forEach((field) => {
+      const el = fields[field];
+      if (el) {
+        el.classList.add("field-missing");
+      }
+    });
+    if (missing.length) {
+      this.focusCpfField(missing[0]);
+    }
   }
 
   handleReferencePointSelection(event) {
@@ -3240,10 +3764,17 @@ export default class AppController {
 
   exportCornerFiling(entry) {
     if (!entry) return;
+    this.clearCpfValidationState();
     const projectName = this.projects[entry.projectId]?.name || "Project";
     const statusLabel = entry.status || "Draft";
     const normalizedStatus = statusLabel.toLowerCase();
     const completeness = this.getCpfCompleteness(entry);
+    if (completeness.missing.length) {
+      this.switchTab("evidenceSection");
+      this.renderCpfValidationCallout(completeness.missing);
+      this.highlightMissingCpfFields(completeness.missing);
+      return;
+    }
     const exportLabel = completeness.complete
       ? this.getExportStatusLabel(statusLabel)
       : this.getExportStatusLabel("in progress");
@@ -3254,19 +3785,21 @@ export default class AppController {
       lines.push("PRELIMINARY — NOT FOR RECORDATION");
     }
     if (exportLabel?.note) lines.push(exportLabel.note);
-    if (completeness.missing.length) {
-      lines.push(
-        `Missing CP&F fields: ${completeness.missing
-          .map((field) => field.toLowerCase())
-          .join(", ")}`
-      );
-    }
     lines.push(`Project: ${projectName}`);
     lines.push(`Record: ${entry.recordName || "Record"}`);
     lines.push(`Traverse Point: ${entry.pointLabel || "Traverse point"}`);
     lines.push(`Status: ${statusLabel}`);
     if (entry.cornerType) lines.push(`Corner Type: ${entry.cornerType}`);
     if (entry.cornerStatus) lines.push(`Corner Status: ${entry.cornerStatus}`);
+    if (entry.basisOfBearing)
+      lines.push(`Basis of Bearing: ${entry.basisOfBearing}`);
+    const monumentParts = [
+      entry.monumentType,
+      entry.monumentMaterial,
+      entry.monumentSize,
+    ].filter(Boolean);
+    if (monumentParts.length)
+      lines.push(`Monument: ${monumentParts.join(" · ")}`);
     lines.push(`Created: ${new Date(entry.createdAt).toLocaleString()}`);
     if (entry.coords) {
       lines.push(
@@ -3275,6 +3808,20 @@ export default class AppController {
         )}, Northing ${entry.coords.y.toFixed(2)}`
       );
     }
+    const surveyorParts = [
+      entry.surveyorName,
+      entry.surveyorLicense ? `Idaho PLS ${entry.surveyorLicense}` : null,
+      entry.surveyorFirm,
+    ].filter(Boolean);
+    if (surveyorParts.length) {
+      lines.push(`Responsible Surveyor: ${surveyorParts.join(" · ")}`);
+    }
+    const recordParts = [
+      entry.surveyDates ? `Survey date(s): ${entry.surveyDates}` : null,
+      entry.surveyCounty ? `County: ${entry.surveyCounty}` : null,
+      entry.recordingInfo ? `Recording: ${entry.recordingInfo}` : null,
+    ].filter(Boolean);
+    if (recordParts.length) lines.push(...recordParts);
     if (entry.location) {
       lines.push(
         `GPS: Lat ${entry.location.lat.toFixed(
@@ -3316,6 +3863,7 @@ export default class AppController {
   }
 
   resetEvidenceForm() {
+    this.clearCpfValidationState();
     if (this.elements.evidenceType) this.elements.evidenceType.value = "";
     if (this.elements.evidenceCornerType)
       this.elements.evidenceCornerType.value = "";
@@ -3324,6 +3872,26 @@ export default class AppController {
     if (this.elements.evidenceStatus) this.elements.evidenceStatus.value = "Draft";
     if (this.elements.evidenceCondition)
       this.elements.evidenceCondition.value = "";
+    if (this.elements.evidenceBasisOfBearing)
+      this.elements.evidenceBasisOfBearing.value = "";
+    if (this.elements.evidenceMonumentType)
+      this.elements.evidenceMonumentType.value = "";
+    if (this.elements.evidenceMonumentMaterial)
+      this.elements.evidenceMonumentMaterial.value = "";
+    if (this.elements.evidenceMonumentSize)
+      this.elements.evidenceMonumentSize.value = "";
+    if (this.elements.evidenceSurveyorName)
+      this.elements.evidenceSurveyorName.value = "";
+    if (this.elements.evidenceSurveyorLicense)
+      this.elements.evidenceSurveyorLicense.value = "";
+    if (this.elements.evidenceSurveyorFirm)
+      this.elements.evidenceSurveyorFirm.value = "";
+    if (this.elements.evidenceSurveyDates)
+      this.elements.evidenceSurveyDates.value = "";
+    if (this.elements.evidenceSurveyCounty)
+      this.elements.evidenceSurveyCounty.value = "";
+    if (this.elements.evidenceRecordingInfo)
+      this.elements.evidenceRecordingInfo.value = "";
     if (this.elements.evidenceNotes) this.elements.evidenceNotes.value = "";
     if (this.elements.evidencePhoto) this.elements.evidencePhoto.value = "";
     if (this.elements.evidenceTiePhotos)
