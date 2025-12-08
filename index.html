@@ -48,10 +48,6 @@
               <button type="button" class="danger" id="deleteProjectButton">
                 Delete Current Project
               </button>
-              <button type="button" id="exportCurrentButton">
-                Export Current
-              </button>
-              <button type="button" id="exportAllButton">Export All</button>
               <button type="button" id="importButton">Import</button>
             </div>
           </div>
@@ -283,78 +279,6 @@
             </form>
           </div>
 
-          <div class="card" id="auditTrailCard">
-            <div class="card-header">
-              <div>
-                <p class="eyebrow" style="color: #475569">Audit Trail</p>
-                <h3 style="margin: 4px 0">Immutable Audit Trail</h3>
-                <p class="subtitle" style="margin-top: 0">
-                  Capture a timestamped, hashed snapshot of this project and
-                  verify exported bundles against their checksum.
-                </p>
-              </div>
-              <div class="view-toggle">
-                <button id="createAuditSnapshotButton" class="secondary">
-                  Create Audit Snapshot
-                </button>
-              </div>
-            </div>
-            <div class="audit-grid">
-              <div>
-                <div class="stat-chip" style="width: 100%">
-                  <div class="stat-label">Latest snapshot</div>
-                  <div class="stat-value" id="latestAuditTimestamp">None</div>
-                  <div class="stat-meta" id="latestAuditMeta"></div>
-                </div>
-                <div class="mini-note" id="auditStatus"></div>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap">
-                  <button id="downloadLatestAuditButton" class="secondary">
-                    Download Latest Audit Bundle
-                  </button>
-                  <button id="verifyAuditButton">Verify Audit Bundle</button>
-                </div>
-              </div>
-              <div>
-                <div class="stat-chip" style="width: 100%">
-                  <div class="stat-label">Recent hashes</div>
-                  <div id="auditEntriesList" class="mini-note">
-                    No snapshots yet.
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="card" id="smartPackCard">
-            <div class="card-header" style="align-items: flex-start">
-              <div>
-                <p class="eyebrow" style="color: #475569">Document Bundle</p>
-                <h3 style="margin: 4px 0">Document Generation Smart Pack</h3>
-                <p class="subtitle" style="margin-top: 0">
-                  Export a consolidated packet with traverses, level loops,
-                  evidence sheets, equipment setups, stakeout notes, QC summary,
-                  and research references.
-                </p>
-              </div>
-              <div class="smartpack-actions">
-                <button id="smartPackExportButton">Export Smart Pack (HTML)</button>
-                <button id="smartPackJsonButton" class="secondary">
-                  Download Smart Pack JSON
-                </button>
-              </div>
-            </div>
-            <div class="smartpack-meta">
-              <div class="stat-chip" id="smartPackStatusChip">
-                <div class="stat-label">Export status</div>
-                <div class="stat-value" id="smartPackStatusValue">Draft</div>
-              </div>
-              <div class="mini-note" id="smartPackStatusNote">
-                Consolidated exports will include QC status labels for each
-                section.
-              </div>
-            </div>
-          </div>
-
           <h2>Project Apps</h2>
           <p class="subtitle" style="margin-top: 0">
             Select a mini app to work with your current project.
@@ -390,6 +314,11 @@
               <span class="app-hint"
                 >Compare traverses and levels against tolerances</span
               >
+            </button>
+            <button class="app-tile" data-target="exportsSection">
+              <span class="app-icon">📤</span>
+              <span class="app-title">Exports &amp; Bundles</span>
+              <span class="app-hint">Download audits, smart packs, and data</span>
             </button>
             <button class="app-tile" data-target="evidenceSection">
               <span class="app-icon">🧾</span>
@@ -1069,6 +998,103 @@
             <div id="qcLevelList" class="qc-list">
               Create a level run with a closing elevation to see misclosure
               checks.
+            </div>
+          </div>
+        </div>
+
+        <div id="exportsSection" class="tool-section">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <p class="eyebrow" style="color: #475569">Exports</p>
+                <h3 style="margin: 4px 0">Exports &amp; Bundles</h3>
+                <p class="subtitle" style="margin-top: 0">
+                  Export project archives, audit snapshots, and consolidated
+                  document bundles from one place.
+                </p>
+              </div>
+              <div class="view-toggle">
+                <button type="button" id="exportCurrentButton" class="secondary">
+                  Export Current Project
+                </button>
+                <button type="button" id="exportAllButton">Export All</button>
+              </div>
+            </div>
+            <div class="mini-note">
+              Exports include project data, linked evidence and research, and
+              quality control summaries.
+            </div>
+          </div>
+
+          <div class="card" id="auditTrailCard">
+            <div class="card-header">
+              <div>
+                <p class="eyebrow" style="color: #475569">Audit Trail</p>
+                <h3 style="margin: 4px 0">Immutable Audit Trail</h3>
+                <p class="subtitle" style="margin-top: 0">
+                  Capture a timestamped, hashed snapshot of this project and
+                  verify exported bundles against their checksum.
+                </p>
+              </div>
+              <div class="view-toggle">
+                <button id="createAuditSnapshotButton" class="secondary">
+                  Create Audit Snapshot
+                </button>
+              </div>
+            </div>
+            <div class="audit-grid">
+              <div>
+                <div class="stat-chip" style="width: 100%">
+                  <div class="stat-label">Latest snapshot</div>
+                  <div class="stat-value" id="latestAuditTimestamp">None</div>
+                  <div class="stat-meta" id="latestAuditMeta"></div>
+                </div>
+                <div class="mini-note" id="auditStatus"></div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap">
+                  <button id="downloadLatestAuditButton" class="secondary">
+                    Download Latest Audit Bundle
+                  </button>
+                  <button id="verifyAuditButton">Verify Audit Bundle</button>
+                </div>
+              </div>
+              <div>
+                <div class="stat-chip" style="width: 100%">
+                  <div class="stat-label">Recent hashes</div>
+                  <div id="auditEntriesList" class="mini-note">
+                    No snapshots yet.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" id="smartPackCard">
+            <div class="card-header" style="align-items: flex-start">
+              <div>
+                <p class="eyebrow" style="color: #475569">Document Bundle</p>
+                <h3 style="margin: 4px 0">Document Generation Smart Pack</h3>
+                <p class="subtitle" style="margin-top: 0">
+                  Export a consolidated packet with traverses, level loops,
+                  evidence sheets, equipment setups, stakeout notes, QC summary,
+                  and research references.
+                </p>
+              </div>
+              <div class="smartpack-actions">
+                <button id="smartPackExportButton">Export Smart Pack (HTML)</button>
+                <button id="smartPackJsonButton" class="secondary">
+                  Download Smart Pack JSON
+                </button>
+              </div>
+            </div>
+            <div class="smartpack-meta">
+              <div class="stat-chip" id="smartPackStatusChip">
+                <div class="stat-label">Export status</div>
+                <div class="stat-value" id="smartPackStatusValue">Draft</div>
+              </div>
+              <div class="mini-note" id="smartPackStatusNote">
+                Consolidated exports will include QC status labels for each
+                section.
+              </div>
             </div>
           </div>
         </div>

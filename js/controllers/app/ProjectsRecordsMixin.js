@@ -6,6 +6,7 @@ import EquipmentAppController from "../apps/EquipmentAppController.js";
 import EvidenceAppController from "../apps/EvidenceAppController.js";
 import HelpAppController from "../apps/HelpAppController.js";
 import LevelingAppController from "../apps/LevelingAppController.js";
+import ExportsAppController from "../apps/ExportsAppController.js";
 import NavigationAppController from "../apps/NavigationAppController.js";
 import PointsAppController from "../apps/PointsAppController.js";
 import QcAppController from "../apps/QcAppController.js";
@@ -1398,6 +1399,10 @@ const ProjectsRecordsMixin = (Base) =>
           onResultsComputed: (results) => {
             this.latestQcResults = results;
           },
+        }),
+        exportsSection: new ExportsAppController({
+          id: "exportsSection",
+          section: this.elements.exportsSection,
         }),
         evidenceSection: new EvidenceAppController({
           id: "evidenceSection",

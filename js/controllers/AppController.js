@@ -382,6 +382,7 @@ class AppControllerBase {
       pointsSection: document.getElementById("pointsSection"),
       settingsSection: document.getElementById("settingsSection"),
       evidenceSection: document.getElementById("evidenceSection"),
+      exportsSection: document.getElementById("exportsSection"),
       chainEvidenceSection: document.getElementById("chainEvidenceSection"),
       equipmentSection: document.getElementById("equipmentSection"),
       stakeoutSection: document.getElementById("stakeoutSection"),
