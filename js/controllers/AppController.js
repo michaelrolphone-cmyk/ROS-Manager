@@ -50,6 +50,7 @@ export default class AppController {
     this.currentMapAddressKey = "";
     this.currentMapUrl = null;
     this.pendingMapRequestId = 0;
+    this.vicinityMapRequestId = 0;
     this.helpLoaded = false;
     this.helpLoading = false;
     this.liveUpdatesSource = null;
@@ -244,6 +245,12 @@ export default class AppController {
         "springboardProjectDescription"
       ),
       springboardStatusChip: document.getElementById("springboardStatusChip"),
+      springboardCompositeCanvas: document.getElementById(
+        "springboardCompositeCanvas"
+      ),
+      springboardCompositeEmpty: document.getElementById(
+        "springboardCompositeEmpty"
+      ),
       springboardClientValue: document.getElementById("springboardClientValue"),
       springboardClientPhoneValue: document.getElementById(
         "springboardClientPhoneValue"
@@ -264,6 +271,11 @@ export default class AppController {
       springboardExportWarning: document.getElementById(
         "springboardExportWarning"
       ),
+      vicinityMapImage: document.getElementById("vicinityMapImage"),
+      vicinityMapPlaceholder: document.getElementById("vicinityMapPlaceholder"),
+      vicinityMapStatus: document.getElementById("vicinityMapStatus"),
+      vicinityMapAddress: document.getElementById("vicinityMapAddress"),
+      vicinityMapLink: document.getElementById("vicinityMapLink"),
       recordNameInput: document.getElementById("recordNameInput"),
       recordList: document.getElementById("recordList"),
       editor: document.getElementById("editor"),
@@ -1698,10 +1710,18 @@ export default class AppController {
     const titleEl = this.elements.springboardProjectTitle;
     const descEl = this.elements.springboardProjectDescription;
     const chipEl = this.elements.springboardStatusChip;
+    const thumbCanvas = this.elements.springboardCompositeCanvas;
+    const thumbWrapper = thumbCanvas?.parentElement;
+    const thumbEmpty = this.elements.springboardCompositeEmpty;
+    const hasProject = Boolean(project);
 
     if (hero) {
       hero.classList.toggle("empty", !project);
       if (!project) hero.classList.remove("collapsed");
+    }
+
+    if (thumbWrapper) {
+      thumbWrapper.classList.toggle("has-geometry", false);
     }
 
     if (!project) {
@@ -1717,6 +1737,12 @@ export default class AppController {
           project.description?.trim() ||
           "Add a project description to guide the crew.";
       if (chipEl) chipEl.textContent = "Active";
+    }
+
+    if (thumbEmpty) {
+      thumbEmpty.textContent = hasProject
+        ? "Add traverse calls to see an overview"
+        : "Select a project to see an overview";
     }
 
     const setValue = (el, value) => {
@@ -1789,7 +1815,26 @@ export default class AppController {
         : "none";
     }
 
+    const hasComposite =
+      hasProject &&
+      this.drawProjectCompositeOnCanvas(
+        this.currentProjectId,
+        thumbCanvas,
+        true
+      );
+
+    if (!hasComposite && thumbCanvas) {
+      this.fitCanvasToDisplaySize(thumbCanvas);
+      const ctx = thumbCanvas.getContext("2d");
+      if (ctx) ctx.clearRect(0, 0, thumbCanvas.width, thumbCanvas.height);
+    }
+
+    if (thumbWrapper) {
+      thumbWrapper.classList.toggle("has-geometry", Boolean(hasComposite));
+    }
+
     this.updateSpringboardMapLayer(project);
+    this.updateVicinityMap(project);
   }
 
   async updateSpringboardMapLayer(project) {
@@ -1831,6 +1876,74 @@ export default class AppController {
       );
     } catch (err) {
       console.warn("Map lookup failed", err);
+    }
+  }
+
+  async updateVicinityMap(project) {
+    const image = this.elements.vicinityMapImage;
+    const placeholder = this.elements.vicinityMapPlaceholder;
+    const status = this.elements.vicinityMapStatus;
+    const addressEl = this.elements.vicinityMapAddress;
+    const linkEl = this.elements.vicinityMapLink;
+    const frame = placeholder?.parentElement;
+
+    if (!image || !placeholder || !status || !addressEl || !linkEl || !frame)
+      return;
+
+    const address = project?.address?.trim();
+    const mapHref = address
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+          address
+        )}`
+      : "";
+
+    image.src = "";
+    frame.classList.remove("has-map");
+    placeholder.textContent = address
+      ? "Looking up the vicinity map..."
+      : "No address configured yet.";
+    addressEl.textContent = address || "—";
+
+    if (mapHref) {
+      linkEl.href = mapHref;
+      linkEl.setAttribute("aria-disabled", "false");
+    } else {
+      linkEl.removeAttribute("href");
+      linkEl.setAttribute("aria-disabled", "true");
+    }
+
+    if (!address) {
+      status.textContent =
+        "Add an address in Project Details to see a map preview.";
+      return;
+    }
+
+    status.textContent = "Fetching map preview...";
+    const requestId = Date.now();
+    this.vicinityMapRequestId = requestId;
+
+    try {
+      const mapUrl = await this.resolveAddressToMap(address);
+      if (this.vicinityMapRequestId !== requestId) return;
+
+      if (mapUrl) {
+        image.src = mapUrl;
+        frame.classList.add("has-map");
+        status.textContent = "Static vicinity map preview ready.";
+      } else {
+        frame.classList.remove("has-map");
+        placeholder.textContent =
+          "Map preview unavailable. Open the address in Maps instead.";
+        status.textContent =
+          "Map preview unavailable. Use the external link if needed.";
+      }
+    } catch (err) {
+      console.warn("Vicinity map lookup failed", err);
+      if (this.vicinityMapRequestId === requestId) {
+        status.textContent =
+          "Map preview unavailable right now. Use the Maps link instead.";
+        frame.classList.remove("has-map");
+      }
     }
   }
 
@@ -4145,16 +4258,16 @@ export default class AppController {
   }
 
   drawProjectCompositeOnCanvas(projectId, canvas, small = false) {
-    if (!canvas) return;
+    if (!canvas) return false;
     this.fitCanvasToDisplaySize(canvas);
     const ctx = canvas.getContext("2d");
     const { width, height } = canvas;
     ctx.clearRect(0, 0, width, height);
 
-    if (!projectId || !this.projects[projectId]) return;
+    if (!projectId || !this.projects[projectId]) return false;
     const records = this.projects[projectId].records || {};
     const recordIds = Object.keys(records);
-    if (recordIds.length === 0) return;
+    if (recordIds.length === 0) return false;
 
     const polylines = [];
     let allPts = [];
@@ -4176,7 +4289,7 @@ export default class AppController {
       }
     });
 
-    if (allPts.length === 0) return;
+    if (allPts.length === 0) return false;
 
     let minX = allPts[0].x,
       maxX = allPts[0].x;
@@ -4214,9 +4327,13 @@ export default class AppController {
       "#7c3aed",
     ];
 
+    let hasGeometry = false;
+
     polylines.forEach((poly, idx) => {
       const lines = poly.lines && poly.lines.length ? poly.lines : [];
       if (!lines.length) return;
+
+      hasGeometry = true;
 
       const color = colors[idx % colors.length];
       ctx.lineWidth = small ? 1 : 2;
@@ -4248,6 +4365,8 @@ export default class AppController {
       ctx.arc(end.x, end.y, small ? 2 : 3, 0, Math.PI * 2);
       ctx.fill();
     });
+
+    return hasGeometry;
   }
 
   drawProjectOverview() {
@@ -4863,7 +4982,6 @@ export default class AppController {
 
       const option = document.createElement("div");
       option.className = "project-option";
-      if (id === this.currentProjectId) option.classList.add("active");
 
       const nameSpan = document.createElement("span");
       nameSpan.className = "project-option-name";

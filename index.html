@@ -75,7 +75,21 @@
         <div id="springboardSection" class="tool-section springboard active">
           <div id="springboardHero" class="springboard-hero">
             <div class="springboard-hero-header">
-              <div>
+              <div class="springboard-hero-thumbnail" aria-hidden="true">
+                <canvas
+                  id="springboardCompositeCanvas"
+                  width="180"
+                  height="110"
+                  role="presentation"
+                ></canvas>
+                <div
+                  id="springboardCompositeEmpty"
+                  class="springboard-hero-thumb-empty"
+                >
+                  Add traverse calls to see an overview
+                </div>
+              </div>
+              <div class="springboard-hero-text">
                 <p class="eyebrow">Active Project</p>
                 <h1 id="springboardProjectTitle" class="springboard-hero-title">
                   No project selected
@@ -267,6 +281,11 @@
             Select a mini app to work with your current project.
           </p>
           <div class="springboard-grid">
+            <button class="app-tile" data-target="vicinityMapSection">
+              <span class="app-icon">🗺️</span>
+              <span class="app-title">Vicinity Map</span>
+              <span class="app-hint">Preview client address context</span>
+            </button>
             <button class="app-tile" data-target="traverseSection">
               <span class="app-icon">🧭</span>
               <span class="app-title">Traversals</span>
@@ -313,6 +332,53 @@
               <span class="app-title">Help</span>
               <span class="app-hint">Read the HELP.md guide in the app</span>
             </button>
+          </div>
+        </div>
+
+        <div id="vicinityMapSection" class="tool-section">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <p class="eyebrow">Location Context</p>
+                <h3 style="margin: 4px 0">Vicinity Map</h3>
+                <p class="subtitle" style="margin-top: 4px">
+                  Use the project address to preview a quick vicinity map for the
+                  client site.
+                </p>
+              </div>
+              <a
+                id="vicinityMapLink"
+                class="secondary"
+                href="#"
+                target="_blank"
+                rel="noopener"
+                aria-disabled="true"
+              >
+                Open in Maps
+              </a>
+            </div>
+            <div class="vicinity-map-panel">
+              <div class="vicinity-map-copy">
+                <div class="meta-card">
+                  <div class="label">Project Address</div>
+                  <span class="value" id="vicinityMapAddress">—</span>
+                </div>
+                <p class="app-hint" id="vicinityMapStatus">
+                  Add an address in Project Details to see a map preview.
+                </p>
+              </div>
+              <div class="vicinity-map-frame">
+                <div class="vicinity-map-placeholder" id="vicinityMapPlaceholder">
+                  No address configured yet.
+                </div>
+                <img
+                  id="vicinityMapImage"
+                  src=""
+                  alt="Vicinity map preview"
+                  loading="lazy"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
