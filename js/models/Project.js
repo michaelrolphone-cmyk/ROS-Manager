@@ -29,6 +29,7 @@ export default class Project {
     localization = null,
     createdAt = null,
     updatedAt = null,
+    lastExportedAt = null,
     version = 1,
     levelRuns = [],
   } = {}) {
@@ -72,6 +73,7 @@ export default class Project {
     this.localization = localization || null;
     this.createdAt = createdAt || stamp;
     this.updatedAt = updatedAt || this.createdAt;
+    this.lastExportedAt = lastExportedAt || null;
     this.version = version ?? 1;
 
     Object.entries(records).forEach(([id, record]) => {
@@ -128,6 +130,7 @@ export default class Project {
       localization: this.localization,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
+      lastExportedAt: this.lastExportedAt,
       version: this.version,
       levelRuns: this.levelRuns.map((run) =>
         run instanceof LevelRun ? run.toObject() : LevelRun.fromObject(run).toObject()

@@ -258,6 +258,12 @@ export default class AppController {
       springboardMapButton: document.getElementById("springboardMapButton"),
       springboardEmailButton: document.getElementById("springboardEmailButton"),
       springboardTrsValue: document.getElementById("springboardTrsValue"),
+      springboardLastExportValue: document.getElementById(
+        "springboardLastExportValue"
+      ),
+      springboardExportWarning: document.getElementById(
+        "springboardExportWarning"
+      ),
       recordNameInput: document.getElementById("recordNameInput"),
       recordList: document.getElementById("recordList"),
       editor: document.getElementById("editor"),
@@ -313,7 +319,6 @@ export default class AppController {
       helpSection: document.getElementById("helpSection"),
       helpContent: document.getElementById("helpContent"),
       helpStatus: document.getElementById("helpStatus"),
-      helpRefreshButton: document.getElementById("helpRefreshButton"),
       evidenceRecordDropdownContainer: document.getElementById(
         "evidenceRecordDropdownContainer"
       ),
@@ -554,10 +559,6 @@ export default class AppController {
     this.elements.importAllDataInput?.addEventListener("change", (e) => {
       this.handleAllDataImport(e.target);
     });
-
-    this.elements.helpRefreshButton?.addEventListener("click", () =>
-      this.loadHelpDocument(true)
-    );
 
     this.elements.addEquipmentNameButton?.addEventListener("click", () =>
       this.addEquipmentName()
@@ -1075,6 +1076,7 @@ export default class AppController {
       payload,
       `carlson-${(proj.name || "project").replace(/[^\w\-]+/g, "_")}.json`
     );
+    this.markProjectsExported([this.currentProjectId]);
   }
 
   exportAllProjects() {
@@ -1090,6 +1092,7 @@ export default class AppController {
       evidence: this.cornerEvidenceService.serializeAllEvidence(),
     };
     this.downloadJson(payload, "carlson-all-projects.json");
+    this.markProjectsExported(Object.keys(this.projects || {}));
   }
 
   downloadJson(payload, filename) {
@@ -1134,6 +1137,22 @@ export default class AppController {
       globalSettings: this.globalSettings,
     };
     this.downloadJson(payload, "carlson-app-data.json");
+    this.markProjectsExported(Object.keys(this.projects || {}));
+  }
+
+  markProjectsExported(projectIds = [], timestamp = new Date().toISOString()) {
+    if (!projectIds?.length) return;
+    let changed = false;
+    projectIds.forEach((projectId) => {
+      if (projectId && this.projects?.[projectId]) {
+        this.projects[projectId].lastExportedAt = timestamp;
+        changed = true;
+      }
+    });
+    if (changed) {
+      this.saveProjects({ skipVersionUpdate: true });
+      this.updateSpringboardHero();
+    }
   }
 
   triggerAllDataImport() {
@@ -1633,6 +1652,44 @@ export default class AppController {
     return list.join(", ");
   }
 
+  formatDateTimeForDisplay(value) {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    return date.toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  }
+
+  getExportAlert(project) {
+    if (!project) return { warning: "", lastExport: null };
+    const lastExport = project?.lastExportedAt
+      ? new Date(project.lastExportedAt)
+      : null;
+    const updatedAt = project?.updatedAt ? new Date(project.updatedAt) : null;
+    const now = new Date();
+    const stale = lastExport
+      ? (now.getTime() - lastExport.getTime()) / (1000 * 60 * 60 * 24) > 7
+      : false;
+    const hasUnexportedChanges =
+      lastExport && updatedAt && updatedAt > lastExport;
+
+    let warning = "";
+    if (!lastExport) {
+      warning = "No export recorded. Export now to avoid data loss.";
+    } else if (stale && hasUnexportedChanges) {
+      warning =
+        "Export is older than 7 days and changes have not been saved to an export.";
+    } else if (stale) {
+      warning = "No export in the last 7 days. Create a backup.";
+    } else if (hasUnexportedChanges) {
+      warning = "Recent changes have not been exported yet.";
+    }
+
+    return { warning, lastExport };
+  }
+
   updateSpringboardHero() {
     const project = this.currentProjectId
       ? this.projects[this.currentProjectId]
@@ -1719,6 +1776,18 @@ export default class AppController {
       this.elements.springboardTrsValue,
       trsParts.length ? trsParts.join(" • ") : "—"
     );
+
+    const { warning, lastExport } = this.getExportAlert(project);
+    setValue(
+      this.elements.springboardLastExportValue,
+      this.formatDateTimeForDisplay(lastExport)
+    );
+    if (this.elements.springboardExportWarning) {
+      this.elements.springboardExportWarning.textContent = warning;
+      this.elements.springboardExportWarning.style.display = warning
+        ? "block"
+        : "none";
+    }
 
     this.updateSpringboardMapLayer(project);
   }
