@@ -5,9 +5,7 @@ import TraverseInstruction from "../models/TraverseInstruction.js";
 import CornerEvidence from "../models/CornerEvidence.js";
 import EvidenceTie from "../models/EvidenceTie.js";
 import CornerEvidenceService from "../services/CornerEvidenceService.js";
-import ResearchDocument from "../models/ResearchDocument.js";
 import ResearchDocumentService from "../services/ResearchDocumentService.js";
-import EquipmentLog from "../models/EquipmentLog.js";
 import Point from "../models/Point.js";
 import PointController from "./PointController.js";
 import NavigationController from "./NavigationController.js";
@@ -71,16 +69,6 @@ export default class AppController {
     this.currentMapUrl = null;
     this.pendingMapRequestId = 0;
     this.vicinityMapRequestId = 0;
-    this.chainFilters = {
-      trs: "",
-      cornerType: "",
-      cornerStatus: "",
-      status: "",
-      startDate: "",
-      endDate: "",
-    };
-    this.helpLoaded = false;
-    this.helpLoading = false;
     this.liveUpdatesSource = null;
     this.liveUpdateRetry = null;
     this.syncPending = null;
@@ -880,10 +868,6 @@ export default class AppController {
       this.captureEvidenceLocation()
     );
 
-    this.elements.captureEquipmentLocation?.addEventListener("click", () =>
-      this.captureEquipmentLocation()
-    );
-
     this.elements.saveEvidenceButton?.addEventListener("click", () =>
       this.saveEvidenceEntry()
     );
@@ -901,16 +885,18 @@ export default class AppController {
       this.elements.chainEndDate,
     ].forEach((el) => {
       const eventName = el?.tagName === "SELECT" ? "change" : "input";
-      el?.addEventListener(eventName, () => this.applyChainFiltersFromInputs());
+      el?.addEventListener(eventName, () =>
+        this.appControllers?.chainEvidenceSection?.applyChainFiltersFromInputs?.()
+      );
     });
     this.elements.chainApplyFilters?.addEventListener("click", () =>
-      this.applyChainFiltersFromInputs()
+      this.appControllers?.chainEvidenceSection?.applyChainFiltersFromInputs?.()
     );
     this.elements.chainResetFilters?.addEventListener("click", () =>
-      this.resetChainFilters()
+      this.appControllers?.chainEvidenceSection?.resetChainFilters?.()
     );
     this.elements.chainExportAll?.addEventListener("click", () =>
-      this.exportChainEvidenceSelection()
+      this.appControllers?.chainEvidenceSection?.exportChainEvidenceSelection?.()
     );
 
     this.elements.cpfValidationStatus?.addEventListener("click", (evt) => {
@@ -919,16 +905,6 @@ export default class AppController {
       evt.preventDefault();
       this.focusCpfField(target.dataset.cpfField);
     });
-
-    this.elements.saveResearchButton?.addEventListener("click", () =>
-      this.saveResearchDocument()
-    );
-    this.elements.resetResearchButton?.addEventListener("click", () =>
-      this.resetResearchForm()
-    );
-    this.elements.exportResearchButton?.addEventListener("click", () =>
-      this.exportResearchPacket()
-    );
 
     this.elements.saveQcSettingsButton?.addEventListener("click", () =>
       this.saveQcSettings()
@@ -942,25 +918,6 @@ export default class AppController {
     this.elements.qcLevelList?.addEventListener("click", (evt) =>
       this.appControllers?.qcSection?.handleQcListClick(evt)
     );
-
-    [
-      this.elements.researchDocumentType,
-      this.elements.researchJurisdiction,
-      this.elements.researchInstrument,
-      this.elements.researchBookPage,
-      this.elements.researchDocumentNumber,
-      this.elements.researchTownship,
-      this.elements.researchRange,
-      this.elements.researchSections,
-      this.elements.researchClassification,
-      this.elements.researchDateReviewed,
-      this.elements.researchReviewer,
-    ].forEach((el) => {
-      el?.addEventListener("input", () => this.updateResearchSaveState());
-      if (el?.tagName === "SELECT") {
-        el.addEventListener("change", () => this.updateResearchSaveState());
-      }
-    });
 
     this.elements.evidenceType?.addEventListener("change", () =>
       this.updateEvidenceSaveState()
@@ -976,34 +933,6 @@ export default class AppController {
     );
     this.elements.evidenceCondition?.addEventListener("change", () =>
       this.updateEvidenceSaveState()
-    );
-
-    [
-      this.elements.equipmentSetupAt,
-      this.elements.equipmentTearDownAt,
-      this.elements.equipmentBaseHeight,
-      this.elements.equipmentReferencePoint,
-      this.elements.equipmentUsed,
-      this.elements.equipmentSetupBy,
-      this.elements.equipmentWorkNotes,
-    ].forEach((el) => {
-      el?.addEventListener("input", () => this.updateEquipmentSaveState());
-      if (el?.tagName === "SELECT") {
-        el.addEventListener("change", () => this.updateEquipmentSaveState());
-      }
-    });
-
-    this.elements.equipmentReferencePointPicker?.addEventListener(
-      "change",
-      (e) => this.handleReferencePointSelection(e)
-    );
-
-    this.elements.saveEquipmentButton?.addEventListener("click", () =>
-      this.saveEquipmentEntry()
-    );
-
-    this.elements.resetEquipmentButton?.addEventListener("click", () =>
-      this.resetEquipmentForm()
     );
 
     window.addEventListener("scroll", () => this.handleSpringboardScroll());
@@ -1045,7 +974,7 @@ export default class AppController {
     this.renderEvidenceTies();
     this.refreshEquipmentUI();
     this.renderGlobalSettings();
-    this.loadHelpDocument();
+    this.appControllers?.helpSection?.loadHelpDocument?.();
     this.switchTab("springboardSection");
     this.handleSpringboardScroll();
     this.setupSyncHandlers();
@@ -1813,7 +1742,7 @@ export default class AppController {
       this.levelingController?.onProjectChanged();
       this.populateQcSettings(null);
       this.renderQualityDashboard();
-      this.resetChainFilters();
+      this.appControllers?.chainEvidenceSection?.resetChainFilters?.();
       return;
     }
 
@@ -1827,7 +1756,7 @@ export default class AppController {
     if (!this.currentRecordId && this.elements.editor)
       this.elements.editor.style.display = "none";
 
-    this.resetChainFilters();
+    this.appControllers?.chainEvidenceSection?.resetChainFilters?.();
     this.appControllers?.traverseSection?.renderRecords();
     this.updateProjectList();
     this.drawProjectOverview();
@@ -3009,34 +2938,6 @@ export default class AppController {
     return html || "<p>No help content found.</p>";
   }
 
-  async loadHelpDocument(force = false) {
-    if (this.helpLoading || (this.helpLoaded && !force)) return;
-    const container = this.elements.helpContent;
-    if (!container) return;
-    const status = this.elements.helpStatus;
-    this.helpLoading = true;
-    if (status) status.textContent = "Loading help from HELP.md…";
-
-    try {
-      const res = await fetch("HELP.md");
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const text = await res.text();
-      container.innerHTML = this.renderMarkdown(text);
-      if (status)
-        status.textContent =
-          "Loaded from HELP.md. Click refresh after editing the file.";
-      this.helpLoaded = true;
-    } catch (err) {
-      console.error("Failed to load help content", err);
-      if (status)
-        status.textContent = "Couldn't load HELP.md. Confirm it sits by index.html.";
-      container.innerHTML =
-        "<p>Help content could not be loaded. Make sure HELP.md is next to index.html.</p>";
-    } finally {
-      this.helpLoading = false;
-    }
-  }
-
   createAppControllers() {
     const getCurrentProject = () =>
       this.currentProjectId ? this.projects[this.currentProjectId] : null;
@@ -3110,17 +3011,131 @@ export default class AppController {
       chainEvidenceSection: new ChainEvidenceAppController({
         id: "chainEvidenceSection",
         section: this.elements.chainEvidenceSection,
-        refreshChainEvidence: () => this.refreshChainEvidence(),
+        elements: {
+          chainEvidenceList: this.elements.chainEvidenceList,
+          chainEvidenceSummary: this.elements.chainEvidenceSummary,
+          chainTrsFilter: this.elements.chainTrsFilter,
+          chainCornerTypeFilter: this.elements.chainCornerTypeFilter,
+          chainCornerStatusFilter: this.elements.chainCornerStatusFilter,
+          chainStatusFilter: this.elements.chainStatusFilter,
+          chainStartDate: this.elements.chainStartDate,
+          chainEndDate: this.elements.chainEndDate,
+          chainApplyFilters: this.elements.chainApplyFilters,
+          chainResetFilters: this.elements.chainResetFilters,
+          chainExportAll: this.elements.chainExportAll,
+        },
+        getCurrentProjectId: () => this.currentProjectId,
+        getProjectEvidence: () =>
+          this.currentProjectId
+            ? this.cornerEvidenceService.getProjectEvidence(
+                this.currentProjectId
+              )
+            : [],
+        computeQualityResults: () => this.computeQualityResults(),
+        getLatestQcResults: () => this.latestQcResults,
+        getResearchDocuments: (projectId) =>
+          this.researchDocumentService.getProjectDocuments(projectId),
+        buildEvidenceTitle: (entry) => this.buildEvidenceTitle(entry),
+        buildEvidenceTrs: (entry) => this.buildEvidenceTrs(entry),
+        buildStatusChip: (status) => this.buildStatusChip(status),
+        getCpfCompleteness: (entry) => this.getCpfCompleteness(entry),
+        exportCornerFiling: (entry) => this.exportCornerFiling(entry),
+        downloadHtml: (html, name) => this.downloadHtml(html, name),
+        escapeHtml: (text) => this.escapeHtml(text),
       }),
       researchSection: new ResearchAppController({
         id: "researchSection",
         section: this.elements.researchSection,
-        refreshResearch: () => this.refreshResearchUI(),
+        elements: {
+          researchEvidenceSelect: this.elements.researchEvidenceSelect,
+          researchDocumentType: this.elements.researchDocumentType,
+          researchJurisdiction: this.elements.researchJurisdiction,
+          researchInstrument: this.elements.researchInstrument,
+          researchBookPage: this.elements.researchBookPage,
+          researchDocumentNumber: this.elements.researchDocumentNumber,
+          researchTownship: this.elements.researchTownship,
+          researchRange: this.elements.researchRange,
+          researchSections: this.elements.researchSections,
+          researchAliquots: this.elements.researchAliquots,
+          researchSource: this.elements.researchSource,
+          researchDateReviewed: this.elements.researchDateReviewed,
+          researchReviewer: this.elements.researchReviewer,
+          researchStatus: this.elements.researchStatus,
+          researchClassification: this.elements.researchClassification,
+          researchNotes: this.elements.researchNotes,
+          researchCornerNotes: this.elements.researchCornerNotes,
+          researchTraverseLinks: this.elements.researchTraverseLinks,
+          researchStakeoutLinks: this.elements.researchStakeoutLinks,
+          researchCornerIds: this.elements.researchCornerIds,
+          researchList: this.elements.researchList,
+          researchSummary: this.elements.researchSummary,
+          researchFormStatus: this.elements.researchFormStatus,
+          saveResearchButton: this.elements.saveResearchButton,
+          resetResearchButton: this.elements.resetResearchButton,
+          exportResearchButton: this.elements.exportResearchButton,
+        },
+        getCurrentProjectId: () => this.currentProjectId,
+        getProjectEvidence: () =>
+          this.currentProjectId
+            ? this.cornerEvidenceService.getProjectEvidence(
+                this.currentProjectId
+              )
+            : [],
+        getResearchDocuments: (projectId) =>
+          this.researchDocumentService.getProjectDocuments(projectId),
+        addResearchDocument: (doc) =>
+          this.researchDocumentService.addEntry(doc),
+        buildExportMetadata: (status) => this.buildExportMetadata(status),
+        getExportStatusLabel: (status) => this.getExportStatusLabel(status),
+        downloadText: (text, name) => this.downloadText(text, name),
+        getProjectName: () =>
+          this.projects[this.currentProjectId]?.name || "Project",
+        onResearchListUpdated: () =>
+          this.appControllers?.chainEvidenceSection?.renderChainEvidenceList?.(),
       }),
       equipmentSection: new EquipmentAppController({
         id: "equipmentSection",
         section: this.elements.equipmentSection,
-        refreshEquipment: () => this.refreshEquipmentUI(),
+        elements: {
+          equipmentSetupAt: this.elements.equipmentSetupAt,
+          equipmentTearDownAt: this.elements.equipmentTearDownAt,
+          equipmentBaseHeight: this.elements.equipmentBaseHeight,
+          equipmentReferencePoint: this.elements.equipmentReferencePoint,
+          equipmentUsed: this.elements.equipmentUsed,
+          equipmentSetupBy: this.elements.equipmentSetupBy,
+          equipmentWorkNotes: this.elements.equipmentWorkNotes,
+          equipmentReferencePointPicker:
+            this.elements.equipmentReferencePointPicker,
+          equipmentReferencePointOptions:
+            this.elements.equipmentReferencePointOptions,
+          equipmentFormStatus: this.elements.equipmentFormStatus,
+          saveEquipmentButton: this.elements.saveEquipmentButton,
+          resetEquipmentButton: this.elements.resetEquipmentButton,
+          equipmentLocationStatus: this.elements.equipmentLocationStatus,
+          equipmentList: this.elements.equipmentList,
+          equipmentSummary: this.elements.equipmentSummary,
+          captureEquipmentLocation: this.elements.captureEquipmentLocation,
+        },
+        getProjects: () => this.projects,
+        getCurrentProjectId: () => this.currentProjectId,
+        getActiveTeamMembers: () => this.getActiveTeamMembers(),
+        getEquipmentSettings: () => this.globalSettings.equipment || [],
+        saveProjects: () => this.saveProjects(),
+        escapeHtml: (text) => this.escapeHtml(text),
+        onEquipmentLogsChanged: () =>
+          this.navigationController?.onEquipmentLogsChanged(),
+        onNavigateToEquipment: (id) => {
+          if (!this.navigationController) return;
+          this.navigationController.renderEquipmentOptions();
+          if (this.elements.navigationEquipmentSelect) {
+            this.elements.navigationEquipmentSelect.value = id;
+          }
+          this.navigationController.applyEquipmentTarget(id);
+          this.switchTab("navigationSection");
+          this.elements.navigationSection?.scrollIntoView({
+            behavior: "smooth",
+          });
+        },
       }),
       navigationSection: new NavigationAppController({
         id: "navigationSection",
@@ -3133,7 +3148,13 @@ export default class AppController {
       helpSection: new HelpAppController({
         id: "helpSection",
         section: this.elements.helpSection,
-        loadHelp: () => this.loadHelpDocument(),
+        elements: {
+          helpContent: this.elements.helpContent,
+          helpStatus: this.elements.helpStatus,
+        },
+        renderMarkdown: (text) => this.renderMarkdown(text),
+        loadHelp: () =>
+          this.appControllers?.helpSection?.loadHelpDocument?.(false),
       }),
     };
   }
@@ -3771,7 +3792,7 @@ export default class AppController {
         container.appendChild(card);
       });
 
-    this.renderChainEvidenceList();
+    this.appControllers?.chainEvidenceSection?.renderChainEvidenceList?.();
     this.populateResearchEvidenceOptions();
   }
 
@@ -3791,1408 +3812,100 @@ export default class AppController {
   }
 
   refreshChainEvidence() {
-    this.populateChainFilters();
-    this.applyChainFiltersFromInputs(false);
-    this.renderChainEvidenceList();
-  }
-
-  populateChainFilters() {
-    const evidence = this.cornerEvidenceService.getProjectEvidence(
-      this.currentProjectId
-    );
-    const types = [
-      ...new Set((evidence || []).map((ev) => ev.cornerType).filter(Boolean)),
-    ];
-    const statuses = [
-      ...new Set((evidence || []).map((ev) => ev.cornerStatus).filter(Boolean)),
-    ];
-
-    const applyOptions = (select, values, label, selectedValue = "") => {
-      if (!select) return;
-      const current = selectedValue || select.value;
-      select.innerHTML = "";
-      const placeholder = document.createElement("option");
-      placeholder.value = "";
-      placeholder.textContent = label;
-      select.appendChild(placeholder);
-      values.forEach((val) => {
-        const opt = document.createElement("option");
-        opt.value = val;
-        opt.textContent = val;
-        opt.selected = val === current;
-        select.appendChild(opt);
-      });
-      if (select.value !== current && current) {
-        select.value = current;
-      }
-    };
-
-    applyOptions(
-      this.elements.chainCornerTypeFilter,
-      types,
-      "All corner types",
-      this.chainFilters.cornerType
-    );
-    applyOptions(
-      this.elements.chainCornerStatusFilter,
-      statuses,
-      "All corner statuses",
-      this.chainFilters.cornerStatus
-    );
-  }
-
-  applyChainFiltersFromInputs(render = true) {
-    this.chainFilters.trs = this.elements.chainTrsFilter?.value.trim() || "";
-    this.chainFilters.cornerType =
-      this.elements.chainCornerTypeFilter?.value || "";
-    this.chainFilters.cornerStatus =
-      this.elements.chainCornerStatusFilter?.value || "";
-    this.chainFilters.status =
-      this.elements.chainStatusFilter?.value || "";
-    this.chainFilters.startDate = this.elements.chainStartDate?.value || "";
-    this.chainFilters.endDate = this.elements.chainEndDate?.value || "";
-    if (render) this.renderChainEvidenceList();
-  }
-
-  resetChainFilters() {
-    this.chainFilters = {
-      trs: "",
-      cornerType: "",
-      cornerStatus: "",
-      status: "",
-      startDate: "",
-      endDate: "",
-    };
-    if (this.elements.chainTrsFilter) this.elements.chainTrsFilter.value = "";
-    if (this.elements.chainCornerTypeFilter)
-      this.elements.chainCornerTypeFilter.value = "";
-    if (this.elements.chainCornerStatusFilter)
-      this.elements.chainCornerStatusFilter.value = "";
-    if (this.elements.chainStatusFilter)
-      this.elements.chainStatusFilter.value = "";
-    if (this.elements.chainStartDate) this.elements.chainStartDate.value = "";
-    if (this.elements.chainEndDate) this.elements.chainEndDate.value = "";
-    this.renderChainEvidenceList();
-  }
-
-  normalizeFilterDate(value, isEnd = false) {
-    if (!value) return null;
-    const date = new Date(value);
-    if (!Number.isFinite(date.getTime())) return null;
-    if (isEnd) {
-      date.setHours(23, 59, 59, 999);
-    } else {
-      date.setHours(0, 0, 0, 0);
-    }
-    return date;
-  }
-
-  getChainFilteredEvidence() {
-    const evidence = this.cornerEvidenceService.getProjectEvidence(
-      this.currentProjectId
-    );
-    const trsFilter = this.chainFilters.trs.toLowerCase();
-    const startDate = this.normalizeFilterDate(this.chainFilters.startDate);
-    const endDate = this.normalizeFilterDate(this.chainFilters.endDate, true);
-
-    const filtered = evidence.filter((ev) => {
-      const trs = (this.buildEvidenceTrs(ev) || "").toLowerCase();
-      if (trsFilter && !trs.includes(trsFilter)) return false;
-      if (this.chainFilters.cornerType && ev.cornerType !== this.chainFilters.cornerType)
-        return false;
-      if (
-        this.chainFilters.cornerStatus &&
-        ev.cornerStatus !== this.chainFilters.cornerStatus
-      )
-        return false;
-      if (this.chainFilters.status && ev.status !== this.chainFilters.status)
-        return false;
-      const created = ev.createdAt ? new Date(ev.createdAt) : null;
-      if (startDate && created && created < startDate) return false;
-      if (endDate && created && created > endDate) return false;
-      return true;
-    });
-
-    return filtered.sort(
-      (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
-    );
-  }
-
-  renderChainEvidenceList() {
-    const container = this.elements.chainEvidenceList;
-    const summary = this.elements.chainEvidenceSummary;
-    if (!container || !summary) return;
-
-    this.populateChainFilters();
-    container.innerHTML = "";
-
-    if (!this.currentProjectId) {
-      summary.textContent = "Select a project to view evidence.";
-      return;
-    }
-
-    const allEvidence = this.cornerEvidenceService.getProjectEvidence(
-      this.currentProjectId
-    );
-    if (!allEvidence.length) {
-      summary.textContent = "No evidence logged yet.";
-      return;
-    }
-
-    const filtered = this.getChainFilteredEvidence();
-    const total = allEvidence.length;
-    const matchedWord = filtered.length === 1 ? "entry" : "entries";
-    const totalWord = total === 1 ? "entry" : "entries";
-    summary.textContent =
-      filtered.length === total
-        ? `${total} evidence ${totalWord} documented.`
-        : `${filtered.length} ${matchedWord} of ${total} evidence ${totalWord} match the filters.`;
-
-    if (!filtered.length) {
-      const empty = document.createElement("div");
-      empty.className = "subtitle";
-      empty.textContent = "No evidence matched the selected filters.";
-      container.appendChild(empty);
-      return;
-    }
-
-    const qcResults = this.latestQcResults || this.computeQualityResults();
-    const researchDocs = this.researchDocumentService.getProjectDocuments(
-      this.currentProjectId
-    );
-
-    const groups = new Map();
-    filtered.forEach((ev) => {
-      const trs = this.buildEvidenceTrs(ev) || "Unspecified TRS";
-      if (!groups.has(trs)) groups.set(trs, []);
-      groups.get(trs).push(ev);
-    });
-
-    Array.from(groups.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .forEach(([trs, entries]) => {
-        const group = document.createElement("div");
-        group.className = "chain-group";
-        const header = document.createElement("div");
-        header.className = "chain-group-header";
-        const title = document.createElement("strong");
-        title.textContent = trs;
-        const count = document.createElement("span");
-        count.className = "subtitle";
-        count.textContent = `${entries.length} entr${
-          entries.length === 1 ? "y" : "ies"
-        }`;
-        header.append(title, count);
-        group.appendChild(header);
-
-        entries
-          .slice()
-          .sort(
-            (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
-          )
-          .forEach((entry) => {
-            group.appendChild(
-              this.buildChainEvidenceCard(entry, qcResults, researchDocs)
-            );
-          });
-
-        container.appendChild(group);
-      });
-  }
-
-  buildChainEvidenceCard(entry, qcResults, researchDocs) {
-    const card = document.createElement("div");
-    card.className = "chain-entry";
-
-    const header = document.createElement("div");
-    header.style.display = "flex";
-    header.style.alignItems = "center";
-    header.style.justifyContent = "space-between";
-    header.style.gap = "10px";
-
-    const title = document.createElement("strong");
-    title.textContent = entry.title || this.buildEvidenceTitle(entry);
-    header.appendChild(title);
-
-    const chipRow = document.createElement("div");
-    chipRow.className = "chip-row";
-    chipRow.appendChild(this.buildStatusChip(entry.status || "Draft"));
-    if (entry.cornerType) {
-      const typeChip = document.createElement("span");
-      typeChip.className = "status-chip info";
-      typeChip.textContent = entry.cornerType;
-      chipRow.appendChild(typeChip);
-    }
-    if (entry.cornerStatus) {
-      const statusChip = document.createElement("span");
-      statusChip.className = "status-chip in-progress";
-      statusChip.textContent = entry.cornerStatus;
-      chipRow.appendChild(statusChip);
-    }
-    const qcState = this.describeEvidenceQc(entry, qcResults);
-    const qcChip = this.buildQcChip(qcState);
-    if (qcChip) chipRow.appendChild(qcChip);
-    header.appendChild(chipRow);
-    card.appendChild(header);
-
-    const meta = document.createElement("div");
-    meta.className = "meta";
-    const recordLabel = entry.recordName || "Unlinked";
-    const createdLabel = entry.createdAt
-      ? new Date(entry.createdAt).toLocaleString()
-      : "";
-    meta.textContent = `${recordLabel} · Saved ${createdLabel}`;
-    card.appendChild(meta);
-
-    const trsLine = this.buildEvidenceTrs(entry);
-    if (trsLine) {
-      const trs = document.createElement("div");
-      trs.textContent = `TRS: ${trsLine}`;
-      card.appendChild(trs);
-    }
-
-    if (entry.notes) {
-      const notes = document.createElement("div");
-      notes.textContent = entry.notes;
-      card.appendChild(notes);
-    }
-
-    if (entry.ties?.length) {
-      const ties = document.createElement("div");
-      ties.className = "subtitle";
-      ties.textContent = `${entry.ties.length} tie${
-        entry.ties.length === 1 ? "" : "s"
-      } recorded.`;
-      card.appendChild(ties);
-    }
-
-    const completeness = this.getCpfCompleteness(entry);
-    const missingFields = completeness?.missing || [];
-    const cpStatus = document.createElement("div");
-    cpStatus.className = "mini-note";
-    cpStatus.textContent = completeness.complete
-      ? "CP&F-ready"
-      : `CP&F validation outstanding: ${missingFields.join(", ") || "Items not documented"}`;
-    card.appendChild(cpStatus);
-
-    const researchRefs = this.getResearchReferencesForEvidence(
-      entry,
-      researchDocs
-    );
-    if (researchRefs.length) {
-      const refBlock = document.createElement("div");
-      const refTitle = document.createElement("strong");
-      refTitle.textContent = "Linked research";
-      const list = document.createElement("ul");
-      researchRefs.forEach((doc) => {
-        const li = document.createElement("li");
-        const line = [doc.type, doc.classification].filter(Boolean).join(" · ");
-        li.textContent = line || doc.type || "Research document";
-        list.appendChild(li);
-      });
-      refBlock.append(refTitle, list);
-      card.appendChild(refBlock);
-    }
-
-    const actions = document.createElement("div");
-    actions.style.display = "flex";
-    actions.style.gap = "8px";
-    actions.style.marginTop = "8px";
-    const cpfBtn = document.createElement("button");
-    cpfBtn.type = "button";
-    cpfBtn.textContent = "Export CP&F";
-    cpfBtn.addEventListener("click", () => this.exportCornerFiling(entry));
-    const packetBtn = document.createElement("button");
-    packetBtn.type = "button";
-    packetBtn.className = "secondary";
-    packetBtn.textContent = "Evidence Packet";
-    packetBtn.addEventListener("click", () =>
-      this.exportChainEvidencePacket(entry, qcState, researchRefs)
-    );
-    actions.append(cpfBtn, packetBtn);
-    card.appendChild(actions);
-
-    return card;
-  }
-
-  describeEvidenceQc(entry, qcResults = {}) {
-    const defaultState = { label: "No traverse link", level: "info" };
-    if (!entry?.recordId) return defaultState;
-    const traverse = qcResults.traverses?.find((t) => t.id === entry.recordId);
-    if (!traverse) return { label: "Traverse not evaluated", level: "warn" };
-    if (traverse.status === "fail")
-      return { label: "Fails tolerance", level: "fail" };
-    if (traverse.status === "pass")
-      return { label: "Passes tolerance", level: "pass" };
-    return { label: traverse.message || "QC pending", level: "warn" };
-  }
-
-  buildQcChip(state = { label: "", level: "info" }) {
-    const chip = document.createElement("span");
-    chip.className = "status-chip";
-    chip.textContent = `QC: ${state.label || "Not evaluated"}`;
-    if (state.level === "fail") chip.classList.add("draft");
-    else if (state.level === "pass") chip.classList.add("ready");
-    else if (state.level === "warn") chip.classList.add("in-progress");
-    else chip.classList.add("info");
-    return chip;
-  }
-
-  getResearchReferencesForEvidence(entry, docs = []) {
-    return (docs || []).filter((doc) =>
-      doc.linkedEvidence?.some((ev) => (ev.id || ev) === entry.id)
-    );
-  }
-
-  exportChainEvidencePacket(entry, qcState, researchRefs = []) {
-    if (!entry) return;
-    const qcResults = this.latestQcResults || this.computeQualityResults();
-    const packetQcState = qcState || this.describeEvidenceQc(entry, qcResults);
-    const completeness = this.getCpfCompleteness(entry);
-    const refs =
-      researchRefs.length > 0
-        ? researchRefs
-        : this.getResearchReferencesForEvidence(
-            entry,
-            this.researchDocumentService.getProjectDocuments(entry.projectId)
-          );
-    const html = this.buildEvidencePacketLayout(entry, {
-      qcState: packetQcState,
-      researchRefs: refs,
-      completeness,
-    });
-    const fileBase = (entry.title || this.buildEvidenceTitle(entry) || "corner")
-      .replace(/[^\w\-]+/g, "_")
-      .toLowerCase();
-    this.downloadHtml(html, `${fileBase}-evidence-packet.html`);
-  }
-
-  exportChainEvidenceSelection() {
-    if (!this.currentProjectId) return;
-    const filtered = this.getChainFilteredEvidence();
-    if (!filtered.length) return;
-    const qcResults = this.latestQcResults || this.computeQualityResults();
-    const researchDocs = this.researchDocumentService.getProjectDocuments(
-      this.currentProjectId
-    );
-    const sections = filtered
-      .map((entry) =>
-        this.buildEvidencePacketLayout(entry, {
-          qcState: this.describeEvidenceQc(entry, qcResults),
-          researchRefs: this.getResearchReferencesForEvidence(
-            entry,
-            researchDocs
-          ),
-          completeness: this.getCpfCompleteness(entry),
-          includeHeader: false,
-        })
-      )
-      .join("<hr />");
-    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8" /><title>Corner Evidence Packet</title></head><body><h1>Corner Evidence Packet</h1>${sections}</body></html>`;
-    this.downloadHtml(html, "corner-evidence-packet.html");
-  }
-
-  buildEvidencePacketLayout(entry, options = {}) {
-    const {
-      qcState = { label: "Not evaluated", level: "info" },
-      researchRefs = [],
-      completeness = { complete: false, missing: [] },
-      includeHeader = true,
-    } = options;
-    const trs = this.buildEvidenceTrs(entry) || "Unspecified";
-    const photoBlock = entry.photo
-      ? `<div style="margin-top:8px;"><strong>Photo</strong><br /><img src="${entry.photo}" alt="Evidence photo" style="max-width:100%;height:auto;border-radius:8px;border:1px solid #e5e7eb;" /></div>`
-      : "";
-    const ties = (entry.ties || [])
-      .map((tie, idx) => {
-        const parts = [tie.distance, tie.bearing, tie.description]
-          .filter(Boolean)
-          .map((p) => this.escapeHtml(p))
-          .join(" · ");
-        return `<li><strong>Tie ${idx + 1}:</strong> ${parts || "No details"}</li>`;
-      })
-      .join("");
-    const researchList = researchRefs
-      .map(
-        (doc) =>
-          `<li><strong>${this.escapeHtml(doc.type || "Research")}</strong> — ${
-            this.escapeHtml(doc.classification || "Unclassified")
-          }</li>`
-      )
-      .join("");
-    const qcLabel = qcState.label || "Not evaluated";
-    const cpStatus = completeness.complete
-      ? "Complete"
-      : `Missing: ${completeness.missing.join(", ")}`;
-    const header = includeHeader
-      ? `<h1>${this.escapeHtml(entry.title || this.buildEvidenceTitle(entry))}</h1>`
-      : "";
-    const body = `${header}<div><strong>TRS:</strong> ${this.escapeHtml(
-      trs
-    )}</div><div><strong>Corner type:</strong> ${this.escapeHtml(
-      entry.cornerType || ""
-    )}</div><div><strong>Corner status:</strong> ${this.escapeHtml(
-      entry.cornerStatus || ""
-    )}</div><div><strong>Evidence status:</strong> ${this.escapeHtml(
-      entry.status || "Draft"
-    )}</div><div><strong>QC:</strong> ${this.escapeHtml(
-      qcLabel
-    )}</div><div><strong>CP&F readiness:</strong> ${this.escapeHtml(
-      cpStatus
-    )}</div><div><strong>Record:</strong> ${this.escapeHtml(
-      entry.recordName || "Unlinked"
-    )}</div><div><strong>Notes:</strong> ${this.escapeHtml(
-      entry.notes || "No notes recorded"
-    )}</div>${photoBlock}${ties ? `<div style="margin-top:6px;"><strong>Ties</strong><ul>${ties}</ul></div>` : ""}${
-      researchList
-        ? `<div style="margin-top:6px;"><strong>Research References</strong><ul>${researchList}</ul></div>`
-        : ""
-    }`;
-
-    if (!includeHeader) {
-      return `<section>${body}</section>`;
-    }
-
-    return `<!DOCTYPE html><html><head><meta charset="UTF-8" /><title>${this.escapeHtml(
-      entry.title || "Evidence Packet"
-    )}</title></head><body>${body}</body></html>`;
+    this.appControllers?.chainEvidenceSection?.refreshChainEvidence?.();
+    this.populateResearchEvidenceOptions();
   }
 
   /* ===================== Research & Source Documentation ===================== */
   refreshResearchUI() {
-    this.populateResearchEvidenceOptions();
-    this.renderResearchList();
-    this.updateResearchSaveState();
+    this.appControllers?.researchSection?.refreshResearchUI?.();
   }
 
   populateResearchEvidenceOptions() {
-    const select = this.elements.researchEvidenceSelect;
-    if (!select) return;
-    select.innerHTML = "";
-    const evidence = this.cornerEvidenceService.getProjectEvidence(
-      this.currentProjectId
-    );
-    if (!evidence.length) {
-      const opt = document.createElement("option");
-      opt.disabled = true;
-      opt.value = "";
-      opt.textContent = "No evidence logged";
-      select.appendChild(opt);
-      return;
-    }
-    evidence
-      .slice()
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .forEach((ev) => {
-        const opt = document.createElement("option");
-        opt.value = ev.id;
-        opt.dataset.label = `${ev.pointLabel || "Traverse point"} · ${
-          ev.recordName || "Record"
-        }`;
-        opt.textContent = `${ev.pointLabel || "Traverse point"} (${ev.recordName ||
-          "Record"})`;
-        select.appendChild(opt);
-      });
+    this.appControllers?.researchSection?.populateResearchEvidenceOptions?.();
   }
 
   updateResearchSaveState() {
-    if (!this.elements.saveResearchButton) return;
-    const required = [
-      this.elements.researchDocumentType,
-      this.elements.researchJurisdiction,
-      this.elements.researchInstrument,
-      this.elements.researchBookPage,
-      this.elements.researchTownship,
-      this.elements.researchRange,
-      this.elements.researchSections,
-      this.elements.researchClassification,
-      this.elements.researchDateReviewed,
-      this.elements.researchReviewer,
-    ];
-    const canSave =
-      !!this.currentProjectId &&
-      required.every((el) => el && el.value.trim().length > 0);
-    this.elements.saveResearchButton.disabled = !canSave;
+    this.appControllers?.researchSection?.updateResearchSaveState?.();
   }
 
   saveResearchDocument() {
-    if (!this.currentProjectId) return;
-    const selectedEvidence = Array.from(
-      this.elements.researchEvidenceSelect?.selectedOptions || []
-    ).map((opt) => ({ id: opt.value, label: opt.dataset.label || opt.textContent }));
-
-    const doc = new ResearchDocument({
-      projectId: this.currentProjectId,
-      type: this.elements.researchDocumentType?.value.trim() || "",
-      jurisdiction: this.elements.researchJurisdiction?.value.trim() || "",
-      instrumentNumber: this.elements.researchInstrument?.value.trim() || "",
-      bookPage: this.elements.researchBookPage?.value.trim() || "",
-      documentNumber: this.elements.researchDocumentNumber?.value.trim() || "",
-      township: this.elements.researchTownship?.value.trim() || "",
-      range: this.elements.researchRange?.value.trim() || "",
-      sections: this.elements.researchSections?.value.trim() || "",
-      aliquots: this.elements.researchAliquots?.value.trim() || "",
-      source: this.elements.researchSource?.value.trim() || "",
-      dateReviewed: this.elements.researchDateReviewed?.value.trim() || "",
-      reviewer: this.elements.researchReviewer?.value.trim() || "",
-      status: this.elements.researchStatus?.value.trim() || "Draft",
-      classification:
-        this.elements.researchClassification?.value.trim() || "",
-      notes: this.elements.researchNotes?.value.trim() || "",
-      cornerNotes: this.elements.researchCornerNotes?.value.trim() || "",
-      linkedEvidence: selectedEvidence,
-      traverseLinks: this.elements.researchTraverseLinks?.value.trim() || "",
-      stakeoutLinks: this.elements.researchStakeoutLinks?.value.trim() || "",
-      cornerIds: this.elements.researchCornerIds?.value.trim() || "",
-    });
-
-    this.researchDocumentService.addEntry(doc);
-    this.resetResearchForm();
-    this.renderResearchList();
+    this.appControllers?.researchSection?.saveResearchDocument?.();
   }
 
   resetResearchForm() {
-    [
-      this.elements.researchDocumentType,
-      this.elements.researchJurisdiction,
-      this.elements.researchInstrument,
-      this.elements.researchBookPage,
-      this.elements.researchDocumentNumber,
-      this.elements.researchTownship,
-      this.elements.researchRange,
-      this.elements.researchSections,
-      this.elements.researchAliquots,
-      this.elements.researchSource,
-      this.elements.researchDateReviewed,
-      this.elements.researchReviewer,
-      this.elements.researchStatus,
-      this.elements.researchClassification,
-      this.elements.researchNotes,
-      this.elements.researchCornerNotes,
-      this.elements.researchTraverseLinks,
-      this.elements.researchStakeoutLinks,
-      this.elements.researchCornerIds,
-    ].forEach((el) => {
-      if (el) el.value = "";
-    });
-    if (this.elements.researchStatus) {
-      this.elements.researchStatus.value = "Draft";
-    }
-    if (this.elements.researchEvidenceSelect) {
-      Array.from(this.elements.researchEvidenceSelect.options).forEach((opt) => {
-        opt.selected = false;
-      });
-    }
-    this.updateResearchSaveState();
+    this.appControllers?.researchSection?.resetResearchForm?.();
   }
 
   renderResearchList() {
-    if (!this.elements.researchList || !this.elements.researchSummary) return;
-    const docs = this.researchDocumentService.getProjectDocuments(
-      this.currentProjectId
-    );
-    const container = this.elements.researchList;
-    container.innerHTML = "";
-
-    if (!this.currentProjectId) {
-      this.elements.researchSummary.textContent =
-        "Select a project to view research.";
-      return;
-    }
-
-    if (!docs.length) {
-      this.elements.researchSummary.textContent =
-        "No research documents logged yet.";
-      return;
-    }
-
-    this.elements.researchSummary.textContent = `${docs.length} source${
-      docs.length === 1 ? "" : "s"
-    } documented.`;
-
-    const toDate = (doc) =>
-      doc.dateReviewed ? new Date(doc.dateReviewed) : new Date(doc.createdAt);
-    docs
-      .slice()
-      .sort((a, b) => toDate(b) - toDate(a))
-      .forEach((doc) => {
-        const card = document.createElement("div");
-        card.className = "card";
-        const title = document.createElement("strong");
-        title.textContent = doc.type || "Source document";
-        const subtitle = document.createElement("div");
-        subtitle.className = "subtitle";
-        const trsParts = [doc.township, doc.range, doc.sections]
-          .filter(Boolean)
-          .join(" ");
-        subtitle.textContent = trsParts || "Location not set";
-        const badgeRow = document.createElement("div");
-        badgeRow.style.display = "flex";
-        badgeRow.style.gap = "8px";
-        const statusChip = this.buildStatusChip(doc.status || "Draft");
-        const badge = document.createElement("span");
-        badge.className = "status-chip info";
-        badge.textContent = doc.classification || "Unclassified";
-        badgeRow.append(statusChip, badge);
-        card.append(title, subtitle, badgeRow);
-
-        const meta = document.createElement("div");
-        const recordParts = [
-          doc.jurisdiction,
-          doc.instrumentNumber,
-          doc.bookPage,
-          doc.documentNumber,
-        ]
-          .filter(Boolean)
-          .join(" · ");
-        if (recordParts) {
-          meta.textContent = recordParts;
-          card.appendChild(meta);
-        }
-        const reviewerLine = document.createElement("div");
-        reviewerLine.textContent = `Reviewed ${doc.dateReviewed || ""} by ${
-          doc.reviewer || ""
-        }`;
-        card.appendChild(reviewerLine);
-
-        if (doc.source) {
-          const src = document.createElement("div");
-          src.textContent = `Source: ${doc.source}`;
-          card.appendChild(src);
-        }
-        if (doc.aliquots) {
-          const ali = document.createElement("div");
-          ali.textContent = `Aliquots: ${doc.aliquots}`;
-          card.appendChild(ali);
-        }
-        if (doc.cornerNotes) {
-          const cn = document.createElement("div");
-          cn.textContent = `Corner/line notes: ${doc.cornerNotes}`;
-          card.appendChild(cn);
-        }
-        if (doc.traverseLinks) {
-          const tv = document.createElement("div");
-          tv.textContent = `Traverse links: ${doc.traverseLinks}`;
-          card.appendChild(tv);
-        }
-        if (doc.stakeoutLinks) {
-          const st = document.createElement("div");
-          st.textContent = `Stakeout links: ${doc.stakeoutLinks}`;
-          card.appendChild(st);
-        }
-        if (doc.cornerIds) {
-          const cid = document.createElement("div");
-          cid.textContent = `TRS corner IDs: ${doc.cornerIds}`;
-          card.appendChild(cid);
-        }
-        if (doc.notes) {
-          const notes = document.createElement("div");
-          notes.textContent = doc.notes;
-          notes.style.marginTop = "6px";
-          card.appendChild(notes);
-        }
-        if (doc.linkedEvidence?.length) {
-          const list = document.createElement("ul");
-          list.className = "ties-list";
-          doc.linkedEvidence.forEach((ev) => {
-            const li = document.createElement("li");
-            li.textContent = ev.label || ev.id;
-            list.appendChild(li);
-          });
-          const heading = document.createElement("strong");
-          heading.textContent = "Linked evidence";
-          card.append(heading, list);
-        }
-        container.appendChild(card);
-      });
-
-    this.renderChainEvidenceList();
+    this.appControllers?.researchSection?.renderResearchList?.();
   }
 
   exportResearchPacket() {
-    if (!this.currentProjectId) return;
-    const docs = this.researchDocumentService.getProjectDocuments(
-      this.currentProjectId
-    );
-    if (!docs.length) {
-      alert("No research documents to export.");
-      return;
-    }
-    const projectName = this.projects[this.currentProjectId]?.name || "Project";
-    const normalizedStatuses = docs.map((doc) =>
-      (doc.status || "Draft").toLowerCase()
-    );
-    const exportStatus = normalizedStatuses.every((status) => status === "final")
-      ? "Final"
-      : normalizedStatuses.some((status) => status === "ready for review")
-      ? "Ready for Review"
-      : normalizedStatuses.some((status) => status === "in progress")
-      ? "In Progress"
-      : "Draft";
-    const meta = this.buildExportMetadata(exportStatus);
-    const label = this.getExportStatusLabel(exportStatus);
-    const exportNote = meta.note || label.note;
-    const lines = [
-      "Research and Source Documentation Packet",
-      meta.status || label.title,
-    ];
-    if (exportStatus.toLowerCase() !== "final") {
-      lines.push("PRELIMINARY — NOT FOR RECORDATION");
-    }
-    if (exportNote) {
-      lines.push(exportNote);
-    } else if (exportStatus.toLowerCase() !== "final") {
-      lines.push("Incomplete — subject to revision.");
-    }
-      lines.push(
-        `Project: ${projectName}`,
-        `Generated: ${meta.generatedAt || new Date().toISOString()}`,
-        ""
-      );
-    docs
-      .slice()
-      .sort((a, b) => (a.township || "").localeCompare(b.township || ""))
-      .forEach((doc, idx) => {
-        lines.push(`${idx + 1}. ${doc.type || "Document"}`);
-        const trs = [doc.township, doc.range, doc.sections, doc.aliquots]
-          .filter(Boolean)
-          .join(" ");
-        if (trs) lines.push(`   TRS: ${trs}`);
-        const recParts = [
-          doc.jurisdiction,
-          doc.instrumentNumber,
-          doc.bookPage,
-          doc.documentNumber,
-        ]
-          .filter(Boolean)
-          .join(" · ");
-        if (recParts) lines.push(`   Recording: ${recParts}`);
-        lines.push(`   Status: ${doc.status || "Draft"}`);
-        lines.push(
-          `   Reviewed ${doc.dateReviewed || ""} by ${doc.reviewer || ""} (${doc.classification || ""})`
-        );
-        if (doc.source) lines.push(`   Source: ${doc.source}`);
-        if (doc.cornerNotes) lines.push(`   Notes: ${doc.cornerNotes}`);
-        if (doc.traverseLinks) lines.push(`   Traverse links: ${doc.traverseLinks}`);
-        if (doc.stakeoutLinks)
-          lines.push(`   Stakeout links: ${doc.stakeoutLinks}`);
-        if (doc.cornerIds) lines.push(`   TRS corner IDs: ${doc.cornerIds}`);
-        if (doc.notes) lines.push(`   Annotation: ${doc.notes}`);
-        if (doc.linkedEvidence?.length) {
-          lines.push(
-            `   Linked evidence: ${doc.linkedEvidence
-              .map((ev) => ev.label || ev.id)
-              .join("; ")}`
-          );
-        }
-        lines.push("");
-      });
-    const safeName = projectName.replace(/[^\w\-]+/g, "_").toLowerCase();
-    this.downloadText(lines.join("\n"), `${safeName}-research-packet.txt`);
+    this.appControllers?.researchSection?.exportResearchPacket?.();
   }
 
   /* ===================== Equipment Setup ===================== */
   refreshEquipmentUI() {
-    this.renderReferencePointOptions();
-    this.renderEquipmentSetupByOptions();
-    this.renderEquipmentPickerOptions();
-    this.renderEquipmentList();
-    this.updateEquipmentSaveState();
+    this.appControllers?.equipmentSection?.refreshEquipmentUI?.();
   }
 
   resetEquipmentForm() {
-    [
-      this.elements.equipmentSetupAt,
-      this.elements.equipmentTearDownAt,
-      this.elements.equipmentBaseHeight,
-      this.elements.equipmentReferencePoint,
-      this.elements.equipmentUsed,
-      this.elements.equipmentSetupBy,
-      this.elements.equipmentWorkNotes,
-    ].forEach((el) => {
-      if (el) el.value = "";
-    });
-    if (this.elements.equipmentReferencePointPicker) {
-      this.elements.equipmentReferencePointPicker.value = "";
-    }
-    if (this.elements.equipmentUsed) {
-      Array.from(this.elements.equipmentUsed.options).forEach((opt) => {
-        opt.selected = false;
-      });
-    }
-    if (this.elements.equipmentFormStatus) {
-      this.elements.equipmentFormStatus.textContent = "";
-    }
-    if (this.elements.saveEquipmentButton) {
-      this.elements.saveEquipmentButton.textContent = "Save Equipment Entry";
-    }
-    if (this.elements.equipmentLocationStatus) {
-      this.elements.equipmentLocationStatus.textContent = "";
-    }
-    this.currentEquipmentLocation = null;
-    this.editingEquipmentId = null;
-    this.updateEquipmentSaveState();
+    this.appControllers?.equipmentSection?.resetEquipmentForm?.();
   }
 
   updateEquipmentSaveState() {
-    if (!this.elements.saveEquipmentButton) return;
-    const requiredFields = [
-      this.elements.equipmentSetupAt,
-      this.elements.equipmentBaseHeight,
-      this.elements.equipmentReferencePoint,
-      this.elements.equipmentSetupBy,
-    ];
-    const canSave =
-      !!this.currentProjectId &&
-      requiredFields.every((el) => el && el.value.trim().length > 0);
-    this.elements.saveEquipmentButton.disabled = !canSave;
+    this.appControllers?.equipmentSection?.updateEquipmentSaveState?.();
   }
 
   renderReferencePointOptions() {
-    const picker = this.elements.equipmentReferencePointPicker;
-    const datalist = this.elements.equipmentReferencePointOptions;
-    const project = this.projects[this.currentProjectId];
-    if (!picker || !datalist || !project) {
-      if (picker) picker.innerHTML = "";
-      if (datalist) datalist.innerHTML = "";
-      return;
-    }
-
-    const options = new Set();
-    (project.pointFiles || []).forEach((pf) => {
-      (pf.points || []).forEach((pt) => {
-        const labelParts = [pt.pointNumber, pt.description]
-          .map((part) => part?.toString().trim())
-          .filter(Boolean);
-        const label = labelParts.join(" · ");
-        if (label) options.add(label);
-      });
-    });
-    (project.referencePoints || []).forEach((name) => {
-      if (name && name.trim()) options.add(name.trim());
-    });
-    (project.equipmentLogs || []).forEach((log) => {
-      if (log.referencePoint && log.referencePoint.trim()) {
-        options.add(log.referencePoint.trim());
-      }
-    });
-
-    const sortedOptions = Array.from(options).sort((a, b) => {
-      const priority = (label) => (/base/i.test(label) || /rerf/i.test(label)) ? 1 : 0;
-      const aPriority = priority(a);
-      const bPriority = priority(b);
-      if (aPriority !== bPriority) return bPriority - aPriority;
-      return a.localeCompare(b, undefined, { sensitivity: "base" });
-    });
-
-    picker.innerHTML = "";
-    const placeholder = document.createElement("option");
-    placeholder.value = "";
-    placeholder.textContent =
-      sortedOptions.length > 0
-        ? "Select a stored reference point"
-        : "No saved reference points";
-    picker.appendChild(placeholder);
-
-    sortedOptions.forEach((label) => {
-      const opt = document.createElement("option");
-      opt.value = label;
-      opt.dataset.label = label;
-      opt.textContent = label;
-      picker.appendChild(opt);
-    });
-
-    datalist.innerHTML = "";
-    sortedOptions.forEach((label) => {
-      const opt = document.createElement("option");
-      opt.value = label;
-      datalist.appendChild(opt);
-    });
+    this.appControllers?.equipmentSection?.renderReferencePointOptions?.();
   }
 
   renderEquipmentSetupByOptions() {
-    const select = this.elements.equipmentSetupBy;
-    if (!select) return;
-
-    const previousValue = select.value;
-    select.innerHTML = "";
-    const memberNames = this.getActiveTeamMembers()
-      .map((entry) => entry.name)
-      .filter(Boolean);
-
-    const placeholder = document.createElement("option");
-    placeholder.value = "";
-    placeholder.textContent =
-      memberNames.length > 0
-        ? "Select team member"
-        : "Add team members in settings";
-    select.appendChild(placeholder);
-
-    memberNames
-      .slice()
-      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
-      .forEach((member) => {
-        const opt = document.createElement("option");
-        opt.value = member;
-        opt.textContent = member;
-        select.appendChild(opt);
-      });
-
-    select.value = previousValue;
-    if (previousValue && select.value !== previousValue) {
-      const fallback = document.createElement("option");
-      fallback.value = previousValue;
-      fallback.textContent = previousValue;
-      select.appendChild(fallback);
-      select.value = previousValue;
-    }
+    this.appControllers?.equipmentSection?.renderEquipmentSetupByOptions?.();
   }
 
   renderEquipmentPickerOptions() {
-    const select = this.elements.equipmentUsed;
-    if (!select) return;
-
-    const previousSelection = Array.from(select.selectedOptions).map(
-      (opt) => opt.value
-    );
-    const project = this.projects[this.currentProjectId];
-    const names = new Set();
-
-    (this.globalSettings.equipment || [])
-      .filter((entry) => entry && !entry.archived && entry.name)
-      .forEach((entry) => names.add(entry.name));
-    project?.equipmentLogs?.forEach((log) => {
-      (log.equipmentUsed || [])
-        .filter(Boolean)
-        .forEach((name) => names.add(name));
-    });
-    previousSelection.filter(Boolean).forEach((name) => names.add(name));
-
-    const sorted = Array.from(names).sort((a, b) =>
-      a.localeCompare(b, undefined, { sensitivity: "base" })
-    );
-
-    select.innerHTML = "";
-    const placeholder = document.createElement("option");
-    placeholder.value = "";
-    placeholder.disabled = true;
-    placeholder.hidden = true;
-    placeholder.textContent =
-      sorted.length > 0
-        ? "Select equipment used (optional)"
-        : "Add equipment names in settings";
-    select.appendChild(placeholder);
-
-    sorted.forEach((name) => {
-      const opt = document.createElement("option");
-      opt.value = name;
-      opt.textContent = name;
-      select.appendChild(opt);
-    });
-
-    previousSelection.forEach((name) => {
-      const option = Array.from(select.options).find(
-        (opt) => opt.value === name
-      );
-      if (option) option.selected = true;
-      else {
-        const fallback = document.createElement("option");
-        fallback.value = name;
-        fallback.textContent = name;
-        fallback.selected = true;
-        select.appendChild(fallback);
-        }
-      });
-  }
-
-  getStatusClass(status) {
-    const normalized = (status || "draft").toLowerCase();
-    if (normalized === "in progress") return "in-progress";
-    if (normalized === "ready for review") return "ready";
-    if (normalized === "final") return "final";
-    return "draft";
-  }
-
-  getEvidenceStatusClass(status) {
-    return this.getStatusClass(status);
-  }
-
-  getExportStatusLabel(status) {
-    const normalized = (status || "").toLowerCase();
-    if (normalized === "draft") {
-      return {
-        title: "Draft — Partial or Incomplete",
-        note: "Incomplete — subject to revision.",
-      };
-    }
-    if (normalized === "final") {
-      return {
-        title: "Final — Professional Declaration Signed",
-        note: null,
-      };
-    }
-    return {
-      title: "Preliminary — In Progress",
-      note: "Incomplete — subject to revision.",
-    };
-  }
-
-  getCpfCompleteness(entry) {
-    if (!entry) {
-      return { missing: ["evidence record missing"], complete: false };
-    }
-    const missing = [];
-    if (!entry.cornerType) missing.push("corner type");
-    if (!entry.cornerStatus) missing.push("corner status");
-    if (!entry.type) missing.push("evidence type");
-    if (!entry.condition) missing.push("condition / occupation evidence");
-    if (!entry.basisOfBearing) missing.push("basis of bearing");
-    if (!entry.monumentType) missing.push("monument type");
-    if (!entry.monumentMaterial) missing.push("monument material");
-    if (!entry.monumentSize) missing.push("monument size");
-    if (!entry.surveyorName) missing.push("responsible surveyor name");
-    if (!entry.surveyorLicense)
-      missing.push("responsible surveyor license number");
-    if (!entry.surveyDates) missing.push("survey date(s)");
-    if (!entry.surveyCounty) missing.push("county");
-    if (!entry.recordingInfo) missing.push("recording information");
-    if (!entry.ties || entry.ties.length === 0)
-      missing.push("reference ties");
-
-    const normalizedStatus = (entry.status || "").toLowerCase();
-    const statusAllowsFinal = normalizedStatus === "final";
-    const complete = statusAllowsFinal && missing.length === 0;
-
-    return { missing, complete };
-  }
-
-  getCpfFieldElements() {
-    return {
-      "corner type": this.elements.evidenceCornerType,
-      "corner status": this.elements.evidenceCornerStatus,
-      "evidence type": this.elements.evidenceType,
-      "condition / occupation evidence": this.elements.evidenceCondition,
-      "basis of bearing": this.elements.evidenceBasisOfBearing,
-      "monument type": this.elements.evidenceMonumentType,
-      "monument material": this.elements.evidenceMonumentMaterial,
-      "monument size": this.elements.evidenceMonumentSize,
-      "responsible surveyor name": this.elements.evidenceSurveyorName,
-      "responsible surveyor license number":
-        this.elements.evidenceSurveyorLicense,
-      "survey date(s)": this.elements.evidenceSurveyDates,
-      county: this.elements.evidenceSurveyCounty,
-      "recording information": this.elements.evidenceRecordingInfo,
-      "reference ties":
-        this.elements.evidenceTiesList || this.elements.evidenceTiesHint,
-    };
-  }
-
-  clearCpfValidationState() {
-    const fields = this.getCpfFieldElements();
-    Object.values(fields).forEach((el) =>
-      el?.classList?.remove("field-missing")
-    );
-    if (this.elements.cpfValidationStatus) {
-      this.elements.cpfValidationStatus.classList.add("hidden");
-      this.elements.cpfValidationStatus
-        .querySelector(".cpf-chip-row")
-        ?.replaceChildren();
-    }
-  }
-
-  renderCpfValidationCallout(missing) {
-    const container = this.elements.cpfValidationStatus;
-    if (!container) return;
-    container.classList.remove("hidden");
-    const chipRow = container.querySelector(".cpf-chip-row");
-    if (!chipRow) return;
-    chipRow.innerHTML = "";
-    missing.forEach((label) => {
-      const chip = document.createElement("button");
-      chip.type = "button";
-      chip.className = "cpf-chip";
-      chip.dataset.cpfField = label;
-      chip.textContent = label;
-      chipRow.appendChild(chip);
-    });
-  }
-
-  focusCpfField(fieldName) {
-    if (!fieldName) return;
-    this.switchTab("evidenceSection");
-    const target = this.getCpfFieldElements()[fieldName];
-    if (target) {
-      target.scrollIntoView({ behavior: "smooth", block: "center" });
-      if (typeof target.focus === "function") target.focus({ preventScroll: true });
-      target.classList.add("field-missing");
-    }
-  }
-
-  highlightMissingCpfFields(missing) {
-    const fields = this.getCpfFieldElements();
-    missing.forEach((field) => {
-      const el = fields[field];
-      if (el) {
-        el.classList.add("field-missing");
-      }
-    });
-    if (missing.length) {
-      this.focusCpfField(missing[0]);
-    }
+    this.appControllers?.equipmentSection?.renderEquipmentPickerOptions?.();
   }
 
   handleReferencePointSelection(event) {
-    const option = event.target?.selectedOptions?.[0];
-    const label = option?.dataset?.label || option?.value || "";
-    if (this.elements.equipmentReferencePoint) {
-      this.elements.equipmentReferencePoint.value = label;
-    }
-    this.updateEquipmentSaveState();
+    this.appControllers?.equipmentSection?.handleReferencePointSelection?.(
+      event
+    );
   }
 
   rememberReferencePoint(name) {
-    const trimmed = name?.trim();
-    if (!trimmed) return;
-    const project = this.projects[this.currentProjectId];
-    if (!project) return;
-    project.referencePoints = Array.isArray(project.referencePoints)
-      ? project.referencePoints
-      : [];
-    const exists = project.referencePoints.some(
-      (rp) => rp.toLowerCase() === trimmed.toLowerCase()
-    );
-    if (!exists) {
-      project.referencePoints.push(trimmed);
-    }
+    this.appControllers?.equipmentSection?.rememberReferencePoint?.(name);
   }
 
   captureEquipmentLocation() {
-    if (!navigator.geolocation) {
-      if (this.elements.equipmentLocationStatus) {
-        this.elements.equipmentLocationStatus.textContent =
-          "Geolocation not supported.";
-      }
-      return;
-    }
-    if (this.elements.equipmentLocationStatus) {
-      this.elements.equipmentLocationStatus.textContent = "Getting location…";
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        this.currentEquipmentLocation = {
-          lat: pos.coords.latitude,
-          lon: pos.coords.longitude,
-          accuracy: pos.coords.accuracy,
-        };
-        if (this.elements.equipmentLocationStatus) {
-          this.elements.equipmentLocationStatus.textContent = `Lat ${pos.coords.latitude.toFixed(
-            6
-          )}, Lon ${pos.coords.longitude.toFixed(
-            6
-          )} (±${pos.coords.accuracy.toFixed(1)} m)`;
-        }
-        this.updateEquipmentSaveState();
-      },
-      () => {
-        if (this.elements.equipmentLocationStatus) {
-          this.elements.equipmentLocationStatus.textContent =
-            "Unable to get location.";
-        }
-      },
-      { enableHighAccuracy: true, timeout: 15000 }
-    );
+    this.appControllers?.equipmentSection?.captureEquipmentLocation?.();
   }
 
   saveEquipmentEntry() {
-    if (!this.currentProjectId || !this.projects[this.currentProjectId]) return;
-    const project = this.projects[this.currentProjectId];
-    project.equipmentLogs = project.equipmentLogs || [];
-    const referencePoint =
-      this.elements.equipmentReferencePoint?.value.trim() || "";
-    const equipmentUsed = Array.from(
-      this.elements.equipmentUsed?.selectedOptions || []
-    )
-      .map((opt) => opt.value)
-      .filter(Boolean);
-    const workNotes = this.elements.equipmentWorkNotes?.value.trim() || "";
-    const payload = {
-      setupAt: this.elements.equipmentSetupAt?.value || "",
-      tearDownAt: this.elements.equipmentTearDownAt?.value || "",
-      baseHeight: this.elements.equipmentBaseHeight?.value.trim() || "",
-      referencePoint,
-      equipmentUsed,
-      setupBy: this.elements.equipmentSetupBy?.value.trim() || "",
-      workNotes,
-    };
-
-    if (referencePoint) {
-      this.rememberReferencePoint(referencePoint);
-    }
-
-    if (this.editingEquipmentId) {
-      const existingIndex = project.equipmentLogs.findIndex(
-        (log) => log.id === this.editingEquipmentId
-      );
-      if (existingIndex !== -1) {
-        const existing = project.equipmentLogs[existingIndex];
-        const updated = Object.assign(existing, payload);
-        updated.location =
-          this.currentEquipmentLocation || existing.location || null;
-        updated.recordedAt = existing.recordedAt || new Date().toISOString();
-      }
-    } else {
-      const entry = new EquipmentLog({
-        id: Date.now().toString(),
-        ...payload,
-        location: this.currentEquipmentLocation,
-        recordedAt: new Date().toISOString(),
-      });
-      project.equipmentLogs.push(entry);
-    }
-    this.saveProjects();
-    this.renderReferencePointOptions();
-    this.renderEquipmentList();
-    this.navigationController?.onEquipmentLogsChanged();
-    this.resetEquipmentForm();
+    this.appControllers?.equipmentSection?.saveEquipmentEntry?.();
   }
 
   renderEquipmentList() {
-    if (!this.elements.equipmentList || !this.elements.equipmentSummary) return;
-    const container = this.elements.equipmentList;
-    container.innerHTML = "";
-
-    const project = this.projects[this.currentProjectId];
-    if (!project) {
-      this.elements.equipmentSummary.textContent =
-        "Select a project to view equipment logs.";
-      return;
-    }
-
-    const logs = project.equipmentLogs || [];
-    if (logs.length === 0) {
-      this.elements.equipmentSummary.textContent =
-        "No equipment setups saved yet.";
-      return;
-    }
-
-    this.elements.equipmentSummary.textContent = `${logs.length} entr${
-      logs.length === 1 ? "y" : "ies"
-    } logged.`;
-
-    logs
-      .slice()
-      .sort(
-        (a, b) =>
-          new Date(b.setupAt || b.recordedAt) -
-          new Date(a.setupAt || a.recordedAt)
-      )
-      .forEach((log) => {
-        const card = document.createElement("div");
-        card.className = "card";
-        const setupTime = log.setupAt
-          ? new Date(log.setupAt).toLocaleString()
-          : "Not set";
-        const teardownTime = log.tearDownAt
-          ? new Date(log.tearDownAt).toLocaleString()
-          : "Not recorded";
-        const equipmentList =
-          log.equipmentUsed?.length
-            ? log.equipmentUsed.join(", ")
-            : "None selected";
-        const locationText = log.location
-          ? `Lat ${log.location.lat.toFixed(6)}, Lon ${log.location.lon.toFixed(
-              6
-            )} (±${log.location.accuracy.toFixed(1)} m)`
-          : "No GPS captured";
-        card.innerHTML = `
-          <strong>Base Station Setup</strong>
-          <div class="subtitle" style="margin-top:4px">Logged ${new Date(
-            log.recordedAt
-          ).toLocaleString()}</div>
-          <div>Setup at: ${this.escapeHtml(setupTime)}</div>
-          <div>Tear down: ${this.escapeHtml(teardownTime)}</div>
-          <div>Base height: ${this.escapeHtml(log.baseHeight || "")}</div>
-          <div>Reference point: ${this.escapeHtml(
-            log.referencePoint || ""
-          )}</div>
-          <div>Equipment: ${this.escapeHtml(equipmentList)}</div>
-          <div>Set up by: ${this.escapeHtml(log.setupBy || "")}</div>
-          <div>Location: ${this.escapeHtml(locationText)}</div>
-        `;
-        if (log.workNotes) {
-          const notes = document.createElement("div");
-          notes.style.marginTop = "6px";
-          notes.textContent = `Work / Goal: ${log.workNotes}`;
-          card.appendChild(notes);
-        }
-
-        const actions = document.createElement("div");
-        actions.className = "equipment-actions";
-
-        const teardownBtn = document.createElement("button");
-        teardownBtn.type = "button";
-        teardownBtn.textContent = "Log Tear Down Now";
-        teardownBtn.addEventListener("click", () =>
-          this.logEquipmentTeardown(log.id)
-        );
-        actions.appendChild(teardownBtn);
-
-        if (log.location) {
-          const navBtn = document.createElement("button");
-          navBtn.type = "button";
-          navBtn.textContent = "Navigate to this base";
-          navBtn.addEventListener("click", () =>
-            this.openEquipmentInNavigation(log.id)
-          );
-          actions.appendChild(navBtn);
-        }
-
-        const editBtn = document.createElement("button");
-        editBtn.type = "button";
-        editBtn.textContent = "Edit";
-        editBtn.addEventListener("click", () =>
-          this.startEditingEquipmentEntry(log.id)
-        );
-        actions.appendChild(editBtn);
-
-        const deleteBtn = document.createElement("button");
-        deleteBtn.type = "button";
-        deleteBtn.textContent = "Delete";
-        deleteBtn.className = "danger";
-        deleteBtn.addEventListener("click", () =>
-          this.deleteEquipmentEntry(log.id)
-        );
-        actions.appendChild(deleteBtn);
-
-        card.appendChild(actions);
-        container.appendChild(card);
-      });
+    this.appControllers?.equipmentSection?.renderEquipmentList?.();
   }
 
   logEquipmentTeardown(id) {
-    const project = this.projects[this.currentProjectId];
-    if (!project?.equipmentLogs) return;
-    const entry = project.equipmentLogs.find((log) => log.id === id);
-    if (!entry) return;
-    entry.tearDownAt = new Date().toISOString();
-    this.saveProjects();
-    this.renderEquipmentList();
-    this.navigationController?.onEquipmentLogsChanged();
+    this.appControllers?.equipmentSection?.logEquipmentTeardown?.(id);
   }
 
   openEquipmentInNavigation(id) {
-    const project = this.projects[this.currentProjectId];
-    if (!project?.equipmentLogs || !this.navigationController) return;
-    const entry = project.equipmentLogs.find((log) => log.id === id);
-    if (!entry?.location) return;
+    this.appControllers?.equipmentSection?.openEquipmentInNavigation?.(id);
+  }
 
-    this.navigationController.renderEquipmentOptions();
-    if (this.elements.navigationEquipmentSelect) {
-      this.elements.navigationEquipmentSelect.value = id;
-    }
-    this.navigationController.applyEquipmentTarget(id);
-    this.switchTab("navigationSection");
-    this.elements.navigationSection?.scrollIntoView({ behavior: "smooth" });
+  startEditingEquipmentEntry(id) {
+    this.appControllers?.equipmentSection?.startEditingEquipmentEntry?.(id);
+  }
+
+  deleteEquipmentEntry(id) {
+    this.appControllers?.equipmentSection?.deleteEquipmentEntry?.(id);
   }
 
   persistNavigationTarget(state = {}) {
@@ -5222,83 +3935,6 @@ export default class AppController {
     };
     this.saveProjects();
   }
-
-  startEditingEquipmentEntry(id) {
-    const project = this.projects[this.currentProjectId];
-    if (!project?.equipmentLogs) return;
-    const entry = project.equipmentLogs.find((log) => log.id === id);
-    if (!entry) return;
-    this.editingEquipmentId = id;
-    if (this.elements.equipmentSetupAt)
-      this.elements.equipmentSetupAt.value = entry.setupAt || "";
-    if (this.elements.equipmentTearDownAt)
-      this.elements.equipmentTearDownAt.value = entry.tearDownAt || "";
-    if (this.elements.equipmentBaseHeight)
-      this.elements.equipmentBaseHeight.value = entry.baseHeight || "";
-    if (this.elements.equipmentReferencePoint)
-      this.elements.equipmentReferencePoint.value = entry.referencePoint || "";
-    if (this.elements.equipmentSetupBy)
-      this.elements.equipmentSetupBy.value = entry.setupBy || "";
-    if (this.elements.equipmentWorkNotes)
-      this.elements.equipmentWorkNotes.value = entry.workNotes || "";
-    this.renderEquipmentPickerOptions();
-    if (this.elements.equipmentUsed) {
-      const desired = new Set(entry.equipmentUsed || []);
-      Array.from(this.elements.equipmentUsed.options).forEach((opt) => {
-        opt.selected = desired.has(opt.value);
-      });
-    }
-    if (
-      this.elements.equipmentSetupBy &&
-      entry.setupBy &&
-      this.elements.equipmentSetupBy.value !== entry.setupBy
-    ) {
-      const opt = document.createElement("option");
-      opt.value = entry.setupBy;
-      opt.textContent = entry.setupBy;
-      this.elements.equipmentSetupBy.appendChild(opt);
-      this.elements.equipmentSetupBy.value = entry.setupBy;
-    }
-    if (this.elements.equipmentFormStatus) {
-      this.elements.equipmentFormStatus.textContent =
-        "Editing existing equipment entry";
-    }
-    if (this.elements.saveEquipmentButton) {
-      this.elements.saveEquipmentButton.textContent = "Update Equipment Entry";
-    }
-    if (this.elements.equipmentReferencePointPicker) {
-      this.elements.equipmentReferencePointPicker.value =
-        entry.referencePoint || "";
-    }
-    this.currentEquipmentLocation = entry.location || null;
-    if (this.elements.equipmentLocationStatus && entry.location) {
-      this.elements.equipmentLocationStatus.textContent = `Lat ${entry.location.lat.toFixed(
-        6
-      )}, Lon ${entry.location.lon.toFixed(
-        6
-      )} (±${entry.location.accuracy.toFixed(1)} m)`;
-    } else if (this.elements.equipmentLocationStatus) {
-      this.elements.equipmentLocationStatus.textContent = "";
-    }
-    this.updateEquipmentSaveState();
-  }
-
-  deleteEquipmentEntry(id) {
-    const project = this.projects[this.currentProjectId];
-    if (!project?.equipmentLogs) return;
-    if (!confirm("Delete this equipment entry?")) return;
-    project.equipmentLogs = project.equipmentLogs.filter(
-      (log) => log.id !== id
-    );
-    this.saveProjects();
-    this.renderReferencePointOptions();
-    this.renderEquipmentList();
-    this.navigationController?.onEquipmentLogsChanged();
-    if (this.editingEquipmentId === id) {
-      this.resetEquipmentForm();
-    }
-  }
-
   exportCornerFiling(entry) {
     if (!entry) return;
     this.clearCpfValidationState();
