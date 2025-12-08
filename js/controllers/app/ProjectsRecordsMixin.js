@@ -15,6 +15,7 @@ import SpringboardAppController from "../apps/SpringboardAppController.js";
 import TraverseAppController from "../apps/TraverseAppController.js";
 import VicinityMapAppController from "../apps/VicinityMapAppController.js";
 import StakeoutAppController from "../apps/StakeoutAppController.js";
+import { buildMapboxStaticUrl, getMapboxToken } from "../../services/MapboxService.js";
 
 const ProjectsRecordsMixin = (Base) =>
   class extends Base {
@@ -1240,22 +1241,13 @@ const ProjectsRecordsMixin = (Base) =>
       const parsedLat = parseFloat(lat);
       const parsedLon = parseFloat(lon);
       if (!Number.isFinite(parsedLat) || !Number.isFinite(parsedLon)) return null;
-      const n = 2 ** zoom;
-      const xtile = Math.floor(((parsedLon + 180) / 360) * n);
-      const latRad = (parsedLat * Math.PI) / 180;
-      const ytile = Math.floor(
-        ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) *
-          n
-      );
-      const bounds = {
-        xmin: Math.max(xtile - 1, 0),
-        xmax: Math.min(xtile + 1, n - 1),
-        ymin: Math.max(ytile - 1, 0),
-        ymax: Math.min(ytile + 1, n - 1),
-      };
-      return `https://bigmap.osmz.ru/bigmap.php?zoom=${zoom}&xmin=${bounds.xmin}&ymin=${bounds.ymin}&xmax=${bounds.xmax}&ymax=${bounds.ymax}&tiles=mapnik&width=1200&height=600&showscale=1&markers=${parsedLat.toFixed(
-        6
-      )},${parsedLon.toFixed(6)},red-pushpin`;
+
+      return buildMapboxStaticUrl(parsedLat, parsedLon, {
+        zoom,
+        width: 1200,
+        height: 600,
+        markerColor: "ef4444",
+      });
     }
 
     async resolveAddressToMap(address) {
@@ -1271,22 +1263,14 @@ const ProjectsRecordsMixin = (Base) =>
 
       try {
         const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
             address
-          )}`,
-          {
-            headers: {
-              "Accept-Language": "en",
-            },
-          }
+          )}.json?limit=1&access_token=${getMapboxToken()}`
         );
         const data = await response.json();
-        if (Array.isArray(data) && data.length) {
-          const { lat, lon } = data[0];
-          const tileMap = this.buildTileMapPreview(lat, lon, 13);
-          const mapUrl =
-            tileMap ||
-            `https://nominatim.openstreetmap.org/ui/staticmap.php?center=${lat},${lon}&zoom=14&size=1200x600&markers=${lat},${lon},red-pushpin`;
+        if (Array.isArray(data?.features) && data.features.length) {
+          const [lon, lat] = data.features[0]?.center || [];
+          const mapUrl = this.buildTileMapPreview(lat, lon, 13);
           this.geocodeCache[normalized] = mapUrl;
           return mapUrl;
         }

@@ -1,5 +1,6 @@
 import EquipmentLog from "../../models/EquipmentLog.js";
 import MiniAppController from "./MiniAppController.js";
+import { buildMapboxStaticUrl } from "../../services/MapboxService.js";
 
 export default class EquipmentAppController extends MiniAppController {
   constructor(options = {}) {
@@ -25,11 +26,12 @@ export default class EquipmentAppController extends MiniAppController {
     if (typeof lat !== "number" || typeof lon !== "number") return null;
     const zoom = accuracy && accuracy < 8 ? 18 : accuracy && accuracy < 20 ? 17 : 16;
     const clampedZoom = Math.max(10, Math.min(18, zoom));
-    const size = "320x220";
-    const marker = `${lat.toFixed(6)},${lon.toFixed(6)},lightblue1`;
-    return `https://staticmap.openstreetmap.de/staticmap.php?center=${lat.toFixed(
-      6
-    )},${lon.toFixed(6)}&zoom=${clampedZoom}&size=${size}&markers=${marker}`;
+    return buildMapboxStaticUrl(lat, lon, {
+      zoom: clampedZoom,
+      width: 320,
+      height: 220,
+      markerColor: "3b82f6",
+    });
   }
 
   buildCalendarIcon(date) {
