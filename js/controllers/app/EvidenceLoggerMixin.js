@@ -964,6 +964,19 @@ const EvidenceLoggerMixin = (Base) =>
     return entry.pointLabel || entry.recordName || "Corner Evidence";
   }
 
+  getEvidenceStatusClass(statusLabel = "") {
+    if (typeof this.getStatusClass === "function") {
+      return this.getStatusClass(statusLabel);
+    }
+    const normalized = statusLabel.toLowerCase();
+    if (normalized.includes("draft")) return "draft";
+    if (normalized.includes("in progress") || normalized === "in-progress")
+      return "in-progress";
+    if (normalized.includes("ready")) return "ready";
+    if (normalized.includes("final")) return "final";
+    return "";
+  }
+
   refreshChainEvidence() {
     this.appControllers?.chainEvidenceSection?.refreshChainEvidence?.();
     this.populateResearchEvidenceOptions();
