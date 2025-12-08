@@ -3844,11 +3844,11 @@ export default class AppController {
     } else if (exportStatus.toLowerCase() !== "final") {
       lines.push("Incomplete — subject to revision.");
     }
-    lines.push(
-      `Project: ${projectName}`,
-      `Generated: ${meta.generatedAt || new Date().toISOString()}`,
-      "",
-    ];
+      lines.push(
+        `Project: ${projectName}`,
+        `Generated: ${meta.generatedAt || new Date().toISOString()}`,
+        ""
+      );
     docs
       .slice()
       .sort((a, b) => (a.township || "").localeCompare(b.township || ""))
