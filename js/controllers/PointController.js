@@ -6,6 +6,7 @@ export default class PointController {
     this.elements = elements;
     this.getCurrentProject = getCurrentProject;
     this.saveProjects = saveProjects;
+    this.viewMode = "adjusted";
 
     this.bindEvents();
   }
@@ -39,6 +40,32 @@ export default class PointController {
     this.elements.downloadPointsButton?.addEventListener("click", () =>
       this.downloadActivePointFile()
     );
+
+    this.elements.pointViewModeSelect?.addEventListener("change", (e) => {
+      this.viewMode = e.target.value === "raw" ? "raw" : "adjusted";
+      this.renderPointsTable();
+    });
+
+    this.elements.adjustmentSaveButton?.addEventListener("click", () =>
+      this.captureAdjustmentRecord()
+    );
+  }
+
+  captureAdjustmentRecord() {
+    const pointFile = this.getActivePointFile();
+    if (!pointFile) {
+      alert("No point file selected to annotate.");
+      return;
+    }
+
+    pointFile.adjustmentMeta.algorithm =
+      this.elements.adjustmentAlgorithm?.value || "";
+    pointFile.adjustmentMeta.notes =
+      this.elements.adjustmentNotes?.value?.trim() || "";
+    pointFile.adjustmentMeta.lastAdjustedAt = new Date().toISOString();
+    this.updateAdjustmentDeltas(pointFile);
+    this.saveProjects();
+    this.renderPointsTable();
   }
 
   triggerPointsImport() {
@@ -222,7 +249,7 @@ export default class PointController {
     if (!project) {
       const row = document.createElement("tr");
       const cell = document.createElement("td");
-      cell.colSpan = 7;
+      cell.colSpan = 10;
       cell.textContent = "Create or select a project to manage points.";
       row.appendChild(cell);
       tbody.appendChild(row);
@@ -233,18 +260,23 @@ export default class PointController {
     if (!pointFile) {
       const row = document.createElement("tr");
       const cell = document.createElement("td");
-      cell.colSpan = 7;
+      cell.colSpan = 10;
       cell.textContent = "No point files yet. Import or create one.";
       row.appendChild(cell);
       tbody.appendChild(row);
       return;
     }
 
-    const points = pointFile.points;
+    this.updateAdjustmentDeltas(pointFile);
+    const isRawView = this.viewMode === "raw";
+    const points = isRawView ? pointFile.originalPoints : pointFile.points;
+    const deltaByIndex = this.getDeltaLookup(pointFile);
+
+    this.renderAdjustmentMeta(pointFile);
     if (!points.length) {
       const row = document.createElement("tr");
       const cell = document.createElement("td");
-      cell.colSpan = 7;
+      cell.colSpan = 10;
       cell.textContent = "No points loaded yet. Import a CSV or add rows.";
       row.appendChild(cell);
       tbody.appendChild(row);
@@ -257,45 +289,55 @@ export default class PointController {
         tr.classList.add("row-modified");
       }
 
-      [
-        "pointNumber",
-        "x",
-        "y",
-        "elevation",
-        "code",
-        "description",
-      ].forEach((field) => {
+      const fields = ["pointNumber", "x", "y", "elevation", "code", "description"];
+      fields.forEach((field) => {
         const td = document.createElement("td");
         const input = document.createElement("input");
         input.type = "text";
         input.value = pt[field] || "";
         input.dataset.index = idx.toString();
         input.dataset.field = field;
-        input.addEventListener("input", (e) =>
-          this.updatePointField(idx, field, e.target.value, e.target)
-        );
+        if (isRawView) {
+          input.readOnly = true;
+          input.classList.add("readonly");
+          input.title = "Raw coordinates are read-only";
+        } else {
+          input.addEventListener("input", (e) =>
+            this.updatePointField(idx, field, e.target.value, e.target)
+          );
+        }
         td.appendChild(input);
         tr.appendChild(td);
       });
 
       const actionsTd = document.createElement("td");
 
-      const revertBtn = document.createElement("button");
-      revertBtn.type = "button";
-      revertBtn.textContent = "Revert";
-      revertBtn.className = "secondary";
-      revertBtn.disabled = !this.isPointModified(pointFile, idx);
-      revertBtn.addEventListener("click", () => this.revertPointRow(idx));
-      actionsTd.appendChild(revertBtn);
+      if (!isRawView) {
+        const revertBtn = document.createElement("button");
+        revertBtn.type = "button";
+        revertBtn.textContent = "Revert";
+        revertBtn.className = "secondary";
+        revertBtn.disabled = !this.isPointModified(pointFile, idx);
+        revertBtn.addEventListener("click", () => this.revertPointRow(idx));
+        actionsTd.appendChild(revertBtn);
 
-      const removeBtn = document.createElement("button");
-      removeBtn.type = "button";
-      removeBtn.textContent = "Remove";
-      removeBtn.className = "danger";
-      removeBtn.addEventListener("click", () => this.removePointRow(idx));
-      actionsTd.appendChild(removeBtn);
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.textContent = "Remove";
+        removeBtn.className = "danger";
+        removeBtn.addEventListener("click", () => this.removePointRow(idx));
+        actionsTd.appendChild(removeBtn);
+      }
 
       tr.appendChild(actionsTd);
+
+      const delta = deltaByIndex[idx] || { dx: "", dy: "", dz: "" };
+      [delta.dx, delta.dy, delta.dz].forEach((val) => {
+        const td = document.createElement("td");
+        td.textContent = val;
+        td.className = "delta-cell";
+        tr.appendChild(td);
+      });
 
       tbody.appendChild(tr);
     });
@@ -306,6 +348,7 @@ export default class PointController {
     if (!pointFile || !pointFile.points[index]) return;
     pointFile.points[index][field] = value;
     this.saveProjects();
+    this.updateAdjustmentDeltas(pointFile);
     this.updatePointRowState(index, inputEl);
   }
 
@@ -329,6 +372,7 @@ export default class PointController {
     pointFile.points.splice(index, 1);
     pointFile.originalPoints.splice(index, 1);
     this.saveProjects();
+    this.updateAdjustmentDeltas(pointFile);
     this.renderPointsTable();
   }
 
@@ -352,6 +396,7 @@ export default class PointController {
       });
     pointFile.points.push(newPoint);
     this.saveProjects();
+    this.updateAdjustmentDeltas(pointFile);
     this.renderPointsTable();
   }
 
@@ -391,6 +436,7 @@ export default class PointController {
     }
     pointFile.points[index] = Point.fromObject(original);
     this.saveProjects();
+    this.updateAdjustmentDeltas(pointFile);
     this.renderPointsTable();
   }
 
@@ -474,8 +520,12 @@ export default class PointController {
       alert("No point file to download");
       return;
     }
-    const header = "point number,x (or lat),y (or lon),elevation,code,description";
-    const rows = pointFile.points.map((pt) => {
+    const useRaw = confirm(
+      "Download raw coordinates (unadjusted)? Click Cancel for adjusted output."
+    );
+    const sourcePoints = useRaw ? pointFile.originalPoints : pointFile.points;
+    const header = `point number,x (or lat),y (or lon),elevation,code,description (${useRaw ? "RAW" : "ADJUSTED"})`;
+    const rows = sourcePoints.map((pt) => {
       const cells = [
         pt.pointNumber,
         pt.x,
@@ -502,5 +552,49 @@ export default class PointController {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  renderAdjustmentMeta(pointFile) {
+    if (!this.elements.adjustmentSummary) return;
+    const meta = pointFile.adjustmentMeta || {};
+    const statusParts = [];
+    if (meta.algorithm) statusParts.push(`Algorithm: ${meta.algorithm}`);
+    if (meta.lastAdjustedAt)
+      statusParts.push(
+        `Captured ${new Date(meta.lastAdjustedAt).toLocaleString()}`
+      );
+    if (meta.notes) statusParts.push(`Notes: ${meta.notes}`);
+
+    this.elements.adjustmentSummary.textContent =
+      statusParts.join(" • ") || "No adjustment record captured.";
+  }
+
+  updateAdjustmentDeltas(pointFile) {
+    if (!pointFile) return;
+    const deltas = pointFile.points.map((pt, idx) => {
+      const raw = pointFile.originalPoints[idx] || {};
+      const dx = this.formatDelta(pt.x, raw.x);
+      const dy = this.formatDelta(pt.y, raw.y);
+      const dz = this.formatDelta(pt.elevation, raw.elevation);
+      return { pointNumber: pt.pointNumber || "", dx, dy, dz };
+    });
+    pointFile.adjustmentMeta.deltas = deltas;
+  }
+
+  getDeltaLookup(pointFile) {
+    const deltas = pointFile?.adjustmentMeta?.deltas || [];
+    const lookup = {};
+    deltas.forEach((delta, idx) => {
+      lookup[idx] = delta;
+    });
+    return lookup;
+  }
+
+  formatDelta(adjusted, raw) {
+    const a = Number.parseFloat(adjusted ?? "");
+    const r = Number.parseFloat(raw ?? "");
+    if (!Number.isFinite(a) || !Number.isFinite(r)) return "";
+    const diff = a - r;
+    return Math.abs(diff) < 1e-9 ? "0.0000" : diff.toFixed(4);
   }
 }

@@ -9,6 +9,10 @@ export default class CornerEvidence {
     pointIndex = 0,
     pointLabel = "",
     coords = null,
+    township = "",
+    range = "",
+    section = "",
+    sectionBreakdown = "",
     type = "",
     cornerType = "",
     cornerStatus = "",
@@ -25,6 +29,7 @@ export default class CornerEvidence {
     surveyCounty = "",
     recordingInfo = "",
     notes = "",
+    title = "",
     ties = [],
     photo = null,
     location = null,
@@ -39,6 +44,10 @@ export default class CornerEvidence {
     this.pointIndex = pointIndex;
     this.pointLabel = pointLabel;
     this.coords = coords;
+    this.township = township;
+    this.range = range;
+    this.section = section;
+    this.sectionBreakdown = sectionBreakdown;
     this.type = type;
     this.cornerType = cornerType;
     this.cornerStatus = cornerStatus;
@@ -55,6 +64,7 @@ export default class CornerEvidence {
     this.surveyCounty = surveyCounty;
     this.recordingInfo = recordingInfo;
     this.notes = notes;
+    this.title = title;
     this.ties = ties.map((tie) =>
       tie instanceof EvidenceTie ? tie : EvidenceTie.fromObject(tie)
     );
@@ -78,6 +88,10 @@ export default class CornerEvidence {
       pointIndex: this.pointIndex,
       pointLabel: this.pointLabel,
       coords: this.coords,
+      township: this.township,
+      range: this.range,
+      section: this.section,
+      sectionBreakdown: this.sectionBreakdown,
       type: this.type,
       cornerType: this.cornerType,
       cornerStatus: this.cornerStatus,
@@ -94,6 +108,7 @@ export default class CornerEvidence {
       surveyCounty: this.surveyCounty,
       recordingInfo: this.recordingInfo,
       notes: this.notes,
+      title: this.title,
       ties: this.ties.map((tie) => tie.toObject()),
       photo: this.photo,
       location: this.location,

@@ -366,6 +366,13 @@
               <span class="app-title">Evidence Records</span>
               <span class="app-hint">Document monuments and attach photos</span>
             </button>
+            <button class="app-tile" data-target="chainEvidenceSection">
+              <span class="app-icon">⛓️</span>
+              <span class="app-title">Chain of Evidence</span>
+              <span class="app-hint"
+                >Trace corner history, filters, and export packets</span
+              >
+            </button>
             <button class="app-tile" data-target="researchSection">
               <span class="app-icon">📚</span>
               <span class="app-title">Historical Research</span>
@@ -669,6 +676,16 @@
               <button type="button" id="downloadPointsButton" class="success">
                 Download Points TXT
               </button>
+              <label style="font-weight: 600; color: #0f172a">
+                Coordinate View
+                <select
+                  id="pointViewModeSelect"
+                  style="margin-left: 8px; padding: 8px"
+                >
+                  <option value="adjusted">Adjusted (editable)</option>
+                  <option value="raw">Raw (read-only)</option>
+                </select>
+              </label>
               <label style="font-weight: 600; color: #1e40af">
                 Active Point File
                 <select
@@ -698,6 +715,39 @@
               />
             </div>
 
+            <div class="card muted" style="margin-top: 12px">
+              <div style="display: flex; gap: 12px; flex-wrap: wrap">
+                <div style="flex: 1 1 220px; min-width: 220px">
+                  <label for="adjustmentAlgorithm">Adjustment algorithm</label>
+                  <select id="adjustmentAlgorithm">
+                    <option value="">Select or type...</option>
+                    <option value="Compass Rule">Compass Rule</option>
+                    <option value="Transit Rule">Transit Rule</option>
+                    <option value="Least Squares">Least Squares</option>
+                    <option value="Rotation/Translation">Rotation/Translation</option>
+                  </select>
+                </div>
+                <div style="flex: 2 1 320px; min-width: 280px">
+                  <label for="adjustmentNotes">Adjustment notes</label>
+                  <textarea
+                    id="adjustmentNotes"
+                    rows="2"
+                    placeholder="Document raw vs adjusted handling, control points, or overrides"
+                  ></textarea>
+                </div>
+                <div
+                  style="display: flex; flex-direction: column; justify-content: flex-end"
+                >
+                  <button type="button" id="adjustmentSaveButton" class="secondary">
+                    Capture Adjustment Record
+                  </button>
+                  <small id="adjustmentSummary" style="margin-top: 6px; color: #0f172a">
+                    No adjustment record captured.
+                  </small>
+                </div>
+              </div>
+            </div>
+
             <div class="table-scroll">
               <table id="pointsTable">
                 <thead>
@@ -709,11 +759,14 @@
                     <th>Code</th>
                     <th>Description</th>
                     <th>Actions</th>
+                    <th title="Adjusted minus raw">ΔX</th>
+                    <th title="Adjusted minus raw">ΔY</th>
+                    <th title="Adjusted minus raw">ΔZ</th>
                   </tr>
                 </thead>
                 <tbody id="pointsTableBody">
                   <tr>
-                    <td colspan="7">
+                    <td colspan="10">
                       Create or select a project to manage points.
                     </td>
                   </tr>
@@ -911,6 +964,13 @@
                   Configure tolerances to start evaluating traverses and level
                   runs.
                 </div>
+                <div class="qc-actions" style="margin-top: 12px">
+                  <button id="exportQcSummaryButton">Export QC Summary</button>
+                  <span class="mini-note">
+                    Includes tolerances, closure checks, and affected evidence
+                    for failures.
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -1028,6 +1088,38 @@
                   <option value="Final">Final</option>
                 </select>
               </div>
+            </div>
+
+            <div class="form-grid">
+              <div>
+                <label for="evidenceTownship">Township</label>
+                <input
+                  id="evidenceTownship"
+                  type="text"
+                  placeholder="T5N"
+                />
+              </div>
+              <div>
+                <label for="evidenceRange">Range</label>
+                <input
+                  id="evidenceRange"
+                  type="text"
+                  placeholder="R2E"
+                />
+              </div>
+              <div>
+                <label for="evidenceSection">Section</label>
+                <input id="evidenceSection" type="text" placeholder="12" />
+              </div>
+            </div>
+
+            <div>
+              <label for="evidenceSectionBreakdown">Section breakdown</label>
+              <input
+                id="evidenceSectionBreakdown"
+                type="text"
+                placeholder="NE Cor, Lot 2, aliquots..."
+              />
             </div>
 
             <div class="form-grid">
@@ -1232,6 +1324,83 @@
             <h3>Project Evidence Points</h3>
             <p class="subtitle" id="evidenceSummary" style="margin-top: 0"></p>
             <div id="evidenceList"></div>
+          </div>
+        </div>
+
+        <div id="chainEvidenceSection" class="tool-section">
+          <div class="card">
+            <h3>Chain of Evidence</h3>
+            <p class="subtitle" style="margin-top: 0">
+              Review every monument with TRS context, linked sources, and QC
+              status. Filter by TRS, classification, or project phase and
+              export per-corner evidence packets.
+            </p>
+
+            <div class="form-grid">
+              <div>
+                <label for="chainTrsFilter">TRS filter</label>
+                <input
+                  id="chainTrsFilter"
+                  type="text"
+                  placeholder="e.g., T5N R3E Sec 12"
+                />
+              </div>
+              <div>
+                <label for="chainCornerTypeFilter">Corner type</label>
+                <select id="chainCornerTypeFilter"></select>
+              </div>
+              <div>
+                <label for="chainStatusFilter">Project phase</label>
+                <select id="chainStatusFilter">
+                  <option value="">All phases</option>
+                  <option value="Draft">Draft</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Ready for Review">Ready for Review</option>
+                  <option value="Final">Final</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div>
+                <label for="chainStartDate">Start date</label>
+                <input id="chainStartDate" type="date" />
+              </div>
+              <div>
+                <label for="chainEndDate">End date</label>
+                <input id="chainEndDate" type="date" />
+              </div>
+              <div>
+                <label for="chainCornerStatusFilter">Corner status</label>
+                <select id="chainCornerStatusFilter"></select>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 12px">
+              <button type="button" id="chainApplyFilters" class="secondary">
+                Apply Filters
+              </button>
+              <button type="button" id="chainResetFilters">Reset</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h3 style="margin: 0">Corner Evidence Register</h3>
+                <p
+                  class="subtitle"
+                  style="margin: 4px 0 0 0"
+                  id="chainEvidenceSummary"
+                ></p>
+              </div>
+              <div class="view-toggle">
+                <button type="button" id="chainExportAll" class="secondary">
+                  Export Visible Corners
+                </button>
+              </div>
+            </div>
+            <div id="chainEvidenceList" class="chain-evidence-list"></div>
           </div>
         </div>
 
