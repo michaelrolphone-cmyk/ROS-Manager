@@ -50,9 +50,14 @@ export default class AuditTrailService {
       ? project.toObject()
       : project;
 
+    const sanitizedProject =
+      normalizedProject && typeof normalizedProject === "object"
+        ? { ...normalizedProject, auditTrail: [] }
+        : normalizedProject;
+
     const bundle = {
       ...data,
-      project: normalizedProject,
+      project: sanitizedProject,
     };
 
     bundle.metadata = {

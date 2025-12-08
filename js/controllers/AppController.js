@@ -538,6 +538,7 @@ export default class AppController {
       levelMisclosure: document.getElementById("levelMisclosure"),
       levelClosureNote: document.getElementById("levelClosureNote"),
       exportLevelRunButton: document.getElementById("exportLevelRunButton"),
+      qcSection: document.getElementById("qcSection"),
       qcOverallStatus: document.getElementById("qcOverallStatus"),
       qcTraverseAngularTolerance: document.getElementById(
         "qcTraverseAngularTolerance"
@@ -1197,7 +1198,12 @@ export default class AppController {
         this.cornerEvidenceService.evidenceByProject
       );
     }
-    this.repository.saveProjects(this.projects);
+    const persisted = this.repository.saveProjects(this.projects);
+    if (!persisted) {
+      console.warn(
+        "Unable to save projects locally. Storage may be full or unavailable."
+      );
+    }
     this.cornerEvidenceService.saveEvidence();
     this.populateLocalizationSelectors();
     this.navigationController?.renderTargetOptions();
@@ -1387,7 +1393,18 @@ export default class AppController {
   }
 
   downloadJson(payload, filename) {
-    const json = JSON.stringify(payload, null, 2);
+    const seen = new WeakSet();
+    const json = JSON.stringify(
+      payload,
+      (key, value) => {
+        if (typeof value === "object" && value !== null) {
+          if (seen.has(value)) return undefined;
+          seen.add(value);
+        }
+        return value;
+      },
+      2
+    );
     const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -2817,7 +2834,7 @@ export default class AppController {
       const data = await response.json();
       if (Array.isArray(data) && data.length) {
         const { lat, lon } = data[0];
-        const mapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lon}&zoom=14&size=1200x600&markers=${lat},${lon},red-pushpin`;
+        const mapUrl = `https://nominatim.openstreetmap.org/ui/staticmap.php?center=${lat},${lon}&zoom=14&size=1200x600&markers=${lat},${lon},red-pushpin`;
         this.geocodeCache[normalized] = mapUrl;
         return mapUrl;
       }
@@ -2923,6 +2940,7 @@ export default class AppController {
       this.elements.settingsSection,
       this.elements.evidenceSection,
       this.elements.researchSection,
+      this.elements.qcSection,
       this.elements.levelingSection,
       this.elements.equipmentSection,
       this.elements.navigationSection,

@@ -6,6 +6,7 @@ import GlobalSettingsService from "../js/services/GlobalSettingsService.js";
 import VersioningService from "../js/services/VersioningService.js";
 import CornerEvidenceService from "../js/services/CornerEvidenceService.js";
 import SyncService from "../js/services/SyncService.js";
+import AuditTrailService from "../js/services/AuditTrailService.js";
 import Project from "../js/models/Project.js";
 import SurveyRecord from "../js/models/SurveyRecord.js";
 import TraverseInstruction from "../js/models/TraverseInstruction.js";
@@ -153,6 +154,26 @@ describe("ProjectRepository", () => {
     assert.equal(storedRecord.startPtNum, "101");
     assert.equal(hydrated[project.id].pointFiles[0].points[1].description, "Iron pin found at fence corner");
   });
+
+  it("gracefully handles browsers that block storage writes", () => {
+    let attempts = 0;
+    globalThis.localStorage = {
+      getItem: () => null,
+      setItem: () => {
+        attempts += 1;
+        throw new Error("QuotaExceededError");
+      },
+      removeItem: () => {},
+      clear: () => {},
+    };
+
+    const repository = new ProjectRepository("projects-under-test");
+    const project = makeProject();
+    const saved = repository.saveProjects({ [project.id]: project });
+
+    assert.equal(saved, false);
+    assert.equal(attempts, 1);
+  });
 });
 
 describe("GlobalSettingsService", () => {
@@ -248,6 +269,31 @@ describe("VersioningService", () => {
     assert.equal(merged["project-1"].description, "Kept description");
     assert.ok(merged["project-1"].records.a);
     assert.equal(merged["project-1"].records.a.name, "Fresh record change");
+  });
+});
+
+describe("AuditTrailService", () => {
+  it("strips circular project references from audit bundles", async () => {
+    const service = new AuditTrailService();
+    const project = makeProject();
+
+    const previousSnapshot = { hash: "abc123" };
+    previousSnapshot.bundle = { project };
+    project.auditTrail = [previousSnapshot];
+
+    const snapshot = await service.createSnapshot(
+      {
+        project,
+        evidence: {},
+        research: {},
+        globalSettings: {},
+        exportMetadata: {},
+      },
+      { deviceId: "device-1", user: "Taylor" }
+    );
+
+    assert.doesNotThrow(() => JSON.stringify(snapshot.bundle));
+    assert.deepEqual(snapshot.bundle.project.auditTrail, []);
   });
 });
 
