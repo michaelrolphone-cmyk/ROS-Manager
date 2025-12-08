@@ -264,6 +264,13 @@ class AppControllerBase {
       projectTownshipInput: document.getElementById("projectTownshipInput"),
       projectRangeInput: document.getElementById("projectRangeInput"),
       projectSectionInput: document.getElementById("projectSectionInput"),
+      projectSectionQuadrant: document.getElementById("projectSectionQuadrant"),
+      projectAliquot1: document.getElementById("projectAliquot1"),
+      projectAliquot2: document.getElementById("projectAliquot2"),
+      projectAliquot3: document.getElementById("projectAliquot3"),
+      projectPlatBook: document.getElementById("projectPlatBook"),
+      projectPlatPageStart: document.getElementById("projectPlatPageStart"),
+      projectPlatPageEnd: document.getElementById("projectPlatPageEnd"),
       projectDescriptionInput: document.getElementById(
         "projectDescriptionInput"
       ),
@@ -302,6 +309,7 @@ class AppControllerBase {
       springboardMapButton: document.getElementById("springboardMapButton"),
       springboardEmailButton: document.getElementById("springboardEmailButton"),
       springboardTrsValue: document.getElementById("springboardTrsValue"),
+      springboardIndexValue: document.getElementById("springboardIndexValue"),
       springboardLastExportValue: document.getElementById(
         "springboardLastExportValue"
       ),
