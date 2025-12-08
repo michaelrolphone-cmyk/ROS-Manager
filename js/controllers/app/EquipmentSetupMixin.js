@@ -408,6 +408,16 @@ const EquipmentSetupMixin = (Base) =>
         .replace(/>/g, "&gt;");
     }
 
+    getStatusClass(statusLabel = "") {
+      const normalized = statusLabel.toLowerCase();
+      if (normalized.includes("draft")) return "draft";
+      if (normalized.includes("in progress") || normalized === "in-progress")
+        return "in-progress";
+      if (normalized.includes("ready")) return "ready";
+      if (normalized.includes("final")) return "final";
+      return "";
+    }
+
     buildStatusChip(statusLabel = "Draft") {
       const chip = document.createElement("span");
       chip.className = `status-chip ${this.getStatusClass(statusLabel)}`;
