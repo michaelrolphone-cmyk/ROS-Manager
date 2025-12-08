@@ -12,6 +12,19 @@ import Point from "../models/Point.js";
 import PointController from "./PointController.js";
 import NavigationController from "./NavigationController.js";
 import LevelingController from "./LevelingController.js";
+import ChainEvidenceAppController from "./apps/ChainEvidenceAppController.js";
+import EquipmentAppController from "./apps/EquipmentAppController.js";
+import EvidenceAppController from "./apps/EvidenceAppController.js";
+import HelpAppController from "./apps/HelpAppController.js";
+import LevelingAppController from "./apps/LevelingAppController.js";
+import NavigationAppController from "./apps/NavigationAppController.js";
+import PointsAppController from "./apps/PointsAppController.js";
+import QcAppController from "./apps/QcAppController.js";
+import ResearchAppController from "./apps/ResearchAppController.js";
+import SettingsAppController from "./apps/SettingsAppController.js";
+import SpringboardAppController from "./apps/SpringboardAppController.js";
+import TraverseAppController from "./apps/TraverseAppController.js";
+import VicinityMapAppController from "./apps/VicinityMapAppController.js";
 import GlobalSettingsService from "../services/GlobalSettingsService.js";
 import VersioningService from "../services/VersioningService.js";
 import SyncService from "../services/SyncService.js";
@@ -169,6 +182,7 @@ export default class AppController {
       getProjectName: () =>
         this.currentProjectId ? this.projects[this.currentProjectId]?.name || "" : "",
     });
+    this.appControllers = this.createAppControllers();
     this.bindStaticEvents();
     this.initialize();
   }
@@ -360,6 +374,7 @@ export default class AppController {
       equipmentTabButton: document.getElementById("equipmentTabButton"),
       levelingSection: document.getElementById("levelingSection"),
       springboardSection: document.getElementById("springboardSection"),
+      vicinityMapSection: document.getElementById("vicinityMapSection"),
       springboardGrid: document.querySelector(".springboard-grid"),
       navigationSection: document.getElementById("navigationSection"),
       traverseSection: document.getElementById("traverseSection"),
@@ -1779,7 +1794,7 @@ export default class AppController {
       this.currentProjectId = null;
       this.currentRecordId = null;
       this.elements.editor.style.display = "none";
-      this.renderRecordList();
+      this.appControllers?.traverseSection?.renderRecords();
       this.updateProjectList();
       this.drawProjectOverview();
       this.hideProjectForm();
@@ -1813,7 +1828,7 @@ export default class AppController {
       this.elements.editor.style.display = "none";
 
     this.resetChainFilters();
-    this.renderRecordList();
+    this.appControllers?.traverseSection?.renderRecords();
     this.updateProjectList();
     this.drawProjectOverview();
     this.hideProjectForm();
@@ -2567,67 +2582,13 @@ export default class AppController {
     this.currentProjectId = null;
     this.currentRecordId = null;
     this.elements.editor.style.display = "none";
-    this.renderRecordList();
+    this.appControllers?.traverseSection?.renderRecords();
     this.updateProjectList();
     this.drawProjectOverview();
     this.pointController.renderPointsTable();
     this.populateProjectDetailsForm(null);
     this.updateSpringboardHero();
     this.handleSpringboardScroll();
-  }
-
-  renderRecordList() {
-    const container = this.elements.recordList;
-    if (!this.currentProjectId || !this.projects[this.currentProjectId]) {
-      container.innerHTML = "<p>Select or create a project first.</p>";
-      return;
-    }
-    const records = this.projects[this.currentProjectId].records || {};
-    if (Object.keys(records).length === 0) {
-      container.innerHTML = "<p>No records yet. Create one above.</p>";
-      this.drawProjectOverview();
-      return;
-    }
-    container.innerHTML = "";
-    Object.keys(records).forEach((id) => {
-      const record = records[id];
-      const div = document.createElement("div");
-      div.className = "record-item";
-      if (id === this.currentRecordId) div.classList.add("active");
-
-      const titleSpan = document.createElement("span");
-      titleSpan.className = "record-title";
-      titleSpan.textContent = record.name;
-
-      const statusChip = this.buildStatusChip(record.status || "Draft");
-
-      const canvasWrapper = document.createElement("div");
-      canvasWrapper.className = "record-canvas";
-      const miniCanvas = document.createElement("canvas");
-      miniCanvas.width = 80;
-      miniCanvas.height = 80;
-      canvasWrapper.appendChild(miniCanvas);
-
-      div.appendChild(titleSpan);
-      div.appendChild(statusChip);
-      div.appendChild(canvasWrapper);
-
-      div.addEventListener("click", () => this.loadRecord(id));
-      container.appendChild(div);
-
-      try {
-        const pts = this.computeTraversePointsForRecord(
-          this.currentProjectId,
-          id
-        );
-        this.drawTraversePreview(miniCanvas, pts);
-      } catch (e) {
-        // ignore icon errors
-      }
-    });
-
-    this.drawProjectOverview();
-    this.populatePointGenerationOptions();
   }
 
   toggleProjectActionsMenu() {
@@ -2720,7 +2681,7 @@ export default class AppController {
     if (this.elements.recordNameInput) this.elements.recordNameInput.value = "";
     this.saveProjects();
     this.loadRecord(id);
-    this.renderRecordList();
+    this.appControllers?.traverseSection?.renderRecords();
     this.updateProjectList();
   }
 
@@ -2747,7 +2708,7 @@ export default class AppController {
 
     this.updateStartFromDropdownUI();
     this.updateAllBearingArrows();
-    this.renderRecordList();
+    this.appControllers?.traverseSection?.renderRecords();
     this.generateCommands();
     this.refreshEvidenceUI(record.id);
     this.populatePointGenerationOptions();
@@ -3235,6 +3196,89 @@ export default class AppController {
     }
   }
 
+  createAppControllers() {
+    const getCurrentProject = () =>
+      this.currentProjectId ? this.projects[this.currentProjectId] : null;
+
+    return {
+      springboardSection: new SpringboardAppController({
+        id: "springboardSection",
+        section: this.elements.springboardSection,
+        onScroll: () => this.handleSpringboardScroll(),
+      }),
+      vicinityMapSection: new VicinityMapAppController({
+        id: "vicinityMapSection",
+        section: this.elements.vicinityMapSection,
+        refreshMap: () => this.updateVicinityMap(getCurrentProject()),
+      }),
+      traverseSection: new TraverseAppController({
+        id: "traverseSection",
+        section: this.elements.traverseSection,
+        elements: {
+          recordList: this.elements.recordList,
+        },
+        getProjects: () => this.projects,
+        getCurrentProjectId: () => this.currentProjectId,
+        getCurrentRecordId: () => this.currentRecordId,
+        computeTraversePointsForRecord: (projectId, recordId) =>
+          this.computeTraversePointsForRecord(projectId, recordId),
+        drawTraversePreview: (canvas, points) =>
+          this.drawTraversePreview(canvas, points),
+        drawProjectOverview: () => this.drawProjectOverview(),
+        populatePointGenerationOptions: () => this.populatePointGenerationOptions(),
+        loadRecord: (id) => this.loadRecord(id),
+        buildStatusChip: (status) => this.buildStatusChip(status),
+      }),
+      pointsSection: new PointsAppController({
+        id: "pointsSection",
+        section: this.elements.pointsSection,
+        pointController: this.pointController,
+      }),
+      levelingSection: new LevelingAppController({
+        id: "levelingSection",
+        section: this.elements.levelingSection,
+        levelingController: this.levelingController,
+      }),
+      qcSection: new QcAppController({
+        id: "qcSection",
+        section: this.elements.qcSection,
+      }),
+      evidenceSection: new EvidenceAppController({
+        id: "evidenceSection",
+        section: this.elements.evidenceSection,
+        refreshEvidence: () => this.refreshEvidenceUI(),
+      }),
+      chainEvidenceSection: new ChainEvidenceAppController({
+        id: "chainEvidenceSection",
+        section: this.elements.chainEvidenceSection,
+        refreshChainEvidence: () => this.refreshChainEvidence(),
+      }),
+      researchSection: new ResearchAppController({
+        id: "researchSection",
+        section: this.elements.researchSection,
+        refreshResearch: () => this.refreshResearchUI(),
+      }),
+      equipmentSection: new EquipmentAppController({
+        id: "equipmentSection",
+        section: this.elements.equipmentSection,
+        refreshEquipment: () => this.refreshEquipmentUI(),
+      }),
+      navigationSection: new NavigationAppController({
+        id: "navigationSection",
+        section: this.elements.navigationSection,
+      }),
+      settingsSection: new SettingsAppController({
+        id: "settingsSection",
+        section: this.elements.settingsSection,
+      }),
+      helpSection: new HelpAppController({
+        id: "helpSection",
+        section: this.elements.helpSection,
+        loadHelp: () => this.loadHelpDocument(),
+      }),
+    };
+  }
+
   handleSpringboardScroll() {
     const header = this.elements.pageHeader;
     if (!header) return;
@@ -3245,21 +3289,12 @@ export default class AppController {
 
   /* ===================== Evidence Logger ===================== */
   switchTab(targetId) {
-    const sections = [
-      this.elements.springboardSection,
-      this.elements.traverseSection,
-      this.elements.pointsSection,
-      this.elements.settingsSection,
-      this.elements.evidenceSection,
-      this.elements.researchSection,
-      this.elements.qcSection,
-      this.elements.levelingSection,
-      this.elements.equipmentSection,
-      this.elements.navigationSection,
-      this.elements.helpSection,
-    ];
-    const validSection = sections.find((sec) => sec?.id === targetId);
-    const resolvedTarget = validSection ? targetId : "springboardSection";
+    const controllers = this.appControllers || {};
+    const targetController =
+      controllers[targetId] ||
+      controllers.springboardSection ||
+      Object.values(controllers)[0];
+    const resolvedId = targetController?.id || "springboardSection";
     const buttons = [
       this.elements.traverseTabButton,
       this.elements.pointsTabButton,
@@ -3267,60 +3302,30 @@ export default class AppController {
       this.elements.equipmentTabButton,
     ];
 
-    sections.forEach((sec) => {
-      if (!sec) return;
-      const isTarget = sec.id === resolvedTarget;
-      sec.classList.toggle("active", isTarget);
-      sec.style.display = isTarget ? "block" : "none";
+    Object.entries(controllers).forEach(([id, controller]) => {
+      if (!controller) return;
+      if (id === resolvedId) controller.activate();
+      else controller.deactivate();
     });
 
     this.handleSpringboardScroll();
 
     buttons.forEach((btn) => {
       if (!btn) return;
-      btn.classList.toggle("active", btn.dataset.target === resolvedTarget);
+      btn.classList.toggle("active", btn.dataset.target === resolvedId);
     });
 
-    this.appLaunchers?.forEach((launcher) => {
-      launcher.classList.toggle(
-        "active",
-        launcher.dataset.target === resolvedTarget
-      );
-    });
-
-    const onSpringboard = resolvedTarget === "springboardSection";
-
+    const onSpringboard = resolvedId === "springboardSection";
     if (!onSpringboard) {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     this.appLaunchers?.forEach((launcher) => {
-      if (launcher.dataset.target === targetId)
-        launcher.classList.add("active");
-      else launcher.classList.remove("active");
+      launcher.classList.toggle("active", launcher.dataset.target === resolvedId);
     });
 
     if (this.elements.homeButton) {
       this.elements.homeButton.classList.toggle("visible", !onSpringboard);
-    }
-
-    if (targetId === "evidenceSection") {
-      this.refreshEvidenceUI();
-    } else if (resolvedTarget === "chainEvidenceSection") {
-      this.refreshChainEvidence();
-    } else if (resolvedTarget === "researchSection") {
-      this.refreshResearchUI();
-    } else if (resolvedTarget === "equipmentSection") {
-      this.refreshEquipmentUI();
-    } else if (resolvedTarget === "traverseSection") {
-      this.renderRecordList();
-    }
-    if (resolvedTarget === "pointsSection") {
-      this.pointController.renderPointsTable();
-    }
-
-    if (resolvedTarget === "helpSection") {
-      this.loadHelpDocument();
     }
   }
 
@@ -5769,7 +5774,7 @@ export default class AppController {
     this.saveProjects();
     this.currentRecordId = null;
     this.elements.editor.style.display = "none";
-    this.renderRecordList();
+    this.appControllers?.traverseSection?.renderRecords();
     this.updateProjectList();
   }
 
@@ -7299,7 +7304,7 @@ export default class AppController {
       this.drawTraversePreview(this.elements.traverseCanvas, geometry);
 
       this.updateAllBearingArrows();
-      this.renderRecordList();
+      this.appControllers?.traverseSection?.renderRecords();
       this.updateProjectList();
       this.drawProjectOverview();
     } catch (e) {
