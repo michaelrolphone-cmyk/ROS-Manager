@@ -123,8 +123,8 @@
 ### 2.1 Application Framework & Sync Stability
 
 * Fix the sync bug where, with application sync features enabled, the app is **duplicating traverse bearing and distance entries over and over again even when only one user is connected**.
-* Remove the **help.md refresh button**.
-* Replace the existing footer/help text with this copyright/behavior notice:  
+* ✅ Remove the **help.md refresh button**.
+* ✅ Replace the existing footer/help text with this copyright/behavior notice:
   **“All data saved locally in your browser • No server • Works offline”**
 
 ---
@@ -158,10 +158,10 @@
 
 **Goal:** Reduce risk of losing field records due to local storage wipes or device failure.
 
-* At project level, display **“Last Export Date”** (for that project).
+* ✅ At project level, display **“Last Export Date”** (for that project).
 * Trigger warnings when:
-  * The project has not been exported in **more than 7 days**; or
-  * Major changes have occurred (e.g., new evidence, new traverses, CP&F-ready data), and no export has occurred since.
+  * ✅ The project has not been exported in **more than 7 days**; or
+  * ✅ Major changes have occurred (e.g., new evidence, new traverses, CP&F-ready data), and no export has occurred since.
 
 * Warnings should:
   * Appear clearly in the springboard and/or project overview.

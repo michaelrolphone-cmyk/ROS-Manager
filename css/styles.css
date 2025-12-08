@@ -1350,6 +1350,11 @@ body {
         font-size: 12px;
       }
 
+      .mini-note.warning {
+        color: #b45309;
+        font-weight: 600;
+      }
+
       .leveling-table-header {
         display: flex;
         align-items: center;

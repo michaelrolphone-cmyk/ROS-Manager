@@ -148,6 +148,14 @@
                   <div class="label">Township / Range / Section</div>
                   <span class="value" id="springboardTrsValue">—</span>
                 </div>
+                <div class="meta-card">
+                  <div class="label">Last Export</div>
+                  <span class="value" id="springboardLastExportValue">—</span>
+                  <span
+                    class="mini-note warning"
+                    id="springboardExportWarning"
+                  ></span>
+                </div>
               </div>
             </div>
           </div>
@@ -1252,8 +1260,8 @@
             </div>
 
             <p class="subtitle" style="margin-top: 12px">
-              © Michael Byrns. No liability is incurred by the use of this app
-              or any data loss.
+              All data saved locally in your browser • No server • Works
+              offline
             </p>
           </div>
         </div>
@@ -1269,9 +1277,6 @@
                 </p>
               </div>
               <div class="help-actions">
-                <button type="button" id="helpRefreshButton">
-                  Refresh from HELP.md
-                </button>
                 <span id="helpStatus" class="mini-note"></span>
               </div>
             </div>
