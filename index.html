@@ -97,9 +97,6 @@
                   Create or open a project to see its location context.
                 </p>
               </div>
-              <span id="springboardStatusChip" class="info-chip"
-                >No project</span
-              >
             </div>
             <div class="springboard-hero-details">
               <div class="meta-grid">
@@ -2243,6 +2240,58 @@
             </p>
 
             <div class="form-grid">
+              <div class="card" style="margin-top: 0">
+                <h4 style="margin-top: 0">Professional Profile</h4>
+                <p class="subtitle" style="margin-top: 0">
+                  This information appears on exports (CP&amp;F, QC summaries,
+                  level books, and Smart Pack) so filings include Idaho-ready
+                  identification.
+                </p>
+                <div class="form-grid">
+                  <label>
+                    Responsible surveyor
+                    <input
+                      type="text"
+                      id="professionalSurveyorName"
+                      placeholder="Name"
+                    />
+                  </label>
+                  <label>
+                    Idaho PLS #
+                    <input type="text" id="professionalLicense" />
+                  </label>
+                  <label>
+                    Firm
+                    <input type="text" id="professionalFirm" />
+                  </label>
+                  <label>
+                    Contact phone
+                    <input type="tel" id="professionalContactPhone" />
+                  </label>
+                  <label>
+                    Contact email
+                    <input type="email" id="professionalContactEmail" />
+                  </label>
+                  <label>
+                    Primary county
+                    <input type="text" id="professionalCounty" />
+                  </label>
+                </div>
+                <div class="input-row" style="margin-top: 8px">
+                  <button type="button" id="saveProfessionalProfileButton">
+                    Save Profile
+                  </button>
+                  <button
+                    type="button"
+                    class="secondary"
+                    id="resetProfessionalProfileButton"
+                  >
+                    Reset
+                  </button>
+                  <div class="subtitle" id="professionalProfileStatus"></div>
+                </div>
+              </div>
+
               <div class="card" style="margin-top: 0">
                 <h4 style="margin-top: 0">Equipment Library</h4>
                 <div class="form-grid">

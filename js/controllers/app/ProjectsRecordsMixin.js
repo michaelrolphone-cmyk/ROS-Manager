@@ -551,10 +551,12 @@ const ProjectsRecordsMixin = (Base) =>
       };
     }
 
-    buildQualityControlSummaryHtml(summary, exportStatus = "Draft") {
-      const label = this.getExportStatusLabel(exportStatus);
-      const formatNumber = (value, digits = 3) =>
-        Number.isFinite(value) ? value.toFixed(digits) : "—";
+  buildQualityControlSummaryHtml(summary, exportStatus = "Draft") {
+    const label = this.getExportStatusLabel(exportStatus);
+    const profile = this.getProfessionalProfile?.() || {};
+    const basis = this.getProjectBasisOfBearing?.(summary.project) || "";
+    const formatNumber = (value, digits = 3) =>
+      Number.isFinite(value) ? value.toFixed(digits) : "—";
       const formatRatio = (misclosure, length) =>
         this.formatRatio(misclosure, length) || "—";
 
@@ -623,6 +625,9 @@ const ProjectsRecordsMixin = (Base) =>
         th, td { border: 1px solid #d7dce5; padding: 6px 8px; text-align: left; }
         th { background: #f1f5f9; }
         .muted { color: #5b6475; font-size: 12px; margin-top: 4px; }
+        .signature-row { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-top: 14px; align-items: stretch; }
+        .sig-box { border: 1px dashed #d7dce5; padding: 12px; min-height: 100px; }
+        .seal-box { border: 2px solid #1c1c1c; min-height: 110px; display: flex; align-items: center; justify-content: center; font-weight: 700; }
       </style>
     </head>
     <body>
@@ -640,6 +645,8 @@ const ProjectsRecordsMixin = (Base) =>
           summary.results.overallLabel || "No checks yet"
         )}</div>
       </div>
+
+      ${this.buildProfessionalHeader?.(profile, summary.project, { basisOfBearing: basis }) || ""}
 
       <div class="section">
         <h2>Tolerances</h2>
@@ -998,7 +1005,6 @@ const ProjectsRecordsMixin = (Base) =>
       const hero = this.elements.springboardHero;
       const titleEl = this.elements.springboardProjectTitle;
       const descEl = this.elements.springboardProjectDescription;
-      const chipEl = this.elements.springboardStatusChip;
       const thumbCanvas = this.elements.springboardCompositeCanvas;
       const thumbWrapper = thumbCanvas?.parentElement;
       const thumbEmpty = this.elements.springboardCompositeEmpty;
@@ -1018,14 +1024,12 @@ const ProjectsRecordsMixin = (Base) =>
         if (descEl)
           descEl.textContent =
             "Create or open a project to see its location context.";
-        if (chipEl) chipEl.textContent = "No project";
       } else {
         if (titleEl) titleEl.textContent = project.name || "Active Project";
         if (descEl)
           descEl.textContent =
             project.description?.trim() ||
             "Add a project description to guide the crew.";
-        if (chipEl) chipEl.textContent = "Active";
       }
 
       if (thumbEmpty) {

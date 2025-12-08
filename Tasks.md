@@ -417,9 +417,9 @@
 
 ### 8.1 Project Overview / Spring Board
 
-* Add a **vicinity map app** to the springboard to view the client’s property when the client’s address has been configured for a project. ✅
-* Remove the **active indicator** in the project overview on the springboard (not needed). ✅
-* Show the **composite project thumbnail** in the project overview: ✅
+* ✅ Add a **vicinity map app** to the springboard to view the client’s property when the client’s address has been configured for a project.
+* ✅ Remove the **active indicator** in the project overview on the springboard (not needed).
+* ✅ Show the **composite project thumbnail** in the project overview:
   * On the left of the project name and description.
   * With rounded corners.
 
@@ -445,7 +445,7 @@
 
 ### 8.3 Idaho-Ready Document Templates
 
-* Ensure all exportable documents (CP&F, QC summaries, level books, equipment logs, Smart Pack) use templates that:
+* ✅ Ensure all exportable documents (CP&F, QC summaries, level books, equipment logs, Smart Pack) use templates that:
   * Include:
     * Surveyor name
     * Idaho license number

@@ -1,11 +1,18 @@
 import LevelRun from "../models/LevelRun.js";
 
 export default class LevelingController {
-  constructor({ elements = {}, getCurrentProject, saveProjects, getProjectName }) {
+  constructor({
+    elements = {},
+    getCurrentProject,
+    saveProjects,
+    getProjectName,
+    getProfessionalProfile,
+  }) {
     this.elements = elements;
     this.getCurrentProject = getCurrentProject;
     this.saveProjects = saveProjects;
     this.getProjectName = getProjectName;
+    this.getProfessionalProfile = getProfessionalProfile;
     this.currentLevelRunId = null;
 
     this.bindEvents();
@@ -435,34 +442,7 @@ export default class LevelingController {
       )
       .join("");
 
-    const printable = `<!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8" />
-        <title>Level Run - ${this.escapeHtml(run.name || "Untitled")}</title>
-        <style>
-          body { font-family: Arial, sans-serif; padding: 24px; }
-          h1 { margin-bottom: 6px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-          th, td { border: 1px solid #cbd5e1; padding: 6px; font-size: 12px; }
-          th { background: #f1f5f9; text-align: left; }
-        </style>
-      </head>
-      <body>
-        <h1>Level Run: ${this.escapeHtml(run.name || "Untitled")}</h1>
-        <p><strong>Project:</strong> ${this.escapeHtml(projectName)}</p>
-        <p><strong>Start:</strong> ${this.escapeHtml(run.startPoint || "")} @ ${this.formatLevelNumber(parseFloat(run.startElevation))}<br />
-        <strong>Closing:</strong> ${this.escapeHtml(run.closingPoint || "")} @ ${this.formatLevelNumber(parseFloat(run.closingElevation))}<br />
-        <strong>Misclosure:</strong> ${this.formatLevelNumber(stats.misclosure)}</p>
-        <table>
-          <thead>
-            <tr>
-              <th>#</th><th>Point</th><th>BS</th><th>FS</th><th>Notes</th><th>Rise/Fall</th><th>Elevation</th><th>ΣBS</th><th>ΣFS</th><th>Closure</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </body></html>`;
+    const printable = this.buildLevelRunHtml({ run, stats, rows, projectName });
 
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
@@ -473,6 +453,88 @@ export default class LevelingController {
     printWindow.document.close();
     printWindow.focus();
     printWindow.print();
+  }
+
+  buildLevelRunHtml({ run, stats, rows, projectName }) {
+    const profile = this.getProfessionalProfile?.() || {};
+    const contact = [profile.contactPhone, profile.contactEmail]
+      .filter(Boolean)
+      .join(" | ");
+
+    return `<!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Level Run - ${this.escapeHtml(run.name || "Untitled")}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 24px; color: #0f172a; }
+          h1 { margin-bottom: 6px; }
+          h2 { margin: 16px 0 6px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+          th, td { border: 1px solid #cbd5e1; padding: 6px; font-size: 12px; }
+          th { background: #f1f5f9; text-align: left; }
+          .meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px 14px; margin-top: 10px; }
+          .meta div { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px; }
+          .signature-row { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-top: 12px; align-items: stretch; }
+          .sig-box { border: 1px dashed #cbd5e1; padding: 10px; min-height: 90px; }
+          .seal-box { border: 2px solid #0f172a; min-height: 110px; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+          .muted { color: #475569; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <h1>Level Run: ${this.escapeHtml(run.name || "Untitled")}</h1>
+        <div class="meta">
+          <div><strong>Project</strong><br />${this.escapeHtml(projectName)}</div>
+          <div><strong>Start</strong><br />${this.escapeHtml(
+            run.startPoint || ""
+          )} @ ${this.formatLevelNumber(parseFloat(run.startElevation))}</div>
+          <div><strong>Closing</strong><br />${this.escapeHtml(
+            run.closingPoint || ""
+          )} @ ${this.formatLevelNumber(
+      parseFloat(run.closingElevation)
+    )}</div>
+          <div><strong>Misclosure</strong><br />${this.formatLevelNumber(
+            stats.misclosure
+          )}</div>
+          <div><strong>Surveyor</strong><br />${this.escapeHtml(
+            profile.surveyorName || "Not provided"
+          )}</div>
+          <div><strong>Idaho PLS #</strong><br />${this.escapeHtml(
+            profile.licenseNumber || "Not provided"
+          )}</div>
+          <div><strong>Firm</strong><br />${this.escapeHtml(
+            profile.firmName || "Not provided"
+          )}</div>
+          <div><strong>Contact</strong><br />${this.escapeHtml(
+            contact || "Not provided"
+          )}</div>
+          <div><strong>County</strong><br />${this.escapeHtml(
+            profile.county || "Not provided"
+          )}</div>
+        </div>
+
+        <div class="signature-row">
+          <div class="sig-box">
+            <strong>Seal / Signature</strong>
+            <div class="muted" style="margin-top:6px;">Idaho-ready acknowledgement for level notes.</div>
+            <div style="margin-top:12px;">
+              <div>Signature: __________________________</div>
+              <div style="margin-top:6px;">Signed date/time: __________________</div>
+            </div>
+          </div>
+          <div class="seal-box">Place Surveyor Seal</div>
+        </div>
+
+        <h2>Level book</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Point</th><th>BS</th><th>FS</th><th>Notes</th><th>Rise/Fall</th><th>Elevation</th><th>ΣBS</th><th>ΣFS</th><th>Closure</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </body></html>`;
   }
 
   formatLevelNumber(value) {

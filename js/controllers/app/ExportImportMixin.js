@@ -134,6 +134,66 @@ const ExportImportMixin = (Base) =>
     return "Draft";
   }
 
+  getProjectBasisOfBearing(project) {
+    if (!project) return "";
+    const records = Object.values(project.records || {});
+    return records.find((rec) => rec?.basis)?.basis || "";
+  }
+
+  buildProfessionalHeader(profile = {}, project = {}, options = {}) {
+    const contact = [profile.contactPhone, profile.contactEmail]
+      .filter(Boolean)
+      .join(" | ");
+    const basis = options.basisOfBearing || this.getProjectBasisOfBearing(project);
+    const county = profile.county || project.county || project.projectCounty || "";
+    const projectId = project.id || project.projectId;
+
+    return `
+      <div class="section">
+        <h2>Professional identification</h2>
+        <div class="meta">
+          <div><strong>Surveyor</strong><br />${this.escapeHtml(
+            profile.surveyorName || "Not provided"
+          )}</div>
+          <div><strong>Idaho PLS #</strong><br />${this.escapeHtml(
+            profile.licenseNumber || "Not provided"
+          )}</div>
+          <div><strong>Firm</strong><br />${this.escapeHtml(
+            profile.firmName || "Not provided"
+          )}</div>
+          <div><strong>Contact</strong><br />${this.escapeHtml(
+            contact || "Not provided"
+          )}</div>
+          <div><strong>County</strong><br />${this.escapeHtml(
+            county || "Not provided"
+          )}</div>
+          <div><strong>Project</strong><br />${this.escapeHtml(
+            project.name || "Project"
+          )}${projectId ? `<div class="muted">ID: ${this.escapeHtml(projectId)}</div>` : ""}</div>
+          ${
+            basis
+              ? `<div><strong>Basis of Bearing</strong><br />${this.escapeHtml(
+                  basis
+                )}</div>`
+              : ""
+          }
+        </div>
+        <div class="signature-row">
+          <div class="sig-box">
+            <strong>Seal / Signature</strong>
+            <div class="muted" style="margin-top:6px;">
+              Idaho-ready declaration and space for professional seal.
+            </div>
+            <div style="margin-top:14px;">
+              <div>Signature: __________________________</div>
+              <div style="margin-top:6px;">Signed date/time: __________________</div>
+            </div>
+          </div>
+          <div class="seal-box">Place Surveyor Seal</div>
+        </div>
+      </div>`;
+  }
+
   renderSmartPackStatus(status = null) {
     const label = this.getExportStatusLabel(
       status || this.computeSmartPackStatus()
@@ -197,6 +257,8 @@ const ExportImportMixin = (Base) =>
       export: metadata,
       status: exportStatus,
       project: project.toObject(),
+      professionalProfile: this.getProfessionalProfile(),
+      basisOfBearing: this.getProjectBasisOfBearing(project),
       records: recordList,
       traverses: traverseReports,
       levels: levelReports,
@@ -211,6 +273,8 @@ const ExportImportMixin = (Base) =>
 
   buildSmartPackHtml(bundle) {
     const label = this.getExportStatusLabel(bundle?.status || "Draft");
+    const profile =
+      bundle.professionalProfile || this.getProfessionalProfile?.() || {};
     const traverseRows = (bundle.traverses || [])
       .map(
         (t) => `
@@ -304,6 +368,9 @@ const ExportImportMixin = (Base) =>
           th { background: #f1f5f9; }
           ul { margin: 8px 0 0; padding-left: 18px; }
           .muted { color: #475569; font-size: 12px; }
+          .signature-row { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-top: 14px; align-items: stretch; }
+          .sig-box { border: 1px dashed #cbd5e1; padding: 12px; min-height: 100px; }
+          .seal-box { border: 2px solid #0f172a; min-height: 120px; display: flex; align-items: center; justify-content: center; font-weight: 700; }
         </style>
       </head>
       <body>
@@ -327,6 +394,12 @@ const ExportImportMixin = (Base) =>
             bundle.qcSummary?.results?.overallLabel || "Not evaluated"
           )}</div>
         </div>
+
+        ${this.buildProfessionalHeader(
+          profile,
+          bundle.project || {},
+          { basisOfBearing: bundle.basisOfBearing }
+        )}
 
         <div class="section">
           <h2>Traverse closure reports</h2>

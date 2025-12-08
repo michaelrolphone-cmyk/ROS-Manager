@@ -537,6 +537,10 @@ describe("ExportImportMixin level integration", () => {
       return "0-00-00";
     }
 
+    getProfessionalProfile() {
+      return {};
+    }
+
     escapeHtml(value) {
       return String(value ?? "");
     }
