@@ -22,6 +22,7 @@ export default class CornerEvidence {
     monumentType = "",
     monumentMaterial = "",
     monumentSize = "",
+    associatedTrs = [],
     surveyorName = "",
     surveyorLicense = "",
     surveyorFirm = "",
@@ -59,6 +60,12 @@ export default class CornerEvidence {
     this.monumentType = monumentType;
     this.monumentMaterial = monumentMaterial;
     this.monumentSize = monumentSize;
+    this.associatedTrs = (associatedTrs || []).map((trs) => ({
+      township: trs?.township || "",
+      range: trs?.range || "",
+      section: trs?.section || "",
+      sectionBreakdown: trs?.sectionBreakdown || "",
+    }));
     this.surveyorName = surveyorName;
     this.surveyorLicense = surveyorLicense;
     this.surveyorFirm = surveyorFirm;
@@ -105,6 +112,7 @@ export default class CornerEvidence {
       monumentType: this.monumentType,
       monumentMaterial: this.monumentMaterial,
       monumentSize: this.monumentSize,
+      associatedTrs: this.associatedTrs,
       surveyorName: this.surveyorName,
       surveyorLicense: this.surveyorLicense,
       surveyorFirm: this.surveyorFirm,

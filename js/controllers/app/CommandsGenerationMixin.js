@@ -151,6 +151,7 @@ const CommandsGenerationMixin = (Base) =>
       this.setCommandText("drawLines", drawLinesText.trimEnd() + "\n");
 
       this.drawTraversePreview(this.elements.traverseCanvas, geometry);
+      this.renderClosureSummary?.(this.currentRecordId);
 
       this.updateAllBearingArrows();
       this.appControllers?.traverseSection?.renderRecords();

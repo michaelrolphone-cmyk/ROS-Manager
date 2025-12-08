@@ -584,6 +584,22 @@ body {
         align-items: start;
       }
 
+      .smartpack-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        align-items: center;
+      }
+
+      .smartpack-meta {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+        align-items: center;
+      }
+
       .audit-entry-row {
         display: flex;
         flex-direction: column;
@@ -776,6 +792,84 @@ body {
         font-weight: 700;
         color: #0f172a;
         margin-top: 2px;
+      }
+
+      .stakeout-grid {
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 16px 20px;
+        align-items: start;
+      }
+
+      .stakeout-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: 14px;
+      }
+
+      .stakeout-actions .mini-note {
+        margin-left: auto;
+      }
+
+      .stakeout-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 12px;
+      }
+
+      .stakeout-card {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .stakeout-card-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: flex-start;
+      }
+
+      .stakeout-title {
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1.2;
+      }
+
+      .stakeout-when {
+        color: #475569;
+        font-weight: 500;
+        margin-top: 2px;
+        font-size: 13px;
+      }
+
+      .stakeout-actions button {
+        padding: 6px 10px;
+      }
+
+      .stakeout-details {
+        display: grid;
+        gap: 8px;
+      }
+
+      .stakeout-row {
+        display: grid;
+        grid-template-columns: 140px 1fr;
+        gap: 8px;
+        align-items: start;
+      }
+
+      .stakeout-row .label {
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.2px;
+        color: #64748b;
+      }
+
+      .stakeout-row .value {
+        font-weight: 700;
+        color: #0f172a;
       }
 
       .equipment-map-thumb {
@@ -1089,6 +1183,19 @@ body {
       .distance-row .distance {
         flex: 1;
       }
+      .code-row,
+      .offset-row {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 6px;
+      }
+      .code-row select,
+      .offset-row select,
+      .offset-row input {
+        flex: 1;
+        min-width: 140px;
+      }
       .row-controls {
         display: flex;
         flex: 0 0 auto;
@@ -1123,6 +1230,32 @@ body {
         height: 16px;
         transform-origin: 50% 50%;
         transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+      }
+      #closureSummaryCard .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .closure-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .closure-grid .label {
+        font-size: 12px;
+        color: #475569;
+        margin: 0 0 2px;
+      }
+      .closure-grid .value {
+        font-size: 16px;
+        font-weight: 700;
+        margin: 0;
+      }
+      #closureRatio {
+        display: block;
+        margin-top: 2px;
       }
 
       /* Traverse canvases: responsive, keep aspect ratio */
@@ -2033,9 +2166,92 @@ body {
         margin: 2px 0 6px 0;
       }
 
-      .chip-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        margin: 6px 0;
-      }
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0;
+}
+
+.associated-trs-list {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.associated-trs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.trs-chip {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: #eef2ff;
+  color: #1e3a8a;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.link-button {
+  border: none;
+  background: none;
+  color: #2563eb;
+  cursor: pointer;
+  font-weight: 600;
+  padding: 4px 6px;
+}
+
+.link-button:hover,
+.link-button:focus {
+  text-decoration: underline;
+}
+
+.backup-list {
+  margin-top: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px;
+  background: #f8fafc;
+}
+
+.backup-list.empty {
+  border-style: dashed;
+  color: #475569;
+}
+
+.backup-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.backup-item:last-child {
+  border-bottom: none;
+}
+
+.backup-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.backup-meta .label {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.backup-meta .timestamp {
+  color: #475569;
+  font-size: 13px;
+}

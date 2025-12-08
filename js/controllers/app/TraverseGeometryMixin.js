@@ -75,6 +75,7 @@ const TraverseGeometryMixin = (Base) =>
       },
     ];
     const polylines = [];
+    const offsetPolylines = [];
     const paths = [];
     const counter = { value: startNumber };
 
@@ -101,6 +102,14 @@ const TraverseGeometryMixin = (Base) =>
         );
         if (!segments || segments.length === 0) return;
 
+        let offsetLine = null;
+        const offsetDistance = parseFloat(call.offsetDistance);
+        const hasOffset =
+          call.offsetReference &&
+          Number.isFinite(offsetDistance) &&
+          offsetDistance !== 0 &&
+          ["left", "right"].includes(call.offsetDirection);
+
         segments.forEach((segment, idx) => {
           const azRad = (segment.azimuth * Math.PI) / 180;
           const dE = segment.distance * Math.sin(azRad);
@@ -117,10 +126,31 @@ const TraverseGeometryMixin = (Base) =>
           if (isLast) points.push(pointToStore);
           polyline.push(pointToStore);
           current = pointToStore;
+
+          if (hasOffset && !segment.isCurve && segment.distance > 0) {
+            const dirX = dE / segment.distance;
+            const dirY = dN / segment.distance;
+            const sign = call.offsetDirection === "left" ? 1 : -1;
+            const anchor = polyline[polyline.length - 1] || current;
+            const startOffset = {
+              x: anchor.x + sign * offsetDistance * dirY,
+              y: anchor.y - sign * offsetDistance * dirX,
+            };
+            const endOffset = {
+              x: intermediate.x + sign * offsetDistance * dirY,
+              y: intermediate.y - sign * offsetDistance * dirX,
+            };
+            if (!offsetLine) offsetLine = [startOffset];
+            offsetLine.push(endOffset);
+          }
         });
 
         const nextPoint = current;
         pathCalls.push(call);
+
+        if (offsetLine && offsetLine.length > 1) {
+          offsetPolylines.push(offsetLine);
+        }
 
         (call.branches || []).forEach((branch) => {
           if (!branch || branch.length === 0) return;
@@ -144,7 +174,7 @@ const TraverseGeometryMixin = (Base) =>
     polylines.unshift(mainResult.polyline);
     paths.unshift(mainResult.path);
 
-    return { points, polylines, paths };
+    return { points, polylines, paths, offsetPolylines };
   }
 
   drawTraversePreview(canvas, traverse) {
@@ -155,6 +185,7 @@ const TraverseGeometryMixin = (Base) =>
     ctx.clearRect(0, 0, width, height);
 
     const polylines = traverse?.polylines || [];
+    const offsetPolylines = traverse?.offsetPolylines || [];
     const points = traverse?.points || (Array.isArray(traverse) ? traverse : []);
     if (!points || points.length === 0) return;
 
@@ -175,6 +206,14 @@ const TraverseGeometryMixin = (Base) =>
       if (p.x > maxX) maxX = p.x;
       if (p.y < minY) minY = p.y;
       if (p.y > maxY) maxY = p.y;
+    });
+    offsetPolylines.forEach((line) => {
+      (line || []).forEach((p) => {
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.y > maxY) maxY = p.y;
+      });
     });
 
     const padding = 10;
@@ -207,6 +246,24 @@ const TraverseGeometryMixin = (Base) =>
       }
       ctx.stroke();
     });
+
+    if (offsetPolylines.length) {
+      ctx.save();
+      ctx.strokeStyle = "#94a3b8";
+      ctx.setLineDash([4, 4]);
+      offsetPolylines.forEach((line) => {
+        if (!line || line.length === 0) return;
+        ctx.beginPath();
+        const first = toCanvas(line[0]);
+        ctx.moveTo(first.x, first.y);
+        for (let i = 1; i < line.length; i++) {
+          const c = toCanvas(line[i]);
+          ctx.lineTo(c.x, c.y);
+        }
+        ctx.stroke();
+      });
+      ctx.restore();
+    }
 
     ctx.fillStyle = "#16a34a";
     const start = toCanvas(lines[0][0]);

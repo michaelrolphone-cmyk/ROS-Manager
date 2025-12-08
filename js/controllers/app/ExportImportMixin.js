@@ -1,6 +1,32 @@
 const ExportImportMixin = (Base) =>
   class extends Base {
   /* ===================== Export / Import ===================== */
+  getExportStatusLabel(status = "Draft") {
+    const normalized = (status || "").toLowerCase();
+    if (normalized.includes("final")) {
+      return {
+        title: "Final — Professional Declaration Signed",
+        note: "Ready for recordation with QC checks satisfied.",
+      };
+    }
+    if (normalized.includes("ready")) {
+      return {
+        title: "Ready for Review",
+        note: "Preliminary — review and seal before filing.",
+      };
+    }
+    if (normalized.includes("progress")) {
+      return {
+        title: "Preliminary — In Progress",
+        note: "Work in progress; not for recordation.",
+      };
+    }
+    return {
+      title: "Draft — Partial or Incomplete",
+      note: "PRELIMINARY — NOT FOR RECORDATION",
+    };
+  }
+
   buildExportMetadata(status = "Draft") {
     const label = this.getExportStatusLabel(status);
     return {
@@ -8,6 +34,26 @@ const ExportImportMixin = (Base) =>
       status: label.title,
       note: label.note,
     };
+  }
+
+  recordRollingBackups(projectIds = [], payload, filename) {
+    const settings = this.globalSettings?.backupSettings || {};
+    if (!settings.rollingBackupsEnabled) return;
+    if (!this.rollingBackupService) return;
+    const ids = Array.isArray(projectIds) && projectIds.length
+      ? projectIds
+      : ["all-projects"];
+    const serialized =
+      typeof payload === "string" ? payload : JSON.stringify(payload || {});
+    this.rollingBackupService.addBackup(
+      ids,
+      `${settings.filenamePrefix || "carlson-backup"}-${new Date()
+        .toISOString()
+        .replace(/[:.]/g, "-")}.json`,
+      serialized,
+      settings.maxCopies || 3
+    );
+    this.renderRollingBackupList?.();
   }
 
   exportCurrentProject() {
@@ -44,6 +90,7 @@ const ExportImportMixin = (Base) =>
       payload,
       `carlson-${(proj.name || "project").replace(/[^\w\-]+/g, "_")}.json`
     );
+    this.recordRollingBackups([this.currentProjectId], payload);
     this.markProjectsExported([this.currentProjectId]);
   }
 
@@ -62,7 +109,301 @@ const ExportImportMixin = (Base) =>
       qcSummaries: this.buildAllQualityControlSummaries(),
     };
     this.downloadJson(payload, "carlson-all-projects.json");
+    this.recordRollingBackups(Object.keys(this.projects || {}), payload);
     this.markProjectsExported(Object.keys(this.projects || {}));
+  }
+
+  computeSmartPackStatus(projectId = this.currentProjectId) {
+    if (!projectId || !this.projects?.[projectId]) return "Draft";
+    const evidence = this.cornerEvidenceService.getProjectEvidence(projectId);
+    const research = this.researchDocumentService.getProjectDocuments(
+      projectId
+    );
+    const qcSummary = this.buildQualityControlSummaryData(projectId);
+
+    const evidenceDraft = (evidence || []).some(
+      (ev) => (ev.status || "").toLowerCase() !== "final"
+    );
+    const researchDraft = (research || []).some(
+      (doc) => (doc.status || "").toLowerCase() !== "final"
+    );
+
+    if (qcSummary?.results?.overallClass === "qc-pass" && !evidenceDraft && !researchDraft)
+      return "Final";
+    if (qcSummary) return "Ready for Review";
+    return "Draft";
+  }
+
+  renderSmartPackStatus(status = null) {
+    const label = this.getExportStatusLabel(
+      status || this.computeSmartPackStatus()
+    );
+    if (this.elements.smartPackStatusValue)
+      this.elements.smartPackStatusValue.textContent =
+        label.title || status || "Draft";
+    if (this.elements.smartPackStatusNote)
+      this.elements.smartPackStatusNote.textContent =
+        label.note || "PRELIMINARY — NOT FOR RECORDATION";
+  }
+
+  buildSmartPackBundle(projectId = this.currentProjectId) {
+    if (!projectId || !this.projects?.[projectId]) {
+      alert("Select a project to export a Smart Pack.");
+      return null;
+    }
+
+    const project = this.projects[projectId];
+    const exportStatus = this.computeSmartPackStatus(projectId);
+    const metadata = this.buildExportMetadata(exportStatus);
+    const qualityResults = this.computeQualityResults(projectId);
+    const qcSummary = this.buildQualityControlSummaryData(projectId);
+    const evidence = this.cornerEvidenceService.serializeEvidenceForProject(
+      projectId
+    );
+    const research = this.researchDocumentService.serializeProject(projectId);
+    const traverseReports = (qualityResults.traverses || []).map((t) => ({
+      id: t.id,
+      name: t.name,
+      linearMisclosure: t.linearMisclosure,
+      misclosureRatio: this.formatRatio(t.linearMisclosure, t.totalLength),
+      angularMisclosure: t.angularMisclosure,
+      status: t.status,
+      message: t.message,
+    }));
+    const levelReports = (qualityResults.levels || []).map((l) => ({
+      id: l.id,
+      name: l.name,
+      misclosure: l.misclosure,
+      allowed: l.allowed,
+      status: l.status,
+      message: l.message,
+    }));
+    const recordList = Object.values(project.records || {}).map((record) =>
+      typeof record.toObject === "function" ? record.toObject() : record
+    );
+    const equipmentLogs = (project.equipmentLogs || []).map((log) =>
+      typeof log.toObject === "function" ? log.toObject() : log
+    );
+    const stakeoutEntries = (project.stakeoutEntries || []).map((entry) =>
+      typeof entry.toObject === "function" ? entry.toObject() : entry
+    );
+    const levelRuns = (project.levelRuns || []).map((run) =>
+      typeof run.toObject === "function" ? run.toObject() : run
+    );
+
+    return {
+      type: "CarlsonDocumentSmartPack",
+      version: 1,
+      export: metadata,
+      status: exportStatus,
+      project: project.toObject(),
+      records: recordList,
+      traverses: traverseReports,
+      levels: levelReports,
+      equipmentLogs,
+      stakeoutEntries,
+      levelRuns,
+      evidence,
+      research,
+      qcSummary,
+    };
+  }
+
+  buildSmartPackHtml(bundle) {
+    const label = this.getExportStatusLabel(bundle?.status || "Draft");
+    const traverseRows = (bundle.traverses || [])
+      .map(
+        (t) => `
+      <tr>
+        <td>${this.escapeHtml(t.name)}</td>
+        <td>${this.escapeHtml(this.formatLevelNumber(t.linearMisclosure))}</td>
+        <td>${this.escapeHtml(t.misclosureRatio || "—")}</td>
+        <td>${this.escapeHtml(this.formatDegrees(t.angularMisclosure))}</td>
+        <td>${this.escapeHtml(t.message)}</td>
+      </tr>`
+      )
+      .join("");
+    const levelRows = (bundle.levels || [])
+      .map(
+        (l) => `
+      <tr>
+        <td>${this.escapeHtml(l.name)}</td>
+        <td>${this.escapeHtml(this.formatLevelNumber(l.misclosure))}</td>
+        <td>${this.escapeHtml(this.formatLevelNumber(l.allowed))}</td>
+        <td>${this.escapeHtml(l.message)}</td>
+      </tr>`
+      )
+      .join("");
+    const evidenceList = (bundle.evidence || [])
+      .map(
+        (ev, idx) => `
+        <li>
+          <strong>${idx + 1}. ${this.escapeHtml(
+          ev.title || ev.pointLabel || "Evidence"
+        )}</strong> — ${this.escapeHtml(ev.status || "Draft")}
+          <div class="muted">${this.escapeHtml(
+            this.buildEvidenceTrs(ev) || ev.trs || "TRS not set"
+          )}</div>
+        </li>`
+      )
+      .join("");
+    const equipmentList = (bundle.equipmentLogs || [])
+      .map(
+        (log) => `
+        <li><strong>${this.escapeHtml(log.equipmentUsed?.join(", ") || "Equipment")}</strong>
+        <div class="muted">Setup: ${this.escapeHtml(log.setupAt || "")}</div>
+        <div class="muted">Base height: ${this.escapeHtml(
+          log.baseHeight || ""
+        )}</div></li>`
+      )
+      .join("");
+    const stakeoutList = (bundle.stakeoutEntries || [])
+      .map(
+        (entry) => `
+        <li><strong>${this.escapeHtml(entry.monumentType || "Stakeout")}</strong>
+        <div class="muted">${this.escapeHtml(entry.occurredAt || "")}</div>
+        <div class="muted">Crew: ${this.escapeHtml(
+          (entry.crewMembers || []).join(", ") || "Unspecified"
+        )}</div></li>`
+      )
+      .join("");
+    const researchList = (bundle.research || [])
+      .map(
+        (doc) => `
+        <li><strong>${this.escapeHtml(doc.type || "Document")}</strong> — ${this.escapeHtml(
+          doc.status || "Draft"
+        )}
+        <div class="muted">${this.escapeHtml(doc.jurisdiction || "")}${
+          doc.instrument ? ` • ${this.escapeHtml(doc.instrument)}` : ""
+        }</div></li>`
+      )
+      .join("");
+
+    return `<!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <title>Document Generation Smart Pack</title>
+        <style>
+          body { font-family: "Segoe UI", Tahoma, sans-serif; color: #0f172a; margin: 28px; line-height: 1.6; }
+          h1 { margin: 0 0 8px; font-size: 22px; }
+          h2 { margin: 20px 0 8px; font-size: 17px; }
+          h3 { margin: 12px 0 6px; font-size: 15px; }
+          .chip { display: inline-block; padding: 6px 12px; border-radius: 14px; background: #eef2ff; color: #312e81; font-weight: 700; font-size: 12px; }
+          .meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px 14px; margin-top: 10px; }
+          .meta div { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; }
+          .section { border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-top: 14px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+          th, td { border: 1px solid #e2e8f0; padding: 6px 8px; text-align: left; }
+          th { background: #f1f5f9; }
+          ul { margin: 8px 0 0; padding-left: 18px; }
+          .muted { color: #475569; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <h1>Document Generation Smart Pack</h1>
+        <div class="chip">${this.escapeHtml(label.title || "Draft")}</div>
+        ${
+          label.note
+            ? `<div class="muted">${this.escapeHtml(label.note)}</div>`
+            : ""
+        }
+        <div class="meta">
+          <div><strong>Project</strong><br />${this.escapeHtml(
+            bundle.project?.name || "Project"
+          )}</div>
+          <div><strong>Generated</strong><br />${this.escapeHtml(
+            bundle.export?.generatedAt
+              ? new Date(bundle.export.generatedAt).toLocaleString()
+              : new Date().toLocaleString()
+          )}</div>
+          <div><strong>QC status</strong><br />${this.escapeHtml(
+            bundle.qcSummary?.results?.overallLabel || "Not evaluated"
+          )}</div>
+        </div>
+
+        <div class="section">
+          <h2>Traverse closure reports</h2>
+          <table>
+            <thead><tr><th>Traverse</th><th>Linear</th><th>Ratio</th><th>Angular</th><th>Status</th></tr></thead>
+            <tbody>
+              ${
+                traverseRows ||
+                '<tr><td colspan="5">No traverses available.</td></tr>'
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="section">
+          <h2>Level loop summaries</h2>
+          <table>
+            <thead><tr><th>Level run</th><th>Misclosure</th><th>Allowed</th><th>Status</th></tr></thead>
+            <tbody>
+              ${levelRows || '<tr><td colspan="4">No level runs recorded.</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="section">
+          <h2>Evidence sheets</h2>
+          ${
+            evidenceList
+              ? `<ul>${evidenceList}</ul>`
+              : '<p class="muted">No evidence captured yet.</p>'
+          }
+        </div>
+
+        <div class="section">
+          <h2>Equipment setups</h2>
+          ${
+            equipmentList
+              ? `<ul>${equipmentList}</ul>`
+              : '<p class="muted">No equipment logs recorded.</p>'
+          }
+        </div>
+
+        <div class="section">
+          <h2>Stakeout / Field notes</h2>
+          ${
+            stakeoutList
+              ? `<ul>${stakeoutList}</ul>`
+              : '<p class="muted">No stakeout entries linked.</p>'
+          }
+        </div>
+
+        <div class="section">
+          <h2>Research references</h2>
+          ${
+            researchList
+              ? `<ul>${researchList}</ul>`
+              : '<p class="muted">No research documents linked.</p>'
+          }
+        </div>
+
+      </body>
+    </html>`;
+  }
+
+  exportSmartPackHtml() {
+    const bundle = this.buildSmartPackBundle();
+    if (!bundle) return;
+    const html = this.buildSmartPackHtml(bundle);
+    const fileBase = (bundle.project?.name || "project")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-") || "project";
+    this.downloadHtml(html, `${fileBase}-smart-pack.html`);
+    this.renderSmartPackStatus(bundle.status);
+  }
+
+  exportSmartPackJson() {
+    const bundle = this.buildSmartPackBundle();
+    if (!bundle) return;
+    const fileBase = (bundle.project?.name || "project")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-") || "project";
+    this.downloadJson(bundle, `${fileBase}-smart-pack.json`);
+    this.renderSmartPackStatus(bundle.status);
   }
 
   downloadJson(payload, filename) {
@@ -79,6 +420,10 @@ const ExportImportMixin = (Base) =>
       2
     );
     const blob = new Blob([json], { type: "application/json" });
+    this.downloadBlob(blob, filename);
+  }
+
+  downloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -132,6 +477,7 @@ const ExportImportMixin = (Base) =>
       qcSummaries: this.buildAllQualityControlSummaries(),
     };
     this.downloadJson(payload, "carlson-app-data.json");
+    this.recordRollingBackups(Object.keys(this.projects || {}), payload);
     this.markProjectsExported(Object.keys(this.projects || {}));
   }
 

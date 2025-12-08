@@ -159,7 +159,7 @@
 **Goal:** Reduce risk of losing field records due to local storage wipes or device failure.
 
 * ✅ At project level, display **“Last Export Date”** (for that project).
-* Trigger warnings when:
+* ✅ Trigger warnings when:
   * ✅ The project has not been exported in **more than 7 days**; or
   * ✅ Major changes have occurred (e.g., new evidence, new traverses, CP&F-ready data), and no export has occurred since.
 
@@ -167,7 +167,7 @@
   * Appear clearly in the springboard and/or project overview.
   * Provide an **“Export Now”** button.
 
-* Optional: Implement **local rolling backups** (user opt-in):
+* ✅ Optional: Implement **local rolling backups** (user opt-in):
   * Maintain the last 3 exports per project (rotating) in a chosen directory or filename pattern.
   * Never upload data externally without explicit user action.
 
@@ -243,9 +243,9 @@
 * ✅ Evidence entries must:
   * ✅ Be fully editable and deletable (subject to archival rules if referenced).
 * ✅ Each evidence entry should have a **title generated** from TRS info (e.g., “Corner Evidence – T5N R2E Sec 12 NE Cor”).
-* Evidence monuments must support:
-  * Joining multiple sections (e.g., common corners)
-  * Bordering multiple townships where applicable.
+* ✅ Evidence monuments must support:
+  * ✅ Joining multiple sections (e.g., common corners)
+  * ✅ Bordering multiple townships where applicable.
 
 ---
 
@@ -290,20 +290,20 @@
 
 ### 4.4 Stakeout / Field Notes Mini-App
 
-* Create a **Stakeout / Field Notes mini-app** that:
-  * Logs monument setting operations and other significant field tasks.
-  * For each stakeout/setting event, store:
-    * Monument type placed and material (rebar/cap, brass monument, PK nail, spike, etc.)
-    * Any witness marks or ties used for setting.
-    * Dig notes (depth, obstructions, soil/rock, existing disturbed material).
-    * Crew members present.
-    * Equipment used (linked to Equipment Setup entries).
-    * Date and time of setting.
+* ✅ Create a **Stakeout / Field Notes mini-app** that:
+  * ✅ Logs monument setting operations and other significant field tasks.
+  * ✅ For each stakeout/setting event, store:
+    * ✅ Monument type placed and material (rebar/cap, brass monument, PK nail, spike, etc.)
+    * ✅ Any witness marks or ties used for setting.
+    * ✅ Dig notes (depth, obstructions, soil/rock, existing disturbed material).
+    * ✅ Crew members present.
+    * ✅ Equipment used (linked to Equipment Setup entries).
+    * ✅ Date and time of setting.
 
-* Link Stakeout entries to:
-  * Evidence entries (once the monument is considered established).
-  * Traverses and points used for controlling the location.
-  * QC Dashboard (to show whether geometry used was PASS/FAIL).
+* ✅ Link Stakeout entries to:
+  * ✅ Evidence entries (once the monument is considered established).
+  * ✅ Traverses and points used for controlling the location.
+  * ✅ QC Dashboard (to show whether geometry used was PASS/FAIL).
 
 ---
 
@@ -311,20 +311,20 @@
 
 ### 5.1 Traversals of Records of Survey & Plats
 
-* When entering traversals:
+* ✅ When entering traversals:
   * Use the **code table in Global Settings** to populate dropdowns that specify what each traversal line or point represents (e.g., CL, R/W, lot line, section line, easement boundary, etc.).
 
-* Global codes must include:
+* ✅ Global codes must include:
   * A field indicating whether the code represents:
     * a **line type**, or
     * a **symbol/point type**.
 
-* Support offsets from:
+* ✅ Support offsets from:
   * **Center Line (CL)** of roads,
   * **Section lines (SEC)**,
   using line codes in a traversal to generate **interior boundaries** of subdivisions/parcels/lots/properties from centerlines.
 
-* Allow specifying a **closure point** for a traversal and show:
+* ✅ Allow specifying a **closure point** for a traversal and show:
   * a closure report in the traversal overview, including:
     * closure error,
     * direction of misclosure,
@@ -427,19 +427,19 @@
 
 ### 8.2 Document Generation Smart Pack
 
-* Create a **Document Generation Smart Pack** workflow that:
-  * Bundles into a single export:
-    * Traverse closure reports (raw and adjusted)
-    * Level loop summaries
-    * Evidence sheets and photos (with CP&F data where applicable)
-    * Equipment setup logs
-    * Stakeout/Field Notes summaries
-    * QC Summary report
-    * Optional Research & Source Documentation index
+* ✅ Create a **Document Generation Smart Pack** workflow that:
+  * ✅ Bundles into a single export:
+    * ✅ Traverse closure reports (raw and adjusted)
+    * ✅ Level loop summaries
+    * ✅ Evidence sheets and photos (with CP&F data where applicable)
+    * ✅ Equipment setup logs
+    * ✅ Stakeout/Field Notes summaries
+    * ✅ QC Summary report
+    * ✅ Optional Research & Source Documentation index
 
-* Allow exporting as:
-  * A consolidated PDF packet (for office/filing use).
-  * A JSON bundle aligned with the Immutable Audit Trail.
+* ✅ Allow exporting as:
+  * ✅ A consolidated PDF packet (for office/filing use).
+  * ✅ A JSON bundle aligned with the Immutable Audit Trail.
 
 ---
 

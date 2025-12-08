@@ -473,11 +473,13 @@ const GlobalSettingsMixin = (Base) =>
   savePointCode() {
     const code = (this.elements.pointCodeInput?.value || "").trim();
     const desc = (this.elements.pointCodeDescriptionInput?.value || "").trim();
+    const kind = this.elements.pointCodeKindSelect?.value || "point";
     if (!code && !desc) return;
     const entry = this.normalizePointCode({
       id: this.editingPointCodeId || undefined,
       code,
       description: desc,
+      kind,
       archived: false,
     });
     const existingIndex = (this.globalSettings.pointCodes || []).findIndex(
@@ -497,6 +499,7 @@ const GlobalSettingsMixin = (Base) =>
     if (this.elements.pointCodeInput) this.elements.pointCodeInput.value = "";
     if (this.elements.pointCodeDescriptionInput)
       this.elements.pointCodeDescriptionInput.value = "";
+    if (this.elements.pointCodeKindSelect) this.elements.pointCodeKindSelect.value = "point";
     this.editingPointCodeId = null;
     if (this.elements.pointCodeEditHint) this.elements.pointCodeEditHint.textContent = "";
   }
@@ -508,6 +511,8 @@ const GlobalSettingsMixin = (Base) =>
     if (this.elements.pointCodeInput) this.elements.pointCodeInput.value = entry.code || "";
     if (this.elements.pointCodeDescriptionInput)
       this.elements.pointCodeDescriptionInput.value = entry.description || "";
+    if (this.elements.pointCodeKindSelect)
+      this.elements.pointCodeKindSelect.value = entry.kind || "point";
     if (this.elements.pointCodeEditHint)
       this.elements.pointCodeEditHint.textContent = "Editing point code";
   }
@@ -526,10 +531,12 @@ const GlobalSettingsMixin = (Base) =>
   renderGlobalSettings() {
     this.renderDeviceIdentityOptions();
     this.renderPointCodes();
+    this.refreshCallCodeOptions?.();
     this.renderEquipmentRows();
     this.renderTeamMemberRows();
     this.renderEquipmentSetupByOptions();
     this.renderEquipmentPickerOptions();
+    this.renderRollingBackupControls();
   }
 
   renderPointCodes() {
@@ -545,6 +552,8 @@ const GlobalSettingsMixin = (Base) =>
       codeCell.textContent = row.code;
       const descCell = document.createElement("td");
       descCell.textContent = row.description;
+      const kindCell = document.createElement("td");
+      kindCell.textContent = row.kind === "line" ? "Line" : "Point";
       const statusCell = document.createElement("td");
       statusCell.textContent = row.archived ? "Archived" : "Active";
       const actionsCell = document.createElement("td");
@@ -559,6 +568,7 @@ const GlobalSettingsMixin = (Base) =>
 
       tr.appendChild(codeCell);
       tr.appendChild(descCell);
+      tr.appendChild(kindCell);
       tr.appendChild(statusCell);
       tr.appendChild(actionsCell);
       tbody.appendChild(tr);
@@ -638,6 +648,103 @@ const GlobalSettingsMixin = (Base) =>
       tr.appendChild(actionsCell);
       tbody.appendChild(tr);
     });
+  }
+
+  renderRollingBackupControls() {
+    const prefs = this.globalSettings.backupSettings || {};
+    if (this.elements.enableRollingBackups)
+      this.elements.enableRollingBackups.checked = Boolean(
+        prefs.rollingBackupsEnabled
+      );
+    if (this.elements.backupFilenamePrefix)
+      this.elements.backupFilenamePrefix.value =
+        prefs.filenamePrefix || "carlson-backup";
+
+    if (this.elements.rollingBackupHint) {
+      this.elements.rollingBackupHint.textContent = prefs.rollingBackupsEnabled
+        ? "Rolling backups are enabled. Exports will also save the last three copies locally."
+        : "Rolling backups are disabled.";
+    }
+
+    this.renderRollingBackupList();
+  }
+
+  toggleRollingBackups(enabled) {
+    this.globalSettings.backupSettings = {
+      ...(this.globalSettings.backupSettings || {}),
+      rollingBackupsEnabled: Boolean(enabled),
+    };
+    this.saveGlobalSettings();
+    this.renderRollingBackupControls();
+  }
+
+  updateRollingBackupPrefix(prefix) {
+    const trimmed = prefix?.trim() || "carlson-backup";
+    this.globalSettings.backupSettings = {
+      ...(this.globalSettings.backupSettings || {}),
+      filenamePrefix: trimmed,
+    };
+    this.saveGlobalSettings();
+    this.renderRollingBackupControls();
+  }
+
+  renderRollingBackupList() {
+    const container = this.elements.rollingBackupList;
+    if (!container) return;
+    container.innerHTML = "";
+    const projectId = this.currentProjectId;
+    const backups =
+      projectId && this.rollingBackupService
+        ? this.rollingBackupService.getBackups(projectId)
+        : [];
+
+    if (!projectId) {
+      container.classList.add("empty");
+      container.textContent = "Select a project to view rolling backups.";
+      return;
+    }
+
+    if (!backups.length) {
+      container.classList.add("empty");
+      container.textContent = "No rolling backups yet for this project.";
+      return;
+    }
+
+    container.classList.remove("empty");
+    backups.forEach((entry) => {
+      const row = document.createElement("div");
+      row.className = "backup-item";
+
+      const meta = document.createElement("div");
+      meta.className = "backup-meta";
+      const label = document.createElement("span");
+      label.className = "label";
+      label.textContent = entry.filename;
+      const timestamp = document.createElement("span");
+      timestamp.className = "timestamp";
+      timestamp.textContent = new Date(entry.timestamp).toLocaleString();
+      meta.append(label, timestamp);
+
+      const downloadBtn = document.createElement("button");
+      downloadBtn.type = "button";
+      downloadBtn.textContent = "Download";
+      downloadBtn.addEventListener("click", () => {
+        const blob = new Blob([entry.payload], {
+          type: "application/json",
+        });
+        this.downloadBlob(blob, entry.filename || "backup.json");
+      });
+
+      row.append(meta, downloadBtn);
+      container.appendChild(row);
+    });
+  }
+
+  clearRollingBackupsForProject() {
+    if (!this.currentProjectId || !this.rollingBackupService) return;
+    if (!confirm("Remove all rolling backups for this project?")) return;
+    this.rollingBackupService.clearProject(this.currentProjectId);
+    this.renderRollingBackupList();
   }
   };
 

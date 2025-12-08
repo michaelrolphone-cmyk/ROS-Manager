@@ -325,6 +325,36 @@
             </div>
           </div>
 
+          <div class="card" id="smartPackCard">
+            <div class="card-header" style="align-items: flex-start">
+              <div>
+                <p class="eyebrow" style="color: #475569">Document Bundle</p>
+                <h3 style="margin: 4px 0">Document Generation Smart Pack</h3>
+                <p class="subtitle" style="margin-top: 0">
+                  Export a consolidated packet with traverses, level loops,
+                  evidence sheets, equipment setups, stakeout notes, QC summary,
+                  and research references.
+                </p>
+              </div>
+              <div class="smartpack-actions">
+                <button id="smartPackExportButton">Export Smart Pack (HTML)</button>
+                <button id="smartPackJsonButton" class="secondary">
+                  Download Smart Pack JSON
+                </button>
+              </div>
+            </div>
+            <div class="smartpack-meta">
+              <div class="stat-chip" id="smartPackStatusChip">
+                <div class="stat-label">Export status</div>
+                <div class="stat-value" id="smartPackStatusValue">Draft</div>
+              </div>
+              <div class="mini-note" id="smartPackStatusNote">
+                Consolidated exports will include QC status labels for each
+                section.
+              </div>
+            </div>
+          </div>
+
           <h2>Project Apps</h2>
           <p class="subtitle" style="margin-top: 0">
             Select a mini app to work with your current project.
@@ -384,6 +414,13 @@
               <span class="app-icon">📡</span>
               <span class="app-title">Equipment Setup</span>
               <span class="app-hint">Log base locations and crews</span>
+            </button>
+            <button class="app-tile" data-target="stakeoutSection">
+              <span class="app-icon">📏</span>
+              <span class="app-title">Stakeout / Field Notes</span>
+              <span class="app-hint">
+                Document monument setting and field work with crews
+              </span>
             </button>
             <button class="app-tile" data-target="navigationSection">
               <span class="app-icon">🛰️</span>
@@ -545,7 +582,16 @@
                 <input type="number" id="firstDist" placeholder="265.33" />
               </div>
               <div>
-                <!-- Add button moved below table -->
+                <label for="closurePointNumber">Closure point number</label>
+                <input
+                  type="number"
+                  id="closurePointNumber"
+                  placeholder="1 (start)"
+                />
+                <p class="mini-note">
+                  Pick the expected closing point number to compute misclosure
+                  direction and ratio.
+                </p>
               </div>
             </div>
 
@@ -565,6 +611,32 @@
               <button id="addCallButton" class="success">
                 + Add Subsequent Call
               </button>
+            </div>
+
+            <div class="card muted" id="closureSummaryCard">
+              <div class="card-header">
+                <h4 style="margin: 0">Closure report</h4>
+                <span id="closureStatusChip" class="status-chip"></span>
+              </div>
+              <div class="closure-grid">
+                <div>
+                  <p class="label">Closure point</p>
+                  <p id="closurePointLabel" class="value">—</p>
+                </div>
+                <div>
+                  <p class="label">Linear misclosure</p>
+                  <p id="closureLinear" class="value">—</p>
+                  <span id="closureRatio" class="mini-note"></span>
+                </div>
+                <div>
+                  <p class="label">Misclosure bearing</p>
+                  <p id="closureDirection" class="value">—</p>
+                </div>
+                <div>
+                  <p class="label">Angular misclosure</p>
+                  <p id="closureAngular" class="value">—</p>
+                </div>
+              </div>
             </div>
 
             <!-- ACTIVE RECORD CANVAS HERE -->
@@ -1120,6 +1192,53 @@
                 type="text"
                 placeholder="NE Cor, Lot 2, aliquots..."
               />
+            </div>
+
+            <div class="card padded">
+              <div class="flex between" style="align-items: center">
+                <div>
+                  <div class="label">Additional TRS associations (optional)</div>
+                  <div class="muted" id="associatedTrsHint">
+                    Add TRS ties for common corners or adjoining townships.
+                  </div>
+                </div>
+                <button type="button" id="addTrsAssociation">Add TRS tie</button>
+              </div>
+              <div class="form-grid" style="margin-top: 10px">
+                <div>
+                  <label for="additionalTrsTownship">Township</label>
+                  <input
+                    id="additionalTrsTownship"
+                    type="text"
+                    placeholder="T5N"
+                  />
+                </div>
+                <div>
+                  <label for="additionalTrsRange">Range</label>
+                  <input
+                    id="additionalTrsRange"
+                    type="text"
+                    placeholder="R2E"
+                  />
+                </div>
+                <div>
+                  <label for="additionalTrsSection">Section</label>
+                  <input
+                    id="additionalTrsSection"
+                    type="text"
+                    placeholder="12 or shared corner"
+                  />
+                </div>
+                <div>
+                  <label for="additionalTrsBreakdown">Section breakdown</label>
+                  <input
+                    id="additionalTrsBreakdown"
+                    type="text"
+                    placeholder="Lot, aliquot, quarter corner..."
+                  />
+                </div>
+              </div>
+              <div id="associatedTrsList" class="associated-trs-list"></div>
             </div>
 
             <div class="form-grid">
@@ -1760,6 +1879,107 @@
           </div>
         </div>
 
+        <div id="stakeoutSection" class="tool-section">
+          <div class="card">
+            <h3>Stakeout / Field Notes</h3>
+            <p class="subtitle" style="margin-top: 0">
+              Log monument settings, witness marks, and other field tasks with
+              crew and equipment context.
+            </p>
+
+            <div class="form-grid stakeout-grid">
+              <div>
+                <label for="stakeoutDatetime">Date &amp; time</label>
+                <input id="stakeoutDatetime" type="datetime-local" />
+              </div>
+              <div>
+                <label for="stakeoutMonumentType">Monument type placed</label>
+                <input
+                  id="stakeoutMonumentType"
+                  type="text"
+                  placeholder="Rebar w/ aluminum cap, PK nail, spike..."
+                />
+              </div>
+              <div>
+                <label for="stakeoutMonumentMaterial">Material / size</label>
+                <input
+                  id="stakeoutMonumentMaterial"
+                  type="text"
+                  placeholder="5/8&quot; rebar x 24&quot;, brass cap, etc."
+                />
+              </div>
+              <div>
+                <label for="stakeoutTraverseSelect">Controlling traverse</label>
+                <select id="stakeoutTraverseSelect"></select>
+              </div>
+            </div>
+
+            <div class="form-grid stakeout-grid">
+              <div>
+                <label for="stakeoutCrewMembers">Crew present</label>
+                <select id="stakeoutCrewMembers" multiple></select>
+                <small class="app-hint">
+                  Hold Ctrl (Windows) or Command (Mac) to select multiple crew
+                  members.
+                </small>
+              </div>
+              <div>
+                <label for="stakeoutEquipmentUsed">Equipment used</label>
+                <select id="stakeoutEquipmentUsed" multiple></select>
+                <small class="app-hint">
+                  Use equipment codes from global settings; select all units
+                  involved.
+                </small>
+              </div>
+              <div>
+                <label for="stakeoutEvidenceSelect">Linked evidence</label>
+                <select id="stakeoutEvidenceSelect"></select>
+              </div>
+              <div>
+                <label for="stakeoutControlPoints">Control points used</label>
+                <input
+                  id="stakeoutControlPoints"
+                  type="text"
+                  placeholder="Point numbers or descriptions"
+                />
+              </div>
+            </div>
+
+            <div class="form-grid stakeout-grid">
+              <div>
+                <label for="stakeoutWitnessMarks">Witness marks / ties</label>
+                <textarea
+                  id="stakeoutWitnessMarks"
+                  placeholder="Reference ties, witness posts, guard stakes..."
+                ></textarea>
+              </div>
+              <div>
+                <label for="stakeoutDigNotes">Dig notes / soil</label>
+                <textarea
+                  id="stakeoutDigNotes"
+                  placeholder="Depth, obstructions, disturbed material, soil/rock notes"
+                ></textarea>
+              </div>
+            </div>
+
+            <div class="stakeout-actions">
+              <button type="button" class="success" id="saveStakeoutButton">
+                Save stakeout entry
+              </button>
+              <button type="button" id="resetStakeoutButton">Reset form</button>
+              <span id="stakeoutFormStatus" class="mini-note"></span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 style="margin: 0">Stakeout log</h3>
+              <span id="stakeoutSummary" class="mini-note"></span>
+            </div>
+            <div id="stakeoutList" class="stakeout-list"></div>
+          </div>
+        </div>
+
         <div id="navigationSection" class="tool-section">
           <div class="card">
             <h3>Navigation</h3>
@@ -2127,6 +2347,10 @@
                   id="pointCodeDescriptionInput"
                   placeholder="Description"
                 />
+                <select id="pointCodeKindSelect">
+                  <option value="line">Line type</option>
+                  <option value="point" selected>Point/symbol type</option>
+                </select>
                 <button type="button" id="savePointCodeButton">Save</button>
                 <button type="button" id="resetPointCodeButton">Reset</button>
                 <div class="subtitle" id="pointCodeEditHint"></div>
@@ -2136,6 +2360,7 @@
                   <tr>
                     <th>Code</th>
                     <th>Description</th>
+                    <th>Type</th>
                     <th>Status</th>
                     <th>Actions</th>
                   </tr>
@@ -2150,12 +2375,38 @@
                 Download a single file with all projects, evidence, and global
                 settings or import one to restore.
               </p>
+              <div class="form-grid">
+                <label class="checkbox-row">
+                  <input type="checkbox" id="enableRollingBackups" />
+                  <span>Keep a rolling backup (last 3 exports per project)</span>
+                </label>
+                <label>
+                  Backup filename prefix
+                  <input
+                    type="text"
+                    id="backupFilenamePrefix"
+                    placeholder="carlson-backup"
+                  />
+                </label>
+              </div>
               <div style="display: flex; gap: 10px; flex-wrap: wrap">
                 <button type="button" id="exportAllDataButton">
                   Download All App Data
                 </button>
                 <button type="button" id="importAllDataButton">
                   Import App Data
+                </button>
+              </div>
+              <div class="mini-note" id="rollingBackupHint">
+                Rolling backups are disabled.
+              </div>
+              <div id="rollingBackupList" class="backup-list"></div>
+              <div style="display: flex; gap: 8px; margin-top: 8px">
+                <button type="button" class="secondary" id="refreshBackupList">
+                  Refresh backups
+                </button>
+                <button type="button" class="danger" id="clearProjectBackups">
+                  Clear backups for this project
                 </button>
               </div>
             </div>
