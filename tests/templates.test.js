@@ -155,4 +155,30 @@ describe("Professional headers", () => {
     assert.match(html, /555-0100/);
     assert.match(html, /Place Surveyor Seal/);
   });
+
+  it("includes backsight and foresight values in differential level exports", () => {
+    const controller = new LevelingController({
+      elements: {},
+      getCurrentProject: () => null,
+      saveProjects: () => {},
+      getProjectName: () => "Prairie Farm",
+      getProfessionalProfile: () => profile,
+    });
+
+    const html = controller.buildLevelRunHtml({
+      run: {
+        name: "Loop B",
+        startPoint: "BM10",
+        startElevation: 100.0,
+        closingPoint: "BM10",
+        closingElevation: 100.0,
+      },
+      stats: { misclosure: 0.0 },
+      rows: "<tr><td>1</td><td>BM10</td><td>1.234</td><td>2.345</td><td>note</td><td>0.0</td><td>100.0</td><td>1.234</td><td>2.345</td><td>0</td></tr>",
+      projectName: "Prairie Farm",
+    });
+
+    assert.match(html, />1.234<\/td><td>2.345</);
+    assert.match(html, /<th>BS<\/th><th>FS<\/th>/);
+  });
 });

@@ -242,7 +242,7 @@
   * ✅ Section breakdown (aliquots, lots, etc.)
 * ✅ Evidence entries must:
   * ✅ Be fully editable and deletable (subject to archival rules if referenced).
-* ✅ Each evidence entry should have a **title generated** from TRS info (e.g., “Corner Evidence – T5N R2E Sec 12 NE Cor”).
+* ✅ 🧪 Each evidence entry should have a **title generated** from TRS info (e.g., “Corner Evidence – T5N R2E Sec 12 NE Cor”).
 * ✅ Evidence monuments must support:
   * ✅ Joining multiple sections (e.g., common corners)
   * ✅ Bordering multiple townships where applicable.
@@ -334,7 +334,7 @@
 
 ### 5.2 Differential Levels (Field Level Book)
 
-* ✅ Fix Differential Levels export so that:
+* ✅ 🧪 Fix Differential Levels export so that:
   * ✅ **FS (foresight)** and **BS (backsight)** values correctly appear in the generated PDF.
 
 * ✅ Ensure:
@@ -405,7 +405,7 @@
 ### 7.2 Navigation
 
 * ✅ Navigation app must:
-  * ✅ Show a list of the **nearest 5 points** to the user’s current location to quickly see what is nearby.
+  * ✅ 🧪 Show a list of the **nearest 5 points** to the user’s current location to quickly see what is nearby.
   * ✅ If a user (in sync mode) has not been connected for more than **5 minutes**, do **not** show them on the navigation page.
   * ✅ Allow toggling between:
     * **Map view**,
