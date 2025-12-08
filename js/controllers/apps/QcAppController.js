@@ -13,11 +13,22 @@ export default class QcAppController extends MiniAppController {
     this.loadRecord = options.loadRecord;
     this.getLevelingController = options.getLevelingController;
     this.onResultsComputed = options.onResultsComputed;
+
+    this.bindEvents();
   }
 
   handleActivate() {
     super.handleActivate();
     this.renderQualityDashboard();
+  }
+
+  bindEvents() {
+    this.elements.qcTraverseList?.addEventListener("click", (evt) =>
+      this.handleQcListClick(evt)
+    );
+    this.elements.qcLevelList?.addEventListener("click", (evt) =>
+      this.handleQcListClick(evt)
+    );
   }
 
   renderQualityDashboard() {
