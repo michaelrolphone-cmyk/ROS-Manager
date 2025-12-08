@@ -133,24 +133,24 @@
 
 **Goal:** Make it impossible to silently alter a project’s history without detection.
 
-* Create an **Immutable Audit Trail mini-app** that:
-  * Serializes all project data and key events (creations, edits, deletions, imports).
-  * Computes a checksum or cryptographic hash for each export snapshot.
-  * Stores:
-    * Audit bundle (JSON)
-    * Hash/signature
-    * Timestamp and responsible user/device (if available)
+* ✅ Create an **Immutable Audit Trail mini-app** that:
+  * ✅ Serializes all project data and key events (creations, edits, deletions, imports).
+  * ✅ Computes a checksum or cryptographic hash for each export snapshot.
+  * ✅ Stores:
+    * ✅ Audit bundle (JSON)
+    * ✅ Hash/signature
+    * ✅ Timestamp and responsible user/device (if available)
 
-* Provide a **verification view**:
-  * Load an exported bundle + hash.
-  * Recompute checksum.
-  * Confirm whether it matches (PASS/FAIL).
+* ✅ Provide a **verification view**:
+  * ✅ Load an exported bundle + hash.
+  * ✅ Recompute checksum.
+  * ✅ Confirm whether it matches (PASS/FAIL).
 
-* Integrate with:
-  * Research/Source Documentation exports
-  * Evidence and CP&F exports
-  * Document Smart Pack exports
-  * QC Summary exports
+* ✅ Integrate with:
+  * ✅ Research/Source Documentation exports
+  * ✅ Evidence and CP&F exports
+  * ✅ Document Smart Pack exports
+  * ✅ QC Summary exports
 
 ---
 
@@ -177,14 +177,14 @@
 
 ### 3.1 Tolerance Controls & QC Dashboard
 
-* Add **project-level tolerance settings**:
+* ✅ Add **project-level tolerance settings**:
   * Traverse closure tolerance:
     * Angular tolerance
     * Linear misclosure per length
   * Level loop closure tolerance:
     * Misclosure allowed per distance (e.g., 0.02√K ft or as configured)
 
-* Implement a **QC Dashboard**:
+* ✅ Implement a **QC Dashboard**:
   * List all traverses with:
     * Closure error (linear, angular as applicable)
     * PASS/FAIL against project tolerance
@@ -334,8 +334,8 @@
 
 ### 5.2 Differential Levels (Field Level Book)
 
-* Fix Differential Levels export so that:
-  * **FS (foresight)** and **BS (backsight)** values correctly appear in the generated PDF.
+* ✅ Fix Differential Levels export so that:
+  * ✅ **FS (foresight)** and **BS (backsight)** values correctly appear in the generated PDF.
 
 * Ensure:
   * Level loop results (closure, adjustment if present) are:
@@ -404,10 +404,10 @@
 
 ### 7.2 Navigation
 
-* Navigation app must:
-  * Show a list of the **nearest 5 points** to the user’s current location to quickly see what is nearby.
-  * If a user (in sync mode) has not been connected for more than **5 minutes**, do **not** show them on the navigation page.
-  * Allow toggling between:
+* ✅ Navigation app must:
+  * ✅ Show a list of the **nearest 5 points** to the user’s current location to quickly see what is nearby.
+  * ✅ If a user (in sync mode) has not been connected for more than **5 minutes**, do **not** show them on the navigation page.
+  * ✅ Allow toggling between:
     * **Map view**,
     * **Compass view**.
 

@@ -216,6 +216,8 @@ export default class LevelingController {
       return {
         ...entry,
         displayPoint,
+        backsightNumber: Number.isFinite(bsVal) ? bsVal : null,
+        foresightNumber: Number.isFinite(fsVal) ? fsVal : null,
         riseFall,
         elevation,
         sumBs: totalBs,
@@ -421,8 +423,8 @@ export default class LevelingController {
           `<tr>
         <td>${idx + 1}</td>
         <td>${this.escapeHtml(row.displayPoint || "")}</td>
-        <td>${this.formatLevelNumber(row.backsight)}</td>
-        <td>${this.formatLevelNumber(row.foresight)}</td>
+        <td>${this.formatLevelNumber(row.backsightNumber)}</td>
+        <td>${this.formatLevelNumber(row.foresightNumber)}</td>
         <td>${this.escapeHtml(row.notes || "")}</td>
         <td>${this.formatLevelNumber(row.riseFall)}</td>
         <td>${this.formatLevelNumber(row.elevation)}</td>

@@ -31,6 +31,7 @@ export default class NavigationController {
     this.orientationSensor = null;
     this.watchId = null;
     this.mapFailed = false;
+    this.viewMode = "compass";
 
     this.ctx = this.elements.compassCanvas?.getContext("2d") || null;
 
@@ -61,6 +62,10 @@ export default class NavigationController {
       this.renderEquipmentOptions();
       this.updateBookmarksList();
     });
+
+    this.elements.toggleViewButton?.addEventListener("click", () =>
+      this.toggleViewMode()
+    );
 
     this.elements.clearTargetButton?.addEventListener("click", () =>
       this.clearTarget()
@@ -195,6 +200,7 @@ export default class NavigationController {
     }
 
     this.updateReadouts();
+    this.renderNearestPoints();
     this.drawCompass();
     this.updateMapView();
   }
@@ -391,20 +397,23 @@ export default class NavigationController {
     );
     const project = this.getCurrentProject?.();
     const localization = project?.localization;
+    const target = this.targetLocation || localization?.anchorGeo;
+    const mapAvailable =
+      !!localization && !!localization.points?.length && !!target;
+
+    this.updateViewToggleState(mapAvailable);
+
     if (!mapPanel || !mapFrame || !compassPanel) return;
 
-    if (!localization || !localization.points?.length) {
-      mapPanel.classList.add("hidden");
-      compassPanel.classList.remove("hidden");
-      if (mapStatus) mapStatus.textContent = "Apply GPS localization to view the map.";
-      return;
-    }
+    const shouldShowMap =
+      this.viewMode === "map" && mapAvailable && target && !this.mapFailed;
 
-    const target = this.targetLocation || localization.anchorGeo;
-    if (!target) {
+    if (!shouldShowMap) {
       mapPanel.classList.add("hidden");
       compassPanel.classList.remove("hidden");
-      if (mapStatus) mapStatus.textContent = "Waiting for target coordinates.";
+      if (!mapAvailable && mapStatus) {
+        mapStatus.textContent = "Apply GPS localization and choose a target to view the map.";
+      }
       return;
     }
 
@@ -422,7 +431,7 @@ export default class NavigationController {
       mapPanel.classList.remove("hidden");
       compassPanel.classList.add("hidden");
       if (mapStatus)
-        mapStatus.textContent = `Map ready for ${localization.anchorLabel || "anchor"}.`;
+        mapStatus.textContent = `Map ready for ${localization?.anchorLabel || "anchor"}.`;
     };
     mapFrame.onerror = () => {
       this.mapFailed = true;
@@ -432,6 +441,104 @@ export default class NavigationController {
         mapStatus.textContent = "Map unavailable, falling back to compass.";
     };
     mapFrame.src = src;
+  }
+
+  updateViewToggleState(canShowMap) {
+    const button = this.elements.toggleViewButton;
+    if (!button) return;
+
+    const viewingMap = this.viewMode === "map";
+    button.disabled = !canShowMap && !viewingMap;
+    button.textContent = viewingMap
+      ? "Switch to Compass View"
+      : canShowMap
+        ? "Switch to Map View"
+        : "Map preview unavailable";
+  }
+
+  toggleViewMode() {
+    const project = this.getCurrentProject?.();
+    const localization = project?.localization;
+    const target = this.targetLocation || localization?.anchorGeo;
+    const hasMapTarget =
+      !!localization && !!localization.points?.length && !!target;
+
+    if (this.viewMode === "compass" && !hasMapTarget) {
+      this.setStatus("Apply GPS localization and set a target to open the map.");
+      this.updateViewToggleState(false);
+      return;
+    }
+
+    this.viewMode = this.viewMode === "compass" ? "map" : "compass";
+    this.updateNavigationState();
+  }
+
+  renderNearestPoints() {
+    const container = this.elements.nearestPointsList;
+    const project = this.getCurrentProject?.();
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    if (!this.currentPosition) {
+      container.textContent = "Waiting for GPS fix…";
+      return;
+    }
+
+    const localizationPoints = project?.localization?.points || [];
+    const bookmarks = project?.navigationBookmarks || [];
+
+    const candidates = [];
+
+    localizationPoints.forEach((pt) => {
+      if (typeof pt?.lat !== "number" || typeof pt?.lon !== "number") return;
+      candidates.push({
+        label: pt.label || "Localized point",
+        lat: pt.lat,
+        lon: pt.lon,
+        source: "Localized grid",
+      });
+    });
+
+    bookmarks.forEach((bm) => {
+      if (typeof bm?.latitude !== "number" || typeof bm?.longitude !== "number") return;
+      candidates.push({
+        label: bm.name || "Saved location",
+        lat: bm.latitude,
+        lon: bm.longitude,
+        source: "Bookmark",
+      });
+    });
+
+    if (!candidates.length) {
+      container.textContent = "Add localization or bookmarks to see nearby points.";
+      return;
+    }
+
+    const nearest = candidates
+      .map((entry) => ({
+        ...entry,
+        distance: this.distanceFeet(this.currentPosition, entry),
+      }))
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 5);
+
+    nearest.forEach((entry) => {
+      const row = document.createElement("div");
+      row.className = "nearby-point-row";
+
+      const label = document.createElement("div");
+      label.className = "nearby-point-label";
+      label.textContent = entry.label;
+
+      const meta = document.createElement("div");
+      meta.className = "nearby-point-meta";
+      meta.textContent = `${entry.source} • ${entry.distance.toFixed(0)} ft`;
+
+      row.appendChild(label);
+      row.appendChild(meta);
+      container.appendChild(row);
+    });
   }
 
   saveBookmarkFromCurrent() {
@@ -784,6 +891,9 @@ export default class NavigationController {
   onProjectChanged() {
     this.prepareSelectors();
     this.applySavedTarget();
+    this.viewMode = "compass";
+    this.renderNearestPoints();
+    this.updateMapView();
   }
 
   applySavedTarget() {
