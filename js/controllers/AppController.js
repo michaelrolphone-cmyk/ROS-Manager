@@ -2288,12 +2288,26 @@ export default class AppController {
       return;
     }
 
+    const previousSelection = select.value;
     const targetId =
       forceRecordId && records[forceRecordId]
         ? forceRecordId
-        : this.currentRecordId && records[this.currentRecordId]
-        ? this.currentRecordId
-        : ids[0];
+        : previousSelection && records[previousSelection]
+        ? previousSelection
+        : this.currentRecordId &&
+            this.projects[this.currentProjectId]?.records?.[this.currentRecordId]
+          ? this.currentRecordId
+          : null;
+
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Select a record (optional)";
+    placeholder.selected = !targetId;
+    placeholder.disabled = false;
+    select.appendChild(placeholder);
+    setLabel(
+      targetId ? records[targetId].name || "Untitled record" : placeholder.textContent
+    );
 
     ids.forEach((id) => {
       const recordName = records[id].name || "Untitled record";
@@ -2348,20 +2362,28 @@ export default class AppController {
     const options = this.getTraversePointOptions(recordId);
     this.currentTraversePointOptions = options;
 
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = recordId
+      ? "Select a traverse point (optional)"
+      : "Select a record to show traverse points";
+    placeholder.selected = true;
+    placeholder.disabled = false;
+    select.appendChild(placeholder);
+
     if (options.length === 0) {
       const opt = document.createElement("option");
       opt.textContent = "No traverse points yet";
       opt.disabled = true;
-      opt.selected = true;
+      opt.selected = false;
       select.appendChild(opt);
       return;
     }
 
-    options.forEach((optData, idx) => {
+    options.forEach((optData) => {
       const opt = document.createElement("option");
       opt.value = optData.index.toString();
       opt.textContent = optData.label;
-      if (idx === 0) opt.selected = true;
       select.appendChild(opt);
     });
   }
@@ -2530,7 +2552,6 @@ export default class AppController {
   updateEvidenceSaveState() {
     if (!this.elements.saveEvidenceButton) return;
     const recordId = this.elements.evidenceRecordSelect?.value || "";
-    const pointVal = this.elements.evidencePointSelect?.value || "";
     const type = this.elements.evidenceType?.value || "";
     const cornerType = this.elements.evidenceCornerType?.value || "";
     const cornerStatus = this.elements.evidenceCornerStatus?.value || "";
@@ -2538,8 +2559,6 @@ export default class AppController {
     const condition = this.elements.evidenceCondition?.value || "";
     const canSave =
       !!this.currentProjectId &&
-      !!recordId &&
-      pointVal !== "" &&
       !!type &&
       !!cornerType &&
       !!cornerStatus &&
@@ -2549,24 +2568,27 @@ export default class AppController {
   }
 
   saveEvidenceEntry() {
-    const recordId = this.elements.evidenceRecordSelect?.value;
-    const pointIndexStr = this.elements.evidencePointSelect?.value;
-    if (!this.currentProjectId || !recordId || !pointIndexStr) return;
+    const recordId = this.elements.evidenceRecordSelect?.value || "";
+    const pointIndexStr = this.elements.evidencePointSelect?.value || "";
+    if (!this.currentProjectId) return;
 
     this.clearCpfValidationState();
 
-    const pointIndex = parseInt(pointIndexStr, 10);
-    const pointMeta = this.currentTraversePointOptions.find(
-      (p) => p.index === pointIndex
-    );
-    const record = this.projects[this.currentProjectId]?.records?.[recordId];
+    const hasPointSelection = pointIndexStr !== "";
+    const pointIndex = hasPointSelection ? parseInt(pointIndexStr, 10) : null;
+    const pointMeta = hasPointSelection
+      ? this.currentTraversePointOptions.find((p) => p.index === pointIndex)
+      : null;
+    const record = recordId
+      ? this.projects[this.currentProjectId]?.records?.[recordId]
+      : null;
     const entry = new CornerEvidence({
       id: Date.now().toString(),
       projectId: this.currentProjectId,
       recordId,
-      recordName: record?.name || "Record",
-      pointIndex,
-      pointLabel: pointMeta?.label || "Traverse point",
+      recordName: record?.name || (recordId ? "Untitled record" : ""),
+      pointIndex: hasPointSelection ? pointIndex : null,
+      pointLabel: pointMeta?.label || (hasPointSelection ? "Traverse point" : ""),
       coords: pointMeta?.coords || null,
       type: this.elements.evidenceType?.value || "",
       cornerType: this.elements.evidenceCornerType?.value || "",
@@ -2622,7 +2644,9 @@ export default class AppController {
       return;
     }
 
-    this.elements.evidenceSummary.textContent = `${evidence.length} point(s) documented.`;
+    this.elements.evidenceSummary.textContent = `${evidence.length} evidence entr${
+      evidence.length === 1 ? "y" : "ies"
+    } documented.`;
 
     evidence
       .slice()
@@ -2631,11 +2655,12 @@ export default class AppController {
         const card = document.createElement("div");
         card.className = "card";
         const title = document.createElement("strong");
-        title.textContent = ev.pointLabel || "Traverse point";
+        title.textContent = ev.pointLabel || "Untied evidence entry";
         const meta = document.createElement("div");
         meta.className = "subtitle";
         meta.style.marginTop = "4px";
-        meta.textContent = `${ev.recordName || "Record"} · Saved ${new Date(
+        const recordLabel = ev.recordName || "No record link";
+        meta.textContent = `${recordLabel} · Saved ${new Date(
           ev.createdAt
         ).toLocaleString()}`;
         const status = document.createElement("span");

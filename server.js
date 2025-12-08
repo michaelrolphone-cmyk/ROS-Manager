@@ -22,12 +22,54 @@ const MIME_TYPES = {
 const isPlainObject = (val) =>
   val && typeof val === "object" && !Array.isArray(val);
 
+const METADATA_KEYS = new Set(["id", "createdAt", "updatedAt", "version"]);
+
 const isVersioned = (val) =>
   isPlainObject(val) && "version" in val && "updatedAt" in val;
 
+const makeCallSignature = (item = {}) => {
+  if (!item || typeof item !== "object") return null;
+  const parts = [
+    item.bearing,
+    item.distance,
+    item.curveRadius,
+    item.curveDirection,
+    item.curveArcLength,
+    item.curveChordLength,
+    item.curveChordBearing,
+    item.curveDeltaAngle,
+    item.curveTangent,
+  ]
+    .filter((val) => val !== undefined && val !== null)
+    .map((val) => `${val}`.trim());
+
+  const signature = parts.join("|").trim();
+  return signature ? `call:${signature}` : null;
+};
+
+const normalizeForKey = (value) => {
+  if (Array.isArray(value)) {
+    return value.map(normalizeForKey);
+  }
+  if (isPlainObject(value)) {
+    const entries = Object.keys(value)
+      .filter((key) => !METADATA_KEYS.has(key))
+      .sort()
+      .map((key) => [key, normalizeForKey(value[key])]);
+    return Object.fromEntries(entries);
+  }
+  return value;
+};
+
 const getArrayKey = (item) => {
   if (item && typeof item === "object") {
-    return item.id || item.pointNumber || JSON.stringify(item);
+    const callSignature = makeCallSignature(item);
+    return (
+      item.id ||
+      item.pointNumber ||
+      callSignature ||
+      JSON.stringify(normalizeForKey(item))
+    );
   }
   return item;
 };

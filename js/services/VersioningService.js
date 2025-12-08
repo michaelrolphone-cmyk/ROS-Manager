@@ -1,5 +1,7 @@
 const DEFAULT_PREFIX = "item";
 
+const METADATA_KEYS = new Set(["id", "createdAt", "updatedAt", "version"]);
+
 const makeId = (prefix = DEFAULT_PREFIX) =>
   `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
@@ -8,9 +10,49 @@ const nowIso = () => new Date().toISOString();
 const isPlainObject = (val) =>
   val && typeof val === "object" && !Array.isArray(val);
 
+const makeCallSignature = (item = {}) => {
+  if (!item || typeof item !== "object") return null;
+  const parts = [
+    item.bearing,
+    item.distance,
+    item.curveRadius,
+    item.curveDirection,
+    item.curveArcLength,
+    item.curveChordLength,
+    item.curveChordBearing,
+    item.curveDeltaAngle,
+    item.curveTangent,
+  ]
+    .filter((val) => val !== undefined && val !== null)
+    .map((val) => `${val}`.trim());
+
+  const signature = parts.join("|").trim();
+  return signature ? `call:${signature}` : null;
+};
+
+const normalizeForKey = (value) => {
+  if (Array.isArray(value)) {
+    return value.map(normalizeForKey);
+  }
+  if (isPlainObject(value)) {
+    const entries = Object.keys(value)
+      .filter((key) => !METADATA_KEYS.has(key))
+      .sort()
+      .map((key) => [key, normalizeForKey(value[key])]);
+    return Object.fromEntries(entries);
+  }
+  return value;
+};
+
 const getArrayKey = (item) => {
   if (item && typeof item === "object") {
-    return item.id || item.pointNumber || JSON.stringify(item);
+    const callSignature = makeCallSignature(item);
+    return (
+      item.id ||
+      item.pointNumber ||
+      callSignature ||
+      JSON.stringify(normalizeForKey(item))
+    );
   }
   return item;
 };
@@ -52,7 +94,9 @@ export default class VersioningService {
     Object.entries(records).forEach(([recordId, record]) => {
       this.touchEntity(record, { prefix: "record", timestamp });
       if (!record.id) record.id = recordId;
-      record.calls = this.touchArray(record.calls || [], "call", timestamp);
+      record.calls = this.dedupeCalls(
+        this.touchArray(record.calls || [], "call", timestamp)
+      );
     });
 
     project.equipmentLogs = this.touchArray(
@@ -104,7 +148,9 @@ export default class VersioningService {
     Object.entries(records).forEach(([recordId, record]) => {
       this.ensureEntity(record, { prefix: "record" });
       if (!record.id) record.id = recordId;
-      record.calls = this.ensureArray(record.calls || [], "call");
+      record.calls = this.dedupeCalls(
+        this.ensureArray(record.calls || [], "call")
+      );
     });
 
     project.equipmentLogs = this.ensureArray(
@@ -141,6 +187,20 @@ export default class VersioningService {
       });
     });
     return evidenceByProject;
+  }
+
+  dedupeCalls(calls = []) {
+    const map = new Map();
+    (calls || []).forEach((call) => {
+      const key = getArrayKey(call);
+      if (map.has(key)) {
+        const merged = this.mergeValues(map.get(key), call);
+        map.set(key, merged);
+      } else {
+        map.set(key, call);
+      }
+    });
+    return Array.from(map.values());
   }
 
   touchEvidenceMap(evidenceByProject = {}) {
