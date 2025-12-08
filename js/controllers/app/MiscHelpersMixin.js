@@ -21,7 +21,6 @@ const MiscHelpersMixin = (Base) =>
       }
       this.toggleExpand(group);
     }
-  }
   };
 
 export default MiscHelpersMixin;

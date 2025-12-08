@@ -21,6 +21,45 @@ export default class EquipmentAppController extends MiniAppController {
     this.bindEvents();
   }
 
+  buildStaticMapUrl(lat, lon, accuracy) {
+    if (typeof lat !== "number" || typeof lon !== "number") return null;
+    const zoom = accuracy && accuracy < 8 ? 18 : accuracy && accuracy < 20 ? 17 : 16;
+    const clampedZoom = Math.max(10, Math.min(18, zoom));
+    const size = "320x220";
+    const marker = `${lat.toFixed(6)},${lon.toFixed(6)},lightblue1`;
+    return `https://staticmap.openstreetmap.de/staticmap.php?center=${lat.toFixed(
+      6
+    )},${lon.toFixed(6)}&zoom=${clampedZoom}&size=${size}&markers=${marker}`;
+  }
+
+  buildCalendarIcon(date) {
+    if (!date || Number.isNaN(date.getTime())) {
+      return `<div class="calendar-icon muted"><div class="month">TBD</div><div class="day">—</div><div class="time">Set date</div></div>`;
+    }
+    const month = date.toLocaleString(undefined, { month: "short" });
+    const day = date.getDate();
+    const time = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return `<div class="calendar-icon"><div class="month">${this.escapeHtml(
+      month
+    )}</div><div class="day">${this.escapeHtml(day)}</div><div class="time">${this.escapeHtml(
+      time
+    )}</div></div>`;
+  }
+
+  getEquipmentMapUrl(location) {
+    if (!location || typeof location.lat !== "number" || typeof location.lon !== "number") {
+      return null;
+    }
+    if (!location.mapTile) {
+      location.mapTile = this.buildStaticMapUrl(
+        location.lat,
+        location.lon,
+        location.accuracy
+      );
+    }
+    return location.mapTile;
+  }
+
   handleActivate() {
     super.handleActivate();
     this.refreshEquipmentUI();
@@ -322,6 +361,11 @@ export default class EquipmentAppController extends MiniAppController {
           lat: pos.coords.latitude,
           lon: pos.coords.longitude,
           accuracy: pos.coords.accuracy,
+          mapTile: this.buildStaticMapUrl(
+            pos.coords.latitude,
+            pos.coords.longitude,
+            pos.coords.accuracy
+          ),
         };
         if (this.elements.equipmentLocationStatus) {
           this.elements.equipmentLocationStatus.textContent = `Lat ${pos.coords.latitude.toFixed(
@@ -424,43 +468,63 @@ export default class EquipmentAppController extends MiniAppController {
       )
       .forEach((log) => {
         const card = document.createElement("div");
-        card.className = "card";
-        const setupTime = log.setupAt
-          ? new Date(log.setupAt).toLocaleString()
-          : "Not set";
-        const teardownTime = log.tearDownAt
-          ? new Date(log.tearDownAt).toLocaleString()
-          : "Not recorded";
+        card.className = "card equipment-card";
+        const setupDate = log.setupAt ? new Date(log.setupAt) : null;
+        const teardownDate = log.tearDownAt ? new Date(log.tearDownAt) : null;
         const equipmentList =
-          log.equipmentUsed?.length
-            ? log.equipmentUsed.join(", ")
-            : "None selected";
+          log.equipmentUsed?.length && log.equipmentUsed.filter(Boolean).length
+            ? log.equipmentUsed.filter(Boolean).join(", ")
+            : "Equipment not specified";
+        const setupBy = log.setupBy || "Not recorded";
         const locationText = log.location
           ? `Lat ${log.location.lat.toFixed(6)}, Lon ${log.location.lon.toFixed(
               6
             )} (±${log.location.accuracy.toFixed(1)} m)`
           : "No GPS captured";
+        const mapTile = this.getEquipmentMapUrl(log.location);
+        const mapThumb = mapTile
+          ? `<img class="equipment-map-thumb" src="${this.escapeHtml(
+              mapTile
+            )}" alt="Base location map" loading="lazy" />`
+          : '<div class="equipment-map-thumb placeholder">GPS not captured</div>';
+        const workNotes = log.workNotes?.trim();
+
         card.innerHTML = `
-          <strong>Base Station Setup</strong>
-          <div class="subtitle" style="margin-top:4px">Logged ${new Date(
-            log.recordedAt
-          ).toLocaleString()}</div>
-          <div>Setup at: ${this.escapeHtml(setupTime)}</div>
-          <div>Tear down: ${this.escapeHtml(teardownTime)}</div>
-          <div>Base height: ${this.escapeHtml(log.baseHeight || "")}</div>
-          <div>Reference point: ${this.escapeHtml(
-            log.referencePoint || ""
-          )}</div>
-          <div>Equipment: ${this.escapeHtml(equipmentList)}</div>
-          <div>Set up by: ${this.escapeHtml(log.setupBy || "")}</div>
-          <div>Location: ${this.escapeHtml(locationText)}</div>
+          <div class="equipment-card-header">
+            ${this.buildCalendarIcon(setupDate)}
+            <div class="equipment-card-title">
+              <div class="equipment-name">${this.escapeHtml(equipmentList)}</div>
+              <div class="equipment-subtitle">Base height: ${this.escapeHtml(
+                log.baseHeight || "—"
+              )} · Reference: ${this.escapeHtml(log.referencePoint || "—")}</div>
+              <div class="equipment-subtitle">Setup by ${this.escapeHtml(
+                setupBy
+              )}</div>
+            </div>
+            ${mapThumb}
+          </div>
+          <div class="equipment-meta-grid">
+            <div><span class="label">Setup at</span><span class="value">${this.escapeHtml(
+              setupDate ? setupDate.toLocaleString() : "Not set"
+            )}</span></div>
+            <div><span class="label">Tear down</span><span class="value">${this.escapeHtml(
+              teardownDate ? teardownDate.toLocaleString() : "Not recorded"
+            )}</span></div>
+            <div><span class="label">Location</span><span class="value">${this.escapeHtml(
+              locationText
+            )}</span></div>
+            <div><span class="label">Logged</span><span class="value">${this.escapeHtml(
+              new Date(log.recordedAt).toLocaleString()
+            )}</span></div>
+          </div>
+          ${
+            workNotes
+              ? `<div class="equipment-notes">Work / Goal: ${this.escapeHtml(
+                  workNotes
+                )}</div>`
+              : ""
+          }
         `;
-        if (log.workNotes) {
-          const notes = document.createElement("div");
-          notes.style.marginTop = "6px";
-          notes.textContent = `Work / Goal: ${log.workNotes}`;
-          card.appendChild(notes);
-        }
 
         const actions = document.createElement("div");
         actions.className = "equipment-actions";

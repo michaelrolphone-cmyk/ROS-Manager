@@ -1291,6 +1291,47 @@
             <label for="evidencePhoto">Photo (optional)</label>
             <input id="evidencePhoto" type="file" accept="image/*" />
 
+            <div class="annotation-toolbar">
+              <span class="subtitle">Annotate photo:</span>
+              <div class="chip-row">
+                <button
+                  type="button"
+                  class="secondary"
+                  data-annotation-mode="arrow"
+                >
+                  Arrow
+                </button>
+                <button
+                  type="button"
+                  class="secondary"
+                  data-annotation-mode="circle"
+                >
+                  Circle
+                </button>
+                <button
+                  type="button"
+                  class="secondary"
+                  data-annotation-mode="text"
+                >
+                  Text label
+                </button>
+                <button type="button" id="evidenceAnnotationClear">
+                  Clear annotations
+                </button>
+              </div>
+            </div>
+
+            <div class="photo-annotation-preview">
+              <div id="evidencePhotoPreview" class="photo-preview">
+                <canvas id="evidenceAnnotationCanvas"></canvas>
+              </div>
+              <p
+                class="subtitle"
+                id="evidencePhotoMetadataNote"
+                style="margin-top: 6px"
+              ></p>
+            </div>
+
             <div
               style="
                 display: flex;

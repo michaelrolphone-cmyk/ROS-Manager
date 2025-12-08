@@ -240,8 +240,8 @@
   * ✅ Range
   * ✅ Section
   * ✅ Section breakdown (aliquots, lots, etc.)
-* Evidence entries must:
-  * Be fully editable and deletable (subject to archival rules if referenced).
+* ✅ Evidence entries must:
+  * ✅ Be fully editable and deletable (subject to archival rules if referenced).
 * ✅ Each evidence entry should have a **title generated** from TRS info (e.g., “Corner Evidence – T5N R2E Sec 12 NE Cor”).
 * Evidence monuments must support:
   * Joining multiple sections (e.g., common corners)
@@ -273,14 +273,14 @@
 
 ### 4.3 Monument Photo Annotation & Metadata
 
-* Extend evidence photos to support:
-  * Drawing simple arrows, circles, and text labels on the image.
-  * Marking the monument location within the frame.
+* ✅ Extend evidence photos to support:
+  * ✅ Drawing simple arrows, circles, and text labels on the image.
+  * ✅ Marking the monument location within the frame.
 
-* Automatically stamp (in metadata / export, not necessarily on original image pixels unless user chooses):
-  * Date and time of capture.
-  * TRS (from the evidence entry).
-  * Associated point/station if applicable.
+* ✅ Automatically stamp (in metadata / export, not necessarily on original image pixels unless user chooses):
+  * ✅ Date and time of capture.
+  * ✅ TRS (from the evidence entry).
+  * ✅ Associated point/station if applicable.
 
 * Ensure annotated photos are:
   * Accessible from Evidence, Chain of Evidence, and Stakeout mini-apps.
@@ -384,21 +384,21 @@
 * ✅ Equipment Setup form:
   * ✅ Add padding between form elements so they do not overflow or overlap, especially in desktop landscape views with long text inputs.
 
-* Base station geolocation:
-  * Use geolocation to fetch an appropriate **map tile** and show a **marker** where the equipment is set up.
-  * Display that tile and marker as a **thumbnail icon** next to each equipment setup in the list.
+* ✅ Base station geolocation:
+  * ✅ Use geolocation to fetch an appropriate **map tile** and show a **marker** where the equipment is set up.
+  * ✅ Display that tile and marker as a **thumbnail icon** next to each equipment setup in the list.
 
-* Equipment setup entry formatting:
-  * Make the **equipment used** the largest text in the entry.
-  * Show the **date/time of setup** as the next most prominent element.
-  * Make it easy to quickly see:
-    * What reference point was used.
-    * The **equipment setup height** (second most important piece of visual information after the equipment name, alongside datetime).
-    * A short description of the work/goal.
+* ✅ Equipment setup entry formatting:
+  * ✅ Make the **equipment used** the largest text in the entry.
+  * ✅ Show the **date/time of setup** as the next most prominent element.
+  * ✅ Make it easy to quickly see:
+    * ✅ What reference point was used.
+    * ✅ The **equipment setup height** (second most important piece of visual information after the equipment name, alongside datetime).
+    * ✅ A short description of the work/goal.
 
-* Represent setup date/time as a **CSS-based calendar icon**, left-aligned:
-  * Show month and day.
-  * Sub-text with the time.
+* ✅ Represent setup date/time as a **CSS-based calendar icon**, left-aligned:
+  * ✅ Show month and day.
+  * ✅ Sub-text with the time.
 
 ---
 

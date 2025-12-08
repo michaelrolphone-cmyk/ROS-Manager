@@ -299,15 +299,175 @@ const EvidenceLoggerMixin = (Base) =>
   handleEvidencePhoto(file) {
     if (!file) {
       this.currentEvidencePhoto = null;
+      this.currentEvidencePhotoAnnotations = [];
+      this.currentEvidencePhotoMetadata = null;
+      this.renderEvidencePhotoPreview();
       this.updateEvidenceSaveState();
       return;
     }
     const reader = new FileReader();
     reader.onload = () => {
       this.currentEvidencePhoto = reader.result;
+      this.currentEvidencePhotoAnnotations = [];
+      this.currentEvidencePhotoMetadata = this.buildEvidencePhotoMetadata();
+      this.setAnnotationMode(this.currentAnnotationMode || "arrow");
+      this.renderEvidencePhotoPreview();
       this.updateEvidenceSaveState();
     };
     reader.readAsDataURL(file);
+  }
+
+  buildEvidencePhotoMetadata() {
+    const baseEntry = {
+      township: this.elements.evidenceTownship?.value.trim() || "",
+      range: this.elements.evidenceRange?.value.trim() || "",
+      section: this.elements.evidenceSection?.value.trim() || "",
+      sectionBreakdown:
+        this.elements.evidenceSectionBreakdown?.value.trim() || "",
+      pointLabel: this.elements.evidencePointSelect?.selectedOptions?.[0]?.text,
+    };
+    return {
+      capturedAt:
+        this.currentEvidencePhotoMetadata?.capturedAt ||
+        new Date().toISOString(),
+      trs: this.buildEvidenceTrs(baseEntry),
+      pointLabel: baseEntry.pointLabel || "",
+    };
+  }
+
+  setAnnotationMode(mode) {
+    this.currentAnnotationMode = mode;
+    this.annotationDraftPoint = null;
+    this.elements.evidenceAnnotationModeButtons?.forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.annotationMode === mode);
+    });
+  }
+
+  clearEvidenceAnnotations() {
+    this.currentEvidencePhotoAnnotations = [];
+    this.annotationDraftPoint = null;
+    this.renderEvidencePhotoPreview();
+  }
+
+  handleAnnotationCanvasClick(evt) {
+    if (!this.currentEvidencePhoto || !this.elements.evidenceAnnotationCanvas)
+      return;
+    const mode = this.currentAnnotationMode || "arrow";
+    const rect = this.elements.evidenceAnnotationCanvas.getBoundingClientRect();
+    const x = (evt.clientX - rect.left) / rect.width;
+    const y = (evt.clientY - rect.top) / rect.height;
+
+    if (mode === "text") {
+      const text = prompt("Text label", "Monument");
+      if (!text) return;
+      this.currentEvidencePhotoAnnotations.push({ type: "text", x, y, text });
+      this.renderEvidencePhotoPreview();
+      return;
+    }
+
+    if (!this.annotationDraftPoint) {
+      this.annotationDraftPoint = { x, y };
+      return;
+    }
+
+    if (mode === "arrow") {
+      this.currentEvidencePhotoAnnotations.push({
+        type: "arrow",
+        x1: this.annotationDraftPoint.x,
+        y1: this.annotationDraftPoint.y,
+        x2: x,
+        y2: y,
+      });
+    } else if (mode === "circle") {
+      const dx = x - this.annotationDraftPoint.x;
+      const dy = y - this.annotationDraftPoint.y;
+      const radius = Math.sqrt(dx * dx + dy * dy);
+      this.currentEvidencePhotoAnnotations.push({
+        type: "circle",
+        x: this.annotationDraftPoint.x,
+        y: this.annotationDraftPoint.y,
+        radius,
+      });
+    }
+    this.annotationDraftPoint = null;
+    this.renderEvidencePhotoPreview();
+  }
+
+  renderEvidencePhotoPreview() {
+    const preview = this.elements.evidencePhotoPreview;
+    const canvas = this.elements.evidenceAnnotationCanvas;
+    const note = this.elements.evidencePhotoMetadataNote;
+    if (!preview || !canvas) return;
+    preview.innerHTML = "";
+    if (!this.currentEvidencePhoto) {
+      canvas.width = 0;
+      canvas.height = 0;
+      if (note) note.textContent = "";
+      preview.appendChild(canvas);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      const maxWidth = 360;
+      const scale = Math.min(1, maxWidth / img.width);
+      const width = img.width * scale;
+      const height = img.height * scale;
+      canvas.width = width;
+      canvas.height = height;
+      img.width = width;
+      img.height = height;
+      preview.appendChild(img);
+      preview.appendChild(canvas);
+      this.drawAnnotationLayer(canvas, img.width, img.height);
+      if (note) {
+        const metadata = this.currentEvidencePhotoMetadata;
+        const parts = [];
+        if (metadata?.capturedAt)
+          parts.push(
+            `Captured ${new Date(metadata.capturedAt).toLocaleString()}`
+          );
+        if (metadata?.trs) parts.push(metadata.trs);
+        if (metadata?.pointLabel) parts.push(`Point: ${metadata.pointLabel}`);
+        note.textContent = parts.join(" · ");
+      }
+    };
+    img.src = this.currentEvidencePhoto;
+  }
+
+  drawAnnotationLayer(canvas, width, height, annotations = null) {
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = "#f97316";
+    ctx.fillStyle = "#f97316";
+    ctx.lineWidth = 2;
+    const list = annotations || this.currentEvidencePhotoAnnotations || [];
+    list.forEach((ann) => {
+      if (ann.type === "arrow") {
+        const x1 = ann.x1 * width;
+        const y1 = ann.y1 * height;
+        const x2 = ann.x2 * width;
+        const y2 = ann.y2 * height;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        const head = 8;
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - head * Math.cos(angle - Math.PI / 6), y2 - head * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(x2 - head * Math.cos(angle + Math.PI / 6), y2 - head * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+      } else if (ann.type === "circle") {
+        ctx.beginPath();
+        ctx.arc(ann.x * width, ann.y * height, ann.radius * Math.min(width, height), 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (ann.type === "text") {
+        ctx.font = "14px Inter, sans-serif";
+        ctx.fillText(ann.text || "Label", ann.x * width + 4, ann.y * height - 4);
+      }
+    });
   }
 
   captureEvidenceLocation() {
@@ -385,14 +545,24 @@ const EvidenceLoggerMixin = (Base) =>
     const record = recordId
       ? this.projects[this.currentProjectId]?.records?.[recordId]
       : null;
+    const existing = this.editingEvidenceId
+      ? this.cornerEvidenceService.getEntry(
+          this.currentProjectId,
+          this.editingEvidenceId
+        )
+      : null;
+
     const entry = new CornerEvidence({
-      id: Date.now().toString(),
+      id: existing?.id || Date.now().toString(),
       projectId: this.currentProjectId,
       recordId,
       recordName: record?.name || (recordId ? "Untitled record" : ""),
       pointIndex: hasPointSelection ? pointIndex : null,
-      pointLabel: pointMeta?.label || (hasPointSelection ? "Traverse point" : ""),
-      coords: pointMeta?.coords || null,
+      pointLabel:
+        pointMeta?.label ||
+        existing?.pointLabel ||
+        (hasPointSelection ? "Traverse point" : ""),
+      coords: pointMeta?.coords || existing?.coords || null,
       township,
       range,
       section,
@@ -418,18 +588,117 @@ const EvidenceLoggerMixin = (Base) =>
       ties: this.currentEvidenceTies.map((tie) =>
         tie instanceof EvidenceTie ? tie : new EvidenceTie({ ...tie })
       ),
-      photo: this.currentEvidencePhoto || null,
-      location: this.currentEvidenceLocation || null,
-      createdAt: new Date().toISOString(),
+      photo: this.currentEvidencePhoto || existing?.photo || null,
+      photoAnnotations:
+        this.currentEvidencePhotoAnnotations?.length > 0
+          ? this.currentEvidencePhotoAnnotations
+          : existing?.photoAnnotations || [],
+      photoMetadata:
+        this.currentEvidencePhoto || existing?.photo
+          ? this.currentEvidencePhotoMetadata ||
+            existing?.photoMetadata ||
+            this.buildEvidencePhotoMetadata()
+          : null,
+      location: this.currentEvidenceLocation || existing?.location || null,
+      createdAt: existing?.createdAt || new Date().toISOString(),
+      version: (existing?.version ?? 0) + 1,
     });
 
     entry.title = this.buildEvidenceTitle(entry);
 
     this.versioningService.touchEntity(entry, { prefix: "evidence" });
     entry.ties = this.versioningService.touchArray(entry.ties || [], "tie");
-    this.cornerEvidenceService.addEntry(entry);
+
+    if (existing) {
+      this.cornerEvidenceService.updateEntry(this.currentProjectId, entry.id, {
+        ...entry.toObject(),
+      });
+    } else {
+      this.cornerEvidenceService.addEntry(entry);
+    }
+
     this.scheduleSync();
     this.resetEvidenceForm();
+    this.renderEvidenceList();
+  }
+
+  startEditingEvidence(entry) {
+    if (!entry) return;
+    this.editingEvidenceId = entry.id;
+    this.populateEvidenceRecordOptions(entry.recordId || null);
+    if (this.elements.evidenceRecordSelect)
+      this.elements.evidenceRecordSelect.value = entry.recordId || "";
+    this.refreshEvidencePointOptions();
+    if (this.elements.evidencePointSelect && entry.pointIndex !== null) {
+      this.elements.evidencePointSelect.value = entry.pointIndex;
+    }
+    if (this.elements.evidenceType) this.elements.evidenceType.value = entry.type;
+    if (this.elements.evidenceCornerType)
+      this.elements.evidenceCornerType.value = entry.cornerType;
+    if (this.elements.evidenceCornerStatus)
+      this.elements.evidenceCornerStatus.value = entry.cornerStatus;
+    if (this.elements.evidenceStatus)
+      this.elements.evidenceStatus.value = entry.status || "Draft";
+    if (this.elements.evidenceCondition)
+      this.elements.evidenceCondition.value = entry.condition || "";
+    if (this.elements.evidenceTownship)
+      this.elements.evidenceTownship.value = entry.township || "";
+    if (this.elements.evidenceRange)
+      this.elements.evidenceRange.value = entry.range || "";
+    if (this.elements.evidenceSection)
+      this.elements.evidenceSection.value = entry.section || "";
+    if (this.elements.evidenceSectionBreakdown)
+      this.elements.evidenceSectionBreakdown.value = entry.sectionBreakdown || "";
+    if (this.elements.evidenceBasisOfBearing)
+      this.elements.evidenceBasisOfBearing.value = entry.basisOfBearing || "";
+    if (this.elements.evidenceMonumentType)
+      this.elements.evidenceMonumentType.value = entry.monumentType || "";
+    if (this.elements.evidenceMonumentMaterial)
+      this.elements.evidenceMonumentMaterial.value = entry.monumentMaterial || "";
+    if (this.elements.evidenceMonumentSize)
+      this.elements.evidenceMonumentSize.value = entry.monumentSize || "";
+    if (this.elements.evidenceSurveyorName)
+      this.elements.evidenceSurveyorName.value = entry.surveyorName || "";
+    if (this.elements.evidenceSurveyorLicense)
+      this.elements.evidenceSurveyorLicense.value = entry.surveyorLicense || "";
+    if (this.elements.evidenceSurveyorFirm)
+      this.elements.evidenceSurveyorFirm.value = entry.surveyorFirm || "";
+    if (this.elements.evidenceSurveyDates)
+      this.elements.evidenceSurveyDates.value = entry.surveyDates || "";
+    if (this.elements.evidenceSurveyCounty)
+      this.elements.evidenceSurveyCounty.value = entry.surveyCounty || "";
+    if (this.elements.evidenceRecordingInfo)
+      this.elements.evidenceRecordingInfo.value = entry.recordingInfo || "";
+    if (this.elements.evidenceNotes)
+      this.elements.evidenceNotes.value = entry.notes || "";
+    if (this.elements.saveEvidenceButton)
+      this.elements.saveEvidenceButton.textContent = "Update evidence";
+    this.currentEvidenceTies = (entry.ties || []).map((t) =>
+      t instanceof EvidenceTie ? t : new EvidenceTie({ ...t })
+    );
+    this.renderEvidenceTies();
+    this.currentEvidencePhoto = entry.photo || null;
+    this.currentEvidencePhotoAnnotations = entry.photoAnnotations || [];
+    this.currentEvidencePhotoMetadata = entry.photoMetadata || null;
+    this.renderEvidencePhotoPreview();
+    this.currentEvidenceLocation = entry.location || null;
+    if (this.elements.evidenceLocationStatus && entry.location) {
+      this.elements.evidenceLocationStatus.textContent = `Lat ${
+        entry.location.lat?.toFixed?.(6) || ""
+      }, Lon ${entry.location.lon?.toFixed?.(6) || ""} (±${
+        entry.location.accuracy?.toFixed?.(1) || "?"
+      } m)`;
+    }
+    this.updateEvidenceSaveState();
+  }
+
+  deleteEvidenceEntry(entryId) {
+    if (!entryId || !this.currentProjectId) return;
+    if (!confirm("Delete this evidence entry?")) return;
+    this.cornerEvidenceService.deleteEntry(this.currentProjectId, entryId);
+    if (this.editingEvidenceId === entryId) {
+      this.resetEvidenceForm();
+    }
     this.renderEvidenceList();
   }
 
@@ -569,11 +838,48 @@ const EvidenceLoggerMixin = (Base) =>
         const mediaRow = document.createElement("div");
         mediaRow.className = "evidence-media-grid";
         if (ev.photo) {
+          const photoWrap = document.createElement("div");
+          photoWrap.className = "evidence-photo-block";
           const photoImg = document.createElement("img");
           photoImg.src = ev.photo;
           photoImg.alt = "Evidence photo";
           photoImg.className = "evidence-thumb";
-          mediaRow.appendChild(photoImg);
+          const overlay = document.createElement("canvas");
+          overlay.className = "evidence-thumb-overlay";
+          overlay.width = 0;
+          overlay.height = 0;
+          photoWrap.appendChild(photoImg);
+          photoWrap.appendChild(overlay);
+          photoImg.onload = () => {
+            const scale = Math.min(1, 240 / photoImg.naturalWidth);
+            photoImg.width = photoImg.naturalWidth * scale;
+            photoImg.height = photoImg.naturalHeight * scale;
+            overlay.width = photoImg.width;
+            overlay.height = photoImg.height;
+            this.drawAnnotationLayer(
+              overlay,
+              photoImg.width,
+              photoImg.height,
+              ev.photoAnnotations
+            );
+          };
+          if (ev.photoMetadata) {
+            const metaNote = document.createElement("div");
+            metaNote.className = "evidence-photo-meta";
+            const parts = [];
+            if (ev.photoMetadata.capturedAt)
+              parts.push(
+                `Captured ${new Date(
+                  ev.photoMetadata.capturedAt
+                ).toLocaleString()}`
+              );
+            if (ev.photoMetadata.trs) parts.push(ev.photoMetadata.trs);
+            if (ev.photoMetadata.pointLabel)
+              parts.push(`Point: ${ev.photoMetadata.pointLabel}`);
+            metaNote.textContent = parts.join(" · ");
+            photoWrap.appendChild(metaNote);
+          }
+          mediaRow.appendChild(photoWrap);
         }
         if (ev.location) {
           const loc = document.createElement("div");
@@ -623,7 +929,18 @@ const EvidenceLoggerMixin = (Base) =>
         exportBtn.type = "button";
         exportBtn.textContent = "Export CPF";
         exportBtn.addEventListener("click", () => this.exportCornerFiling(ev));
-        actionsRow.appendChild(exportBtn);
+        const editBtn = document.createElement("button");
+        editBtn.type = "button";
+        editBtn.textContent = "Edit";
+        editBtn.addEventListener("click", () => this.startEditingEvidence(ev));
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.textContent = "Delete";
+        deleteBtn.className = "secondary";
+        deleteBtn.addEventListener("click", () =>
+          this.deleteEvidenceEntry(ev.id)
+        );
+        actionsRow.append(exportBtn, editBtn, deleteBtn);
         card.appendChild(actionsRow);
         container.appendChild(card);
       });
