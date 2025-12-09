@@ -471,13 +471,13 @@ describe("MapboxService", () => {
     const url = buildMapboxStaticUrl(40.1, -75.2, {
       centerMarker: false,
       markers: [
-        { lat: 40.1, lon: -75.21, symbol: "triangle", color: "ff8800", size: "m" },
+        { lat: 40.1, lon: -75.21, color: "ff8800", size: "m" },
         { lat: 40.2, lon: -75.22, iconUrl: getMakiIconUrl("post-jp"), size: "m" },
       ],
     });
 
-    assert.ok(url.includes("pin-m-triangle+ff8800(-75.210000,40.100000)"));
-    assert.ok(url.includes(encodeURIComponent("post-jp")));
+    assert.ok(url.includes("pin-m+ff8800(-75.210000,40.100000)"));
+    assert.ok(url.includes("pin-m+3b82f6(-75.220000,40.200000)"));
   });
 
   it("returns null when coordinates are invalid", () => {

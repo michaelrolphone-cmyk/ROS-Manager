@@ -18,8 +18,6 @@ const buildMarkerOverlay = ({
   lon,
   color = DEFAULT_MARKER_COLOR,
   size = "s",
-  symbol = "",
-  iconUrl = "",
 } = {}) => {
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
 
@@ -31,12 +29,7 @@ const buildMarkerOverlay = ({
   const latStr = lat.toFixed(6);
   const lonStr = lon.toFixed(6);
 
-  if (iconUrl) {
-    return `url-${encodeURIComponent(iconUrl)}(${lonStr},${latStr})`;
-  }
-
-  const symbolPart = symbol ? `-${symbol}` : "";
-  return `pin-${clampedSize}${symbolPart}+${normalizedColor}(${lonStr},${latStr})`;
+  return `pin-${clampedSize}+${normalizedColor}(${lonStr},${latStr})`;
 };
 
 export const buildMapboxStaticUrl = (
