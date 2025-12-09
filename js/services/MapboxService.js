@@ -1,5 +1,5 @@
 const MAPBOX_ACCESS_TOKEN = "pk.eyJ1IjoibWljaGFlbC1yb2wiLCJhIjoiY21peGFzeDRuMDJjNDNmb2twaWU3YXJpbyJ9.Kqm0O9xcqzwPUoyve0yJXQ";
-const DEFAULT_STYLE = "mapbox/streets-v12";
+const DEFAULT_STYLE = "mapbox/light-v11";
 const DEFAULT_MARKER_COLOR = "3b82f6";
 const MAX_DIMENSION = 1280;
 
@@ -12,7 +12,7 @@ const clampDimension = (value, fallback) => {
 export const buildMapboxStaticUrl = (
   lat,
   lon,
-  { zoom = 15, width = 800, height = 600, markerColor = DEFAULT_MARKER_COLOR } = {}
+  { zoom = 22, width = 800, height = 600, markerColor = DEFAULT_MARKER_COLOR } = {}
 ) => {
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
 

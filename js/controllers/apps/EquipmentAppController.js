@@ -24,10 +24,8 @@ export default class EquipmentAppController extends MiniAppController {
 
   buildStaticMapUrl(lat, lon, accuracy) {
     if (typeof lat !== "number" || typeof lon !== "number") return null;
-    const zoom = accuracy && accuracy < 8 ? 18 : accuracy && accuracy < 20 ? 17 : 16;
-    const clampedZoom = Math.max(10, Math.min(18, zoom));
     return buildMapboxStaticUrl(lat, lon, {
-      zoom: clampedZoom,
+      zoom: 22,
       width: 320,
       height: 220,
       markerColor: "3b82f6",

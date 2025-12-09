@@ -1332,7 +1332,7 @@ const ProjectsRecordsMixin = (Base) =>
       }
     }
 
-    buildTileMapPreview(lat, lon, zoom = 14) {
+    buildTileMapPreview(lat, lon, zoom = 22) {
       const parsedLat = parseFloat(lat);
       const parsedLon = parseFloat(lon);
       if (!Number.isFinite(parsedLat) || !Number.isFinite(parsedLon)) return null;
@@ -1365,7 +1365,7 @@ const ProjectsRecordsMixin = (Base) =>
         const data = await response.json();
         if (Array.isArray(data?.features) && data.features.length) {
           const [lon, lat] = data.features[0]?.center || [];
-          const mapUrl = this.buildTileMapPreview(lat, lon, 13);
+          const mapUrl = this.buildTileMapPreview(lat, lon, 22);
           this.geocodeCache[normalized] = mapUrl;
           return mapUrl;
         }
