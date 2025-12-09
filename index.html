@@ -159,25 +159,6 @@
                   <div class="label">Township / Range / Section</div>
                   <span class="value" id="springboardTrsValue">—</span>
                 </div>
-                <div class="meta-card">
-                  <div class="label">Index Number</div>
-                  <span class="value" id="springboardIndexValue">—</span>
-                </div>
-                <div class="meta-card">
-                  <div class="label">Last Export</div>
-                  <span class="value" id="springboardLastExportValue">—</span>
-                  <span
-                    class="mini-note warning"
-                    id="springboardExportWarning"
-                  ></span>
-                  <button
-                    type="button"
-                    class="secondary"
-                    id="springboardExportNowButton"
-                  >
-                    Export Now
-                  </button>
-                </div>
               </div>
             </div>
           </div>
@@ -1090,6 +1071,41 @@
             <div class="mini-note">
               Exports include project data, linked evidence and research, and
               quality control summaries.
+            </div>
+          </div>
+
+          <div class="card" id="exportStatusCard">
+            <div class="card-header">
+              <div>
+                <p class="eyebrow" style="color: #475569">Backups</p>
+                <h3 style="margin: 4px 0">Last export &amp; reminders</h3>
+                <p class="subtitle" style="margin-top: 0">
+                  Keep your export schedule current so local field data stays
+                  protected.
+                </p>
+              </div>
+              <div class="view-toggle">
+                <button type="button" id="springboardExportNowButton">
+                  Export Now
+                </button>
+              </div>
+            </div>
+            <div class="smartpack-meta">
+              <div class="stat-chip">
+                <div class="stat-label">Last export</div>
+                <div class="stat-value" id="springboardLastExportValue">—</div>
+              </div>
+              <div class="stat-chip">
+                <div class="stat-label">Export reminders</div>
+                <div
+                  class="mini-note warning"
+                  id="springboardExportWarning"
+                  style="display: none"
+                ></div>
+                <div class="mini-note" id="exportStatusHealthyMessage">
+                  Exports are up to date.
+                </div>
+              </div>
             </div>
           </div>
 
