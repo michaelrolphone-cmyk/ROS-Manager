@@ -1046,6 +1046,31 @@ body {
         padding: 6px 8px;
       }
 
+      .calls-table td.call-geometry {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .call-geometry .bearing-cell {
+        align-items: flex-start;
+      }
+
+      .call-geometry .distance-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+      }
+
+      .call-geometry .distance-row .code-row,
+      .call-geometry .distance-row .offset-row {
+        grid-column: 1 / -1;
+      }
+
+      .call-geometry .distance-row .row-controls {
+        justify-content: flex-end;
+      }
+
       .curve-row {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));

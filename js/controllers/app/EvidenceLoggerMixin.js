@@ -600,13 +600,11 @@ const EvidenceLoggerMixin = (Base) =>
     const cornerStatus = this.elements.evidenceCornerStatus?.value || "";
     const status = this.elements.evidenceStatus?.value || "";
     const condition = this.elements.evidenceCondition?.value || "";
+    const isFinal = (status || "").toLowerCase() === "final";
+    const hasRequiredFinalFields =
+      !!type && !!cornerType && !!cornerStatus && !!condition;
     const canSave =
-      !!this.currentProjectId &&
-      !!type &&
-      !!cornerType &&
-      !!cornerStatus &&
-      !!status &&
-      !!condition;
+      !!this.currentProjectId && (!isFinal || hasRequiredFinalFields);
     this.elements.saveEvidenceButton.disabled = !canSave;
   }
 

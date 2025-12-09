@@ -64,7 +64,10 @@ const CallsBearingsMixin = (Base) =>
     numTd.className = "call-label";
     numTd.textContent = label || "";
 
-    const bearingTd = document.createElement("td");
+    const geometryTd = document.createElement("td");
+    geometryTd.colSpan = 2;
+    geometryTd.className = "call-geometry";
+
     const bearingCell = document.createElement("div");
     bearingCell.className = "bearing-cell";
     const bearingInput = document.createElement("input");
@@ -83,10 +86,8 @@ const CallsBearingsMixin = (Base) =>
       '<svg viewBox="0 0 24 24"><path d="M12 4 L6 14 H18 Z" fill="#1e40af"></path></svg>';
     bearingCell.appendChild(bearingInput);
     bearingCell.appendChild(arrowSpan);
-    bearingTd.appendChild(bearingCell);
+    geometryTd.appendChild(bearingCell);
 
-    const distTd = document.createElement("td");
-    distTd.colSpan = 2;
     const distanceRow = document.createElement("div");
     distanceRow.className = "distance-row";
     const distanceInput = document.createElement("input");
@@ -338,13 +339,13 @@ const CallsBearingsMixin = (Base) =>
     rowControls.append(moveUp, moveDown, branchButton, remove);
     distanceRow.append(distanceInput, rowControls);
     distanceRow.append(codeRow, offsetRow);
-    distTd.appendChild(distanceRow);
+    geometryTd.appendChild(distanceRow);
 
     const branchContainer = document.createElement("div");
     branchContainer.className = "branch-container";
-    distTd.append(curveRow, branchContainer);
+    geometryTd.append(curveRow, branchContainer);
 
-    tr.append(numTd, bearingTd, distTd);
+    tr.append(numTd, geometryTd);
     tbody.appendChild(tr);
 
     updateCallInputVisibility();
