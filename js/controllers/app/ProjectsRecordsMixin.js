@@ -203,19 +203,18 @@ const ProjectsRecordsMixin = (Base) =>
 
     buildProjectIndexNumber(project) {
       if (!project) return "";
-      const township = this.normalizeTrsComponent(project.townships?.[0], 0);
-      const range = this.normalizeTrsComponent(project.ranges?.[0], 0);
-      const section = this.normalizeTrsComponent(project.sections?.[0]);
-      const quadrant = this.aliquotToCode(project.sectionQuadrant);
-      const aliquotCodes = this.buildAliquotCodes(project.aliquots);
-      const book = this.normalizeBookOrPage(project.platBook);
-      const pageStart = this.normalizeBookOrPage(project.platPageStart);
-      const pageEnd = this.normalizeBookOrPage(project.platPageEnd);
-
-      if (!township || !range || !section || !book || !pageStart) return "";
+      const township =
+        this.normalizeTrsComponent(project.townships?.[0], 0) || "0";
+      const range = this.normalizeTrsComponent(project.ranges?.[0], 0) || "0";
+      const section = this.normalizeTrsComponent(project.sections?.[0]) || "00";
+      const quadrant = this.aliquotToCode(project.sectionQuadrant) || "0";
+      const aliquotCodes = this.buildAliquotCodes(project.aliquots) || "000";
+      const book = this.normalizeBookOrPage(project.platBook) || "0";
+      const pageStart = this.normalizeBookOrPage(project.platPageStart) || "0";
+      const pageEnd = this.normalizeBookOrPage(project.platPageEnd) || "";
 
       const base = `${township}${range}${quadrant}-${section}-${aliquotCodes}-${book}-${pageStart}`;
-      return pageEnd ? `${base}-${pageEnd}` : base;
+      return pageEnd ? `${base}-${pageEnd || "0"}` : base;
     }
 
     setProjectDetailsEditing(isEditing) {
@@ -1072,11 +1071,16 @@ const ProjectsRecordsMixin = (Base) =>
         : null;
       const hero = this.elements.springboardHero;
       const titleEl = this.elements.springboardProjectTitle;
+      const nameEl = this.elements.springboardProjectName;
+      const indexEl = this.elements.springboardProjectIndex;
       const descEl = this.elements.springboardProjectDescription;
       const thumbCanvas = this.elements.springboardCompositeCanvas;
       const thumbWrapper = thumbCanvas?.parentElement;
       const thumbEmpty = this.elements.springboardCompositeEmpty;
       const hasProject = Boolean(project);
+      const indexNumber = hasProject
+        ? this.buildProjectIndexNumber(project)
+        : "";
 
       if (hero) {
         hero.classList.toggle("empty", !project);
@@ -1088,12 +1092,25 @@ const ProjectsRecordsMixin = (Base) =>
       }
 
       if (!project) {
-        if (titleEl) titleEl.textContent = "No project selected";
+        if (nameEl) nameEl.textContent = "No project selected";
+        else if (titleEl) titleEl.textContent = "No project selected";
+        if (indexEl) {
+          indexEl.textContent = "";
+          indexEl.style.display = "none";
+        }
         if (descEl)
           descEl.textContent =
             "Create or open a project to see its location context.";
       } else {
-        if (titleEl) titleEl.textContent = project.name || "Active Project";
+        const projectName = project.name || "Active Project";
+        if (nameEl) nameEl.textContent = projectName;
+        else if (titleEl) titleEl.textContent = projectName;
+        if (indexEl) {
+          indexEl.textContent = indexNumber;
+          indexEl.style.display = indexNumber ? "inline-flex" : "none";
+        } else if (titleEl && !nameEl && indexNumber) {
+          titleEl.textContent = `${projectName} (${indexNumber})`;
+        }
         if (descEl)
           descEl.textContent =
             project.description?.trim() ||
@@ -1164,8 +1181,7 @@ const ProjectsRecordsMixin = (Base) =>
         trsParts.length ? trsParts.join(" • ") : "—"
       );
 
-      const indexNumber = this.buildProjectIndexNumber(project);
-      setValue(this.elements.springboardIndexValue, indexNumber || "—");
+        setValue(this.elements.springboardIndexValue, indexNumber || "—");
 
       const { warning, lastExport } = this.getExportAlert(project);
       setValue(
