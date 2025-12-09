@@ -217,4 +217,25 @@ describe("Project index number", () => {
 
     assert.equal(index, "323-10-000-5-12");
   });
+
+  it("fills zeros when details are missing", () => {
+    const harness = new IndexHarness();
+
+    const index = harness.buildProjectIndexNumber({});
+
+    assert.equal(index, "000-00-000-0-0");
+  });
+
+  it("blends provided parts with zero placeholders", () => {
+    const harness = new IndexHarness();
+
+    const index = harness.buildProjectIndexNumber({
+      townships: ["T4N"],
+      sections: ["7"],
+      platPageStart: "3",
+      platPageEnd: "9",
+    });
+
+    assert.equal(index, "400-07-000-0-3-9");
+  });
 });

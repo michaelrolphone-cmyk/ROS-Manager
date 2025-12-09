@@ -122,6 +122,17 @@ body {
         margin: 4px 0;
         font-size: 1.8rem;
         letter-spacing: -0.01em;
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .springboard-index-badge {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: rgba(226, 232, 240, 0.65);
+        display: none;
       }
 
       .springboard-hero-subtitle {

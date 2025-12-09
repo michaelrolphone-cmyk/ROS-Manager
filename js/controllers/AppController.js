@@ -286,6 +286,8 @@ class AppControllerBase {
       springboardProjectTitle: document.getElementById(
         "springboardProjectTitle"
       ),
+      springboardProjectName: document.getElementById("springboardProjectName"),
+      springboardProjectIndex: document.getElementById("springboardProjectIndex"),
       springboardProjectDescription: document.getElementById(
         "springboardProjectDescription"
       ),
