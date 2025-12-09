@@ -1,6 +1,9 @@
 import EquipmentLog from "../../models/EquipmentLog.js";
 import MiniAppController from "./MiniAppController.js";
-import { buildMapboxStaticUrl } from "../../services/MapboxService.js";
+import {
+  buildMapboxStaticUrl,
+  getMakiIconUrl,
+} from "../../services/MapboxService.js";
 
 export default class EquipmentAppController extends MiniAppController {
   constructor(options = {}) {
@@ -11,6 +14,8 @@ export default class EquipmentAppController extends MiniAppController {
     this.getActiveTeamMembers = options.getActiveTeamMembers || (() => []);
     this.getEquipmentSettings = options.getEquipmentSettings || (() => []);
     this.saveProjects = options.saveProjects || (() => {});
+    this.getProjectMapMarkers =
+      options.getProjectMapMarkers || (() => []);
     this.escapeHtml = options.escapeHtml || ((text) => text ?? "");
     this.onEquipmentLogsChanged =
       options.onEquipmentLogsChanged || (() => {});
@@ -24,11 +29,15 @@ export default class EquipmentAppController extends MiniAppController {
 
   buildStaticMapUrl(lat, lon, accuracy) {
     if (typeof lat !== "number" || typeof lon !== "number") return null;
+    const markers = this.getProjectMapMarkers(this.currentProject) || [];
+    markers.push({ lat, lon, iconUrl: getMakiIconUrl("post-jp"), size: "m" });
     return buildMapboxStaticUrl(lat, lon, {
       zoom: 19,
       width: 320,
       height: 220,
       markerColor: "3b82f6",
+      centerMarker: false,
+      markers,
     });
   }
 

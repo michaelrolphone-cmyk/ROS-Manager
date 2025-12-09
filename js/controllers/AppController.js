@@ -150,6 +150,10 @@ class AppControllerBase {
       onTargetChanged: (state) => this.persistNavigationTarget(state),
       getDeviceId: () => this.deviceId,
       getPeerLocations: () => this.getPeerLocations(),
+      getProjectMapMarkers: () =>
+        this.currentProjectId
+          ? this.buildProjectMapMarkers(this.projects[this.currentProjectId])
+          : [],
       onLocationUpdate: (coords) => this.recordLiveLocation(coords),
     });
     this.levelingController = new LevelingController({

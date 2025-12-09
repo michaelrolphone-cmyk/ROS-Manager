@@ -10,6 +10,7 @@ export default class NavigationController {
     onTargetChanged,
     getDeviceId,
     getPeerLocations,
+    getProjectMapMarkers,
     onLocationUpdate,
   }) {
     this.elements = elements;
@@ -19,6 +20,7 @@ export default class NavigationController {
     this.onTargetChanged = onTargetChanged;
     this.getDeviceId = getDeviceId;
     this.getPeerLocations = getPeerLocations;
+    this.getProjectMapMarkers = getProjectMapMarkers || (() => []);
     this.onLocationUpdate = onLocationUpdate;
 
     this.deviceHeading = null;
@@ -418,11 +420,13 @@ export default class NavigationController {
       return;
     }
 
+    const markers = this.getProjectMapMarkers(project);
     const src = buildMapboxStaticUrl(target.lat, target.lon, {
       zoom: 19,
       width: 800,
       height: 320,
       markerColor: "ef4444",
+      markers,
     });
 
     mapPanel.classList.remove("hidden");
