@@ -1181,8 +1181,6 @@ const ProjectsRecordsMixin = (Base) =>
         trsParts.length ? trsParts.join(" • ") : "—"
       );
 
-        setValue(this.elements.springboardIndexValue, indexNumber || "—");
-
       const { warning, lastExport } = this.getExportAlert(project);
       setValue(
         this.elements.springboardLastExportValue,
@@ -1193,6 +1191,10 @@ const ProjectsRecordsMixin = (Base) =>
         this.elements.springboardExportWarning.style.display = warning
           ? "block"
           : "none";
+      }
+      if (this.elements.exportStatusHealthyMessage) {
+        this.elements.exportStatusHealthyMessage.style.display =
+          !warning && hasProject ? "block" : "none";
       }
       if (this.elements.springboardExportNowButton) {
         this.elements.springboardExportNowButton.style.display =

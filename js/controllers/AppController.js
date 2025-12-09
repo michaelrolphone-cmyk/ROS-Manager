@@ -311,12 +311,14 @@ class AppControllerBase {
       springboardMapButton: document.getElementById("springboardMapButton"),
       springboardEmailButton: document.getElementById("springboardEmailButton"),
       springboardTrsValue: document.getElementById("springboardTrsValue"),
-      springboardIndexValue: document.getElementById("springboardIndexValue"),
       springboardLastExportValue: document.getElementById(
         "springboardLastExportValue"
       ),
       springboardExportWarning: document.getElementById(
         "springboardExportWarning"
+      ),
+      exportStatusHealthyMessage: document.getElementById(
+        "exportStatusHealthyMessage"
       ),
       springboardExportNowButton: document.getElementById(
         "springboardExportNowButton"
