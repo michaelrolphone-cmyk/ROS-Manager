@@ -431,7 +431,10 @@ const EquipmentSetupMixin = (Base) =>
     }
 
     escapeHtml(str) {
-      return (str || "")
+      const safeStr =
+        str === null || str === undefined ? "" : typeof str === "string" ? str : String(str);
+
+      return safeStr
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
