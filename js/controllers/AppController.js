@@ -340,6 +340,7 @@ class AppControllerBase {
       bsAzimuth: document.getElementById("bsAzimuth"),
       basis: document.getElementById("basis"),
       firstDist: document.getElementById("firstDist"),
+      expectedToClose: document.getElementById("expectedToClose"),
       closurePointNumber: document.getElementById("closurePointNumber"),
       callsTableBody: document.querySelector("#callsTable tbody"),
       traverseCanvas: document.getElementById("traverseCanvas"),
@@ -914,11 +915,20 @@ class AppControllerBase {
       el?.addEventListener("input", () => this.saveCurrentRecord());
     });
 
-    [this.elements.basis, this.elements.firstDist, this.elements.closurePointNumber].forEach((el) => {
+    [
+      this.elements.basis,
+      this.elements.firstDist,
+      this.elements.closurePointNumber,
+    ].forEach((el) => {
       el?.addEventListener("input", () => {
         this.saveCurrentRecord();
         this.generateCommands();
       });
+    });
+
+    this.elements.expectedToClose?.addEventListener("change", () => {
+      this.saveCurrentRecord();
+      this.renderClosureSummary();
     });
 
     this.elements.recordStatus?.addEventListener("change", () =>

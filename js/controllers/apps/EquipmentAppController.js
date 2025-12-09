@@ -25,7 +25,7 @@ export default class EquipmentAppController extends MiniAppController {
   buildStaticMapUrl(lat, lon, accuracy) {
     if (typeof lat !== "number" || typeof lon !== "number") return null;
     return buildMapboxStaticUrl(lat, lon, {
-      zoom: 22,
+      zoom: 19,
       width: 320,
       height: 220,
       markerColor: "3b82f6",

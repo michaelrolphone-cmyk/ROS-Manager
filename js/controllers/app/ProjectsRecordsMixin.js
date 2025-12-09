@@ -350,6 +350,7 @@ const ProjectsRecordsMixin = (Base) =>
       Object.entries(records).forEach(([id, record], idx) => {
         const geometry = this.computeTraversePointsForRecord(projectId, id);
         const mainLine = geometry?.polylines?.[0] || geometry?.points || [];
+        const expectsClosure = record.expectedToClose !== false;
         let totalLength = 0;
         let linearMisclosure = null;
         let angularMisclosure = null;
@@ -407,7 +408,13 @@ const ProjectsRecordsMixin = (Base) =>
             ? `${misclosureBearing.quadrant}-${misclosureBearing.formatted}`
             : this.formatDegrees(this.normalizeAzimuth(misclosureAzimuth));
 
-          if ((angularPass === false || linearPass === false) && qcSettings) {
+          if (!Number.isFinite(linearMisclosure)) {
+            status = "warn";
+            message = "Need numeric distances to compute closure.";
+          } else if (!expectsClosure) {
+            status = "warn";
+            message = "Open traverse; closure not evaluated.";
+          } else if ((angularPass === false || linearPass === false) && qcSettings) {
             status = "fail";
             message = "Fails tolerance";
             results.failedTraverseIds.push(id);
@@ -417,11 +424,6 @@ const ProjectsRecordsMixin = (Base) =>
           } else {
             status = "pass";
             message = "Passes tolerance";
-          }
-
-          if (!Number.isFinite(linearMisclosure)) {
-            status = "warn";
-            message = "Need numeric distances to compute closure.";
           }
         }
 
@@ -956,6 +958,8 @@ const ProjectsRecordsMixin = (Base) =>
       this.elements.firstDist.value = record.firstDist || "";
       if (this.elements.closurePointNumber)
         this.elements.closurePointNumber.value = record.closurePointNumber || "";
+      if (this.elements.expectedToClose)
+        this.elements.expectedToClose.checked = record.expectedToClose !== false;
       this.elements.editor.style.display = "block";
 
       const tbody = this.elements.callsTableBody;
@@ -1334,7 +1338,7 @@ const ProjectsRecordsMixin = (Base) =>
       }
     }
 
-    buildTileMapPreview(lat, lon, zoom = 22) {
+    buildTileMapPreview(lat, lon, zoom = 19) {
       const parsedLat = parseFloat(lat);
       const parsedLon = parseFloat(lon);
       if (!Number.isFinite(parsedLat) || !Number.isFinite(parsedLon)) return null;
@@ -1367,7 +1371,7 @@ const ProjectsRecordsMixin = (Base) =>
         const data = await response.json();
         if (Array.isArray(data?.features) && data.features.length) {
           const [lon, lat] = data.features[0]?.center || [];
-          const mapUrl = this.buildTileMapPreview(lat, lon, 22);
+          const mapUrl = this.buildTileMapPreview(lat, lon, 19);
           this.geocodeCache[normalized] = mapUrl;
           return mapUrl;
         }
