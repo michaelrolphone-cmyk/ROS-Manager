@@ -1759,7 +1759,7 @@ body {
 
       .vicinity-map-panel {
         display: grid;
-        grid-template-columns: minmax(260px, 1fr) 2fr;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
         gap: 16px;
         align-items: stretch;
       }
