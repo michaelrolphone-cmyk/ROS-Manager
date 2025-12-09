@@ -456,6 +456,13 @@ describe("MapboxService", () => {
     assert.ok(url.includes(getMapboxToken()));
   });
 
+  it("defaults static map zoom to 19", () => {
+    const url = buildMapboxStaticUrl(40.7128, -74.006);
+
+    assert.ok(url.includes(",19/"));
+    assert.ok(url.includes("800x600"));
+  });
+
   it("returns null when coordinates are invalid", () => {
     assert.equal(buildMapboxStaticUrl(null, -116.2), null);
     assert.equal(buildMapboxStaticUrl(43.6, "bad"), null);

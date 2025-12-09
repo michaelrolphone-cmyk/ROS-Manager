@@ -592,6 +592,7 @@ const EquipmentSetupMixin = (Base) =>
       record.firstDist = this.elements.firstDist.value.trim();
       record.closurePointNumber =
         this.elements.closurePointNumber?.value?.trim() || "";
+      record.expectedToClose = this.elements.expectedToClose?.checked !== false;
       record.status = this.elements.recordStatus?.value || "Draft";
 
       record.calls = this.serializeCallsFromContainer(this.elements.callsTableBody);

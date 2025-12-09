@@ -419,7 +419,7 @@ export default class NavigationController {
     }
 
     const src = buildMapboxStaticUrl(target.lat, target.lon, {
-      zoom: 22,
+      zoom: 19,
       width: 800,
       height: 320,
       markerColor: "ef4444",

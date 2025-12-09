@@ -12,7 +12,7 @@ const clampDimension = (value, fallback) => {
 export const buildMapboxStaticUrl = (
   lat,
   lon,
-  { zoom = 22, width = 800, height = 600, markerColor = DEFAULT_MARKER_COLOR } = {}
+  { zoom = 19, width = 800, height = 600, markerColor = DEFAULT_MARKER_COLOR } = {}
 ) => {
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
 
