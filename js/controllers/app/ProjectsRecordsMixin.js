@@ -16,7 +16,11 @@ import SpringboardAppController from "../apps/SpringboardAppController.js";
 import TraverseAppController from "../apps/TraverseAppController.js";
 import VicinityMapAppController from "../apps/VicinityMapAppController.js";
 import StakeoutAppController from "../apps/StakeoutAppController.js";
-import { buildMapboxStaticUrl, getMapboxToken } from "../../services/MapboxService.js";
+import {
+  buildMapboxStaticUrl,
+  getMakiIconUrl,
+  getMapboxToken,
+} from "../../services/MapboxService.js";
 
 const ProjectsRecordsMixin = (Base) =>
   class extends Base {
@@ -1258,7 +1262,10 @@ const ProjectsRecordsMixin = (Base) =>
       this.pendingMapRequestId = requestId;
 
       try {
-        const mapUrl = await this.resolveAddressToMap(address);
+        const mapUrl = await this.resolveAddressToMap(address, {
+          zoom: 16,
+          markers: this.buildProjectMapMarkers(project),
+        });
         if (this.pendingMapRequestId !== requestId) return;
         this.currentMapUrl = mapUrl;
         header.style.setProperty(
@@ -1314,7 +1321,9 @@ const ProjectsRecordsMixin = (Base) =>
       this.vicinityMapRequestId = requestId;
 
       try {
-        const mapUrl = await this.resolveAddressToMap(address);
+        const mapUrl = await this.resolveAddressToMap(address, {
+          markers: this.buildProjectMapMarkers(project),
+        });
         if (this.vicinityMapRequestId !== requestId) return;
 
         if (mapUrl) {
@@ -1338,23 +1347,28 @@ const ProjectsRecordsMixin = (Base) =>
       }
     }
 
-    buildTileMapPreview(lat, lon, zoom = 19) {
+    buildTileMapPreview(lat, lon, options = {}) {
       const parsedLat = parseFloat(lat);
       const parsedLon = parseFloat(lon);
       if (!Number.isFinite(parsedLat) || !Number.isFinite(parsedLon)) return null;
+
+      const { zoom = 19, markers = [] } = options || {};
 
       return buildMapboxStaticUrl(parsedLat, parsedLon, {
         zoom,
         width: 1200,
         height: 600,
         markerColor: "ef4444",
+        markers,
       });
     }
 
-    async resolveAddressToMap(address) {
+    async resolveAddressToMap(address, options = {}) {
       const normalized = address.trim().toLowerCase();
       if (this.geocodeCache[normalized] !== undefined) {
-        return this.geocodeCache[normalized];
+        const cached = this.geocodeCache[normalized];
+        if (!cached) return null;
+        return this.buildTileMapPreview(cached.lat, cached.lon, options);
       }
 
       if (typeof fetch !== "function") {
@@ -1371,9 +1385,8 @@ const ProjectsRecordsMixin = (Base) =>
         const data = await response.json();
         if (Array.isArray(data?.features) && data.features.length) {
           const [lon, lat] = data.features[0]?.center || [];
-          const mapUrl = this.buildTileMapPreview(lat, lon, 19);
-          this.geocodeCache[normalized] = mapUrl;
-          return mapUrl;
+          this.geocodeCache[normalized] = { lat, lon };
+          return this.buildTileMapPreview(lat, lon, options);
         }
       } catch (err) {
         console.warn("Geocode lookup failed", err);
@@ -1381,6 +1394,53 @@ const ProjectsRecordsMixin = (Base) =>
 
       this.geocodeCache[normalized] = null;
       return null;
+    }
+
+    buildProjectMapMarkers(project) {
+      const markers = [];
+      if (!project) return markers;
+
+      const addMarker = (marker) => {
+        if (marker && Number.isFinite(marker.lat) && Number.isFinite(marker.lon)) {
+          markers.push(marker);
+        }
+      };
+
+      (project.localization?.points || []).forEach((pt) => {
+        const lat = parseFloat(pt.lat);
+        const lon = parseFloat(pt.lon);
+        addMarker({ lat, lon, color: "2563eb", size: "s" });
+      });
+
+      (project.navigationBookmarks || []).forEach((bm) => {
+        const lat = parseFloat(bm.latitude);
+        const lon = parseFloat(bm.longitude);
+        addMarker({ lat, lon, color: "f97316", symbol: "triangle", size: "m" });
+      });
+
+      (project.equipmentLogs || []).forEach((log) => {
+        const lat = parseFloat(log?.location?.lat);
+        const lon = parseFloat(log?.location?.lon);
+        addMarker({
+          lat,
+          lon,
+          iconUrl: getMakiIconUrl("post-jp"),
+          size: "m",
+        });
+      });
+
+      (this.getPeerLocations?.() || []).forEach((loc) => {
+        const lat = parseFloat(loc.lat);
+        const lon = parseFloat(loc.lon);
+        addMarker({
+          lat,
+          lon,
+          iconUrl: getMakiIconUrl("person"),
+          size: "m",
+        });
+      });
+
+      return markers;
     }
 
     escapeHtml(str = "") {
@@ -1619,6 +1679,8 @@ const ProjectsRecordsMixin = (Base) =>
           getActiveTeamMembers: () => this.getActiveTeamMembers(),
           getEquipmentSettings: () => this.globalSettings.equipment || [],
           saveProjects: () => this.saveProjects(),
+          getProjectMapMarkers: (project) =>
+            this.buildProjectMapMarkers(project || getCurrentProject()),
           escapeHtml: (text) => this.escapeHtml(text),
           onEquipmentLogsChanged: () =>
             this.navigationController?.onEquipmentLogsChanged(),

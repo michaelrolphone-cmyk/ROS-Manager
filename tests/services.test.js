@@ -6,7 +6,11 @@ import GlobalSettingsService from "../js/services/GlobalSettingsService.js";
 import VersioningService from "../js/services/VersioningService.js";
 import CornerEvidenceService from "../js/services/CornerEvidenceService.js";
 import SyncService from "../js/services/SyncService.js";
-import { buildMapboxStaticUrl, getMapboxToken } from "../js/services/MapboxService.js";
+import {
+  buildMapboxStaticUrl,
+  getMapboxToken,
+  getMakiIconUrl,
+} from "../js/services/MapboxService.js";
 import AuditTrailService from "../js/services/AuditTrailService.js";
 import ExportImportMixin from "../js/controllers/app/ExportImportMixin.js";
 import { buildAnnotatedPhotoHtml } from "../js/services/PhotoAnnotationRenderer.js";
@@ -461,6 +465,19 @@ describe("MapboxService", () => {
 
     assert.ok(url.includes(",19/"));
     assert.ok(url.includes("800x600"));
+  });
+
+  it("includes multiple overlays when markers are provided", () => {
+    const url = buildMapboxStaticUrl(40.1, -75.2, {
+      centerMarker: false,
+      markers: [
+        { lat: 40.1, lon: -75.21, symbol: "triangle", color: "ff8800", size: "m" },
+        { lat: 40.2, lon: -75.22, iconUrl: getMakiIconUrl("post-jp"), size: "m" },
+      ],
+    });
+
+    assert.ok(url.includes("pin-m-triangle+ff8800(-75.210000,40.100000)"));
+    assert.ok(url.includes(encodeURIComponent("post-jp")));
   });
 
   it("returns null when coordinates are invalid", () => {
