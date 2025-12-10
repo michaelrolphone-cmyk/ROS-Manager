@@ -594,18 +594,27 @@ const EvidenceLoggerMixin = (Base) =>
 
   updateEvidenceSaveState() {
     if (!this.elements.saveEvidenceButton) return;
-    const recordId = this.elements.evidenceRecordSelect?.value || "";
+    const hasProject = !!this.currentProjectId;
+    const status = this.elements.evidenceStatus?.value || "";
     const type = this.elements.evidenceType?.value || "";
     const cornerType = this.elements.evidenceCornerType?.value || "";
     const cornerStatus = this.elements.evidenceCornerStatus?.value || "";
-    const status = this.elements.evidenceStatus?.value || "";
     const condition = this.elements.evidenceCondition?.value || "";
     const isFinal = (status || "").toLowerCase() === "final";
-    const hasRequiredFinalFields =
-      !!type && !!cornerType && !!cornerStatus && !!condition;
-    const canSave =
-      !!this.currentProjectId && (!isFinal || hasRequiredFinalFields);
-    this.elements.saveEvidenceButton.disabled = !canSave;
+    const missing = [];
+    if (!type) missing.push("type");
+    if (!cornerType) missing.push("corner type");
+    if (!cornerStatus) missing.push("corner status");
+    if (!condition) missing.push("condition");
+
+    this.elements.saveEvidenceButton.disabled = !hasProject;
+    if (isFinal && missing.length && this.elements.saveEvidenceButton) {
+      this.elements.saveEvidenceButton.title = `Missing ${missing.join(
+        ", "
+      )} – will stay in Draft QC until completed.`;
+    } else if (this.elements.saveEvidenceButton) {
+      this.elements.saveEvidenceButton.title = "";
+    }
   }
 
   saveEvidenceEntry() {

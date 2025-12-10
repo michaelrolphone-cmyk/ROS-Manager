@@ -57,12 +57,21 @@ export default class QcAppController extends MiniAppController {
           (t) => t.status === "pass"
         ).length;
         const levelPass = results.levels.filter((l) => l.status === "pass").length;
+        const evidenceTotal = results.evidenceSummary?.total ?? 0;
+        const evidenceReady = results.evidenceSummary?.readyCount ?? 0;
+        const evidenceIncomplete = results.evidenceSummary?.incompleteCount ?? 0;
         summaryEl.innerHTML = `
           <div class="summary-chip">Traverses passing: ${traversePass} / ${
           results.traverses.length
         }</div>
           <div class="summary-chip">Level loops passing: ${levelPass} / ${
           results.levels.length
+        }</div>
+          <div class="summary-chip">Evidence ready: ${evidenceReady} / ${
+          evidenceTotal
+        }</div>
+          <div class="summary-chip">Draft or incomplete evidence: ${
+          evidenceIncomplete
         }</div>
           <div class="summary-chip">Failed items: ${
           results.failedTraverseIds.length +
