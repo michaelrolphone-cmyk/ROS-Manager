@@ -342,6 +342,8 @@ const ProjectsRecordsMixin = (Base) =>
       const results = {
         traverses: [],
         levels: [],
+        evidence: [],
+        evidenceSummary: { total: 0, readyCount: 0, incompleteCount: 0 },
         overallClass: "",
         overallLabel: "No checks yet",
         failedTraverseIds: [],
@@ -351,6 +353,9 @@ const ProjectsRecordsMixin = (Base) =>
 
       const qcSettings = this.getProjectQcSettings(project);
       const records = project.records || {};
+      const evidence = this.cornerEvidenceService?.getProjectEvidence
+        ? this.cornerEvidenceService.getProjectEvidence(projectId)
+        : [];
       Object.entries(records).forEach(([id, record], idx) => {
         const geometry = this.computeTraversePointsForRecord(projectId, id);
         const mainLine = geometry?.polylines?.[0] || geometry?.points || [];
@@ -483,13 +488,46 @@ const ProjectsRecordsMixin = (Base) =>
         });
       });
 
-      const hasChecks = results.traverses.length > 0 || results.levels.length > 0;
+      const evidenceQuality = (evidence || []).map((ev) => {
+        const missing = [];
+        if (!ev.type) missing.push("type");
+        if (!ev.cornerType) missing.push("corner type");
+        if (!ev.cornerStatus) missing.push("corner status");
+        if (!ev.condition) missing.push("condition");
+        const statusLabel = ev.status || "Draft";
+        const isDraft = (statusLabel || "").toLowerCase().includes("draft");
+        const isComplete = !isDraft && missing.length === 0;
+        return {
+          id: ev.id,
+          title: this.buildEvidenceTitle?.(ev) || ev.title || "Untitled evidence",
+          status: statusLabel,
+          missing,
+          isComplete,
+          recordName: ev.recordName || "",
+          pointLabel: ev.pointLabel || "",
+          createdAt: ev.createdAt,
+        };
+      });
+
+      results.evidence = evidenceQuality;
+      const incompleteCount = evidenceQuality.filter((ev) => !ev.isComplete).length;
+      results.evidenceSummary = {
+        total: evidenceQuality.length,
+        readyCount: evidenceQuality.length - incompleteCount,
+        incompleteCount,
+      };
+
+      const hasChecks =
+        results.traverses.length > 0 ||
+        results.levels.length > 0 ||
+        results.evidenceSummary.total > 0;
       const hasFails =
         results.traverses.some((t) => t.status === "fail") ||
         results.levels.some((l) => l.status === "fail");
       const hasWarnings =
         results.traverses.some((t) => t.status === "warn") ||
-        results.levels.some((l) => l.status === "warn");
+        results.levels.some((l) => l.status === "warn") ||
+        results.evidenceSummary.incompleteCount > 0;
 
       if (!hasChecks) {
         results.overallClass = "";
