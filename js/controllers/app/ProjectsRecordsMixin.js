@@ -1643,6 +1643,8 @@ const ProjectsRecordsMixin = (Base) =>
             this.researchDocumentService.getProjectDocuments(projectId),
           addResearchDocument: (doc) =>
             this.researchDocumentService.addEntry(doc),
+          updateResearchDocument: (doc) =>
+            this.researchDocumentService.updateEntry(doc),
           buildExportMetadata: (status) => this.buildExportMetadata(status),
           getExportStatusLabel: (status) => this.getExportStatusLabel(status),
           downloadText: (text, name) => this.downloadText(text, name),
