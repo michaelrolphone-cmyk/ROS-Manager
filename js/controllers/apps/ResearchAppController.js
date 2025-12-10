@@ -106,6 +106,18 @@ export default class ResearchAppController extends MiniAppController {
       !!this.getCurrentProjectId() &&
       required.every((el) => el && el.value.trim().length > 0);
     this.elements.saveResearchButton.disabled = !canSave;
+
+    if (this.elements.researchFormStatus) {
+      if (!this.getCurrentProjectId()) {
+        this.elements.researchFormStatus.textContent =
+          "Select or create a project to save research entries.";
+      } else if (!canSave) {
+        this.elements.researchFormStatus.textContent =
+          "Fill in the required research details (type, jurisdiction, instrument, book/page, township, range, sections, classification, date, reviewer).";
+      } else {
+        this.elements.researchFormStatus.textContent = "";
+      }
+    }
   }
 
   saveResearchDocument() {
@@ -141,6 +153,11 @@ export default class ResearchAppController extends MiniAppController {
     this.addResearchDocument(doc);
     this.resetResearchForm();
     this.renderResearchList();
+
+    if (this.elements.researchFormStatus) {
+      this.elements.researchFormStatus.textContent =
+        "Research entry saved.";
+    }
   }
 
   resetResearchForm() {
