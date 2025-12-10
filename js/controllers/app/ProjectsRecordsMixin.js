@@ -336,6 +336,28 @@ const ProjectsRecordsMixin = (Base) =>
       }
     }
 
+    getRequiredResearchFields() {
+      return [
+        { key: "type", label: "Document type" },
+        { key: "jurisdiction", label: "Jurisdiction" },
+        { key: "instrumentNumber", label: "Instrument number" },
+        { key: "bookPage", label: "Book/page" },
+        { key: "documentNumber", label: "Document number" },
+        { key: "township", label: "Township" },
+        { key: "range", label: "Range" },
+        { key: "sections", label: "Section(s)" },
+        { key: "classification", label: "Classification" },
+        { key: "dateReviewed", label: "Date reviewed" },
+        { key: "reviewer", label: "Reviewer" },
+      ];
+    }
+
+    getMissingResearchFields(values = {}) {
+      return this.getRequiredResearchFields()
+        .filter(({ key }) => !values[key]?.toString().trim())
+        .map(({ label }) => label);
+    }
+
     computeQualityResults(projectId = this.currentProjectId) {
       const project = projectId ? this.projects[projectId] : null;
 
@@ -343,7 +365,9 @@ const ProjectsRecordsMixin = (Base) =>
         traverses: [],
         levels: [],
         evidence: [],
+        research: [],
         evidenceSummary: { total: 0, readyCount: 0, incompleteCount: 0 },
+        researchSummary: { total: 0, readyCount: 0, incompleteCount: 0 },
         overallClass: "",
         overallLabel: "No checks yet",
         failedTraverseIds: [],
@@ -355,6 +379,9 @@ const ProjectsRecordsMixin = (Base) =>
       const records = project.records || {};
       const evidence = this.cornerEvidenceService?.getProjectEvidence
         ? this.cornerEvidenceService.getProjectEvidence(projectId)
+        : [];
+      const researchDocs = this.researchDocumentService?.getProjectDocuments
+        ? this.researchDocumentService.getProjectDocuments(projectId)
         : [];
       Object.entries(records).forEach(([id, record], idx) => {
         const geometry = this.computeTraversePointsForRecord(projectId, id);
@@ -517,17 +544,46 @@ const ProjectsRecordsMixin = (Base) =>
         incompleteCount,
       };
 
+      const researchQuality = (researchDocs || []).map((doc) => {
+        const missing = this.getMissingResearchFields(doc);
+        const statusLabel = doc.status || "Draft";
+        const isDraft = (statusLabel || "").toLowerCase().includes("draft");
+        const isComplete = missing.length === 0 && !isDraft;
+        return {
+          id: doc.id,
+          title: doc.type || "Research document",
+          status: statusLabel,
+          missing,
+          isComplete,
+          reviewer: doc.reviewer || "",
+          dateReviewed: doc.dateReviewed || "",
+          jurisdiction: doc.jurisdiction || "",
+          classification: doc.classification || "",
+        };
+      });
+
+      results.research = researchQuality;
+      const researchIncomplete = researchQuality.filter((doc) => !doc.isComplete)
+        .length;
+      results.researchSummary = {
+        total: researchQuality.length,
+        readyCount: researchQuality.length - researchIncomplete,
+        incompleteCount: researchIncomplete,
+      };
+
       const hasChecks =
         results.traverses.length > 0 ||
         results.levels.length > 0 ||
-        results.evidenceSummary.total > 0;
+        results.evidenceSummary.total > 0 ||
+        results.researchSummary.total > 0;
       const hasFails =
         results.traverses.some((t) => t.status === "fail") ||
         results.levels.some((l) => l.status === "fail");
       const hasWarnings =
         results.traverses.some((t) => t.status === "warn") ||
         results.levels.some((l) => l.status === "warn") ||
-        results.evidenceSummary.incompleteCount > 0;
+        results.evidenceSummary.incompleteCount > 0 ||
+        results.researchSummary.incompleteCount > 0;
 
       if (!hasChecks) {
         results.overallClass = "";
@@ -544,6 +600,22 @@ const ProjectsRecordsMixin = (Base) =>
       }
 
       return results;
+    }
+
+    loadEvidenceEntry(entryId) {
+      if (!this.currentProjectId || !entryId) return;
+      const entries = this.cornerEvidenceService?.getProjectEvidence?.(
+        this.currentProjectId
+      );
+      const entry = (entries || []).find((ev) => ev.id === entryId);
+      if (entry && typeof this.startEditingEvidence === "function") {
+        this.startEditingEvidence(entry);
+      }
+    }
+
+    loadResearchDocument(docId) {
+      if (!this.currentProjectId || !docId) return;
+      this.appControllers?.researchSection?.startEditingResearch?.(docId);
     }
 
     renderClosureSummary(recordId = this.currentRecordId) {
@@ -1581,6 +1653,8 @@ const ProjectsRecordsMixin = (Base) =>
             qcSummary: this.elements.qcSummary,
             qcTraverseList: this.elements.qcTraverseList,
             qcLevelList: this.elements.qcLevelList,
+            qcEvidenceList: this.elements.qcEvidenceList,
+            qcResearchList: this.elements.qcResearchList,
           },
           getCurrentProjectId: () => this.currentProjectId,
           computeQualityResults: () => this.computeQualityResults(),
@@ -1591,6 +1665,8 @@ const ProjectsRecordsMixin = (Base) =>
           switchTab: (target) => this.switchTab(target),
           loadRecord: (id) => this.loadRecord(id),
           getLevelingController: () => this.levelingController,
+          loadEvidenceEntry: (id) => this.loadEvidenceEntry(id),
+          loadResearchDocument: (id) => this.loadResearchDocument(id),
           onResultsComputed: (results) => {
             this.latestQcResults = results;
           },

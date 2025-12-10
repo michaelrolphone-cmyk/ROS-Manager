@@ -29,6 +29,12 @@ export default class QcAppController extends MiniAppController {
     this.elements.qcLevelList?.addEventListener("click", (evt) =>
       this.handleQcListClick(evt)
     );
+    this.elements.qcEvidenceList?.addEventListener("click", (evt) =>
+      this.handleQcListClick(evt)
+    );
+    this.elements.qcResearchList?.addEventListener("click", (evt) =>
+      this.handleQcListClick(evt)
+    );
   }
 
   renderQualityDashboard() {
@@ -60,6 +66,9 @@ export default class QcAppController extends MiniAppController {
         const evidenceTotal = results.evidenceSummary?.total ?? 0;
         const evidenceReady = results.evidenceSummary?.readyCount ?? 0;
         const evidenceIncomplete = results.evidenceSummary?.incompleteCount ?? 0;
+        const researchTotal = results.researchSummary?.total ?? 0;
+        const researchReady = results.researchSummary?.readyCount ?? 0;
+        const researchIncomplete = results.researchSummary?.incompleteCount ?? 0;
         summaryEl.innerHTML = `
           <div class="summary-chip">Traverses passing: ${traversePass} / ${
           results.traverses.length
@@ -73,6 +82,12 @@ export default class QcAppController extends MiniAppController {
           <div class="summary-chip">Draft or incomplete evidence: ${
           evidenceIncomplete
         }</div>
+          <div class="summary-chip">Research ready: ${researchReady} / ${
+          researchTotal
+        }</div>
+          <div class="summary-chip">Draft or incomplete research: ${
+          researchIncomplete
+        }</div>
           <div class="summary-chip">Failed items: ${
           results.failedTraverseIds.length +
           results.levels.filter((l) => l.status === "fail").length
@@ -82,6 +97,8 @@ export default class QcAppController extends MiniAppController {
 
     this.renderTraverseQcList(results);
     this.renderLevelQcList(results);
+    this.renderEvidenceQcList(results);
+    this.renderResearchQcList(results);
   }
 
   renderTraverseQcList(results) {
@@ -212,6 +229,138 @@ export default class QcAppController extends MiniAppController {
     });
   }
 
+  renderEvidenceQcList(results) {
+    const list = this.elements.qcEvidenceList;
+    if (!list) return;
+    list.innerHTML = "";
+
+    const currentProjectId =
+      typeof this.getCurrentProjectId === "function"
+        ? this.getCurrentProjectId()
+        : null;
+
+    if (!currentProjectId) {
+      list.textContent = "Select a project to review evidence.";
+      return;
+    }
+    if (!results.evidence.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.textContent = "Log evidence to see QC completion status.";
+      list.appendChild(empty);
+      return;
+    }
+
+    results.evidence
+      .slice()
+      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+      .forEach((item) => {
+        const row = document.createElement("div");
+        row.className = "qc-item";
+        row.classList.add(item.isComplete ? "qc-pass" : "qc-warning");
+
+        const header = document.createElement("div");
+        header.className = "qc-item-header";
+        const name = document.createElement("strong");
+        name.textContent = item.title;
+        const chip = document.createElement("span");
+        chip.className = "status-chip";
+        chip.textContent = `Status: ${item.status}`;
+        header.append(name, chip);
+
+        const meta = document.createElement("div");
+        meta.className = "qc-meta";
+        const completionLabel = item.isComplete ? "Complete" : "Draft";
+        const missing = item.missing?.length
+          ? `Missing ${item.missing.join(", ")}`
+          : "All recommended fields captured";
+        const locationLabel =
+          item.pointLabel || item.recordName
+            ? `${item.pointLabel || item.recordName}`
+            : "";
+        meta.textContent = `${completionLabel} · ${missing}${
+          locationLabel ? ` · ${locationLabel}` : ""
+        }`;
+
+        const actions = document.createElement("div");
+        actions.className = "qc-item-actions";
+        const open = document.createElement("button");
+        open.type = "button";
+        open.textContent = "Open evidence";
+        open.dataset.action = "open-evidence";
+        open.dataset.evidenceId = item.id;
+        actions.appendChild(open);
+
+        row.append(header, meta, actions);
+        list.appendChild(row);
+      });
+  }
+
+  renderResearchQcList(results) {
+    const list = this.elements.qcResearchList;
+    if (!list) return;
+    list.innerHTML = "";
+
+    const currentProjectId =
+      typeof this.getCurrentProjectId === "function"
+        ? this.getCurrentProjectId()
+        : null;
+
+    if (!currentProjectId) {
+      list.textContent = "Select a project to review research.";
+      return;
+    }
+    if (!results.research.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.textContent = "Add research documents to track QC completion.";
+      list.appendChild(empty);
+      return;
+    }
+
+    results.research.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "qc-item";
+      row.classList.add(item.isComplete ? "qc-pass" : "qc-warning");
+
+      const header = document.createElement("div");
+      header.className = "qc-item-header";
+      const name = document.createElement("strong");
+      name.textContent = item.title;
+      const chip = document.createElement("span");
+      chip.className = "status-chip";
+      chip.textContent = `Status: ${item.status}`;
+      header.append(name, chip);
+
+      const meta = document.createElement("div");
+      meta.className = "qc-meta";
+      const completionLabel = item.isComplete ? "Complete" : "Draft";
+      const missing = item.missing?.length
+        ? `Missing ${item.missing.join(", ")}`
+        : "All recommended fields captured";
+      const reviewerLabel = item.reviewer || item.classification || item.jurisdiction
+        ? [item.reviewer, item.dateReviewed, item.classification]
+            .filter(Boolean)
+            .join(" · ") || item.jurisdiction
+        : "";
+      meta.textContent = `${completionLabel} · ${missing}${
+        reviewerLabel ? ` · ${reviewerLabel}` : ""
+      }`;
+
+      const actions = document.createElement("div");
+      actions.className = "qc-item-actions";
+      const open = document.createElement("button");
+      open.type = "button";
+      open.textContent = "Open research";
+      open.dataset.action = "open-research";
+      open.dataset.researchId = item.id;
+      actions.appendChild(open);
+
+      row.append(header, meta, actions);
+      list.appendChild(row);
+    });
+  }
+
   handleQcListClick(evt) {
     const traverseBtn = evt.target.closest("button[data-action='open-traverse']");
     if (traverseBtn && traverseBtn.dataset.recordId) {
@@ -231,6 +380,23 @@ export default class QcAppController extends MiniAppController {
         levelingController.currentLevelRunId = levelBtn.dataset.levelId;
         levelingController.renderLevelRuns();
       }
+    }
+
+    const evidenceBtn = evt.target.closest(
+      "button[data-action='open-evidence']"
+    );
+    if (evidenceBtn && evidenceBtn.dataset.evidenceId) {
+      this.switchTab?.("evidenceSection");
+      this.loadEvidenceEntry?.(evidenceBtn.dataset.evidenceId);
+      return;
+    }
+
+    const researchBtn = evt.target.closest(
+      "button[data-action='open-research']"
+    );
+    if (researchBtn && researchBtn.dataset.researchId) {
+      this.switchTab?.("researchSection");
+      this.loadResearchDocument?.(researchBtn.dataset.researchId);
     }
   }
 }

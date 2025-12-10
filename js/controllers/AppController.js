@@ -689,6 +689,8 @@ class AppControllerBase {
       qcSummary: document.getElementById("qcSummary"),
       qcTraverseList: document.getElementById("qcTraverseList"),
       qcLevelList: document.getElementById("qcLevelList"),
+      qcEvidenceList: document.getElementById("qcEvidenceList"),
+      qcResearchList: document.getElementById("qcResearchList"),
       exportQcSummaryButton: document.getElementById("exportQcSummaryButton"),
       smartPackExportButton: document.getElementById("smartPackExportButton"),
       smartPackJsonButton: document.getElementById("smartPackJsonButton"),
