@@ -16,6 +16,7 @@ import SpringboardAppController from "../apps/SpringboardAppController.js";
 import TraverseAppController from "../apps/TraverseAppController.js";
 import VicinityMapAppController from "../apps/VicinityMapAppController.js";
 import StakeoutAppController from "../apps/StakeoutAppController.js";
+import BoundaryLabAppController from "../apps/BoundaryLabAppController.js";
 import {
   buildMapboxStaticUrl,
   getMakiIconUrl,
@@ -61,6 +62,7 @@ const ProjectsRecordsMixin = (Base) =>
         this.populateQcSettings(null);
         this.renderQualityDashboard();
         this.appControllers?.chainEvidenceSection?.resetChainFilters?.();
+        this.appControllers?.boundarySection?.renderRecordOptions?.();
         return;
       }
 
@@ -99,6 +101,7 @@ const ProjectsRecordsMixin = (Base) =>
       this.levelingController?.onProjectChanged();
       this.populateQcSettings(this.projects[id]);
       this.renderQualityDashboard();
+      this.appControllers?.boundarySection?.renderRecordOptions?.();
 
       if (this.currentRecordId) {
         this.loadRecord(this.currentRecordId);
@@ -1053,6 +1056,7 @@ const ProjectsRecordsMixin = (Base) =>
       this.saveProjects();
       this.loadRecord(id);
       this.appControllers?.traverseSection?.renderRecords();
+      this.appControllers?.boundarySection?.renderRecordOptions?.();
       this.updateProjectList();
     }
 
@@ -1088,6 +1092,7 @@ const ProjectsRecordsMixin = (Base) =>
       this.refreshEvidenceUI(record.id);
       this.populatePointGenerationOptions();
       this.renderClosureSummary(record.id);
+      this.appControllers?.boundarySection?.renderProcedure?.();
     }
 
     generatePointFileFromRecord() {
@@ -1634,6 +1639,34 @@ const ProjectsRecordsMixin = (Base) =>
           populatePointGenerationOptions: () => this.populatePointGenerationOptions(),
           loadRecord: (id) => this.loadRecord(id),
           buildStatusChip: (status) => this.buildStatusChip(status),
+        }),
+        boundarySection: new BoundaryLabAppController({
+          id: "boundarySection",
+          section: this.elements.boundarySection,
+          elements: {
+            boundaryRecordSelect: this.elements.boundaryRecordSelect,
+            boundaryGenerateStandard: this.elements.boundaryGenerateStandard,
+            boundaryStandardOffset: this.elements.boundaryStandardOffset,
+            boundaryStepList: this.elements.boundaryStepList,
+            boundaryStepType: this.elements.boundaryStepType,
+            boundaryStepDistance: this.elements.boundaryStepDistance,
+            boundaryStepDirection: this.elements.boundaryStepDirection,
+            boundarySegmentOffsets: this.elements.boundarySegmentOffsets,
+            boundaryStepLabel: this.elements.boundaryStepLabel,
+            boundaryAddStepButton: this.elements.boundaryAddStepButton,
+            boundaryPreviewCanvas: this.elements.boundaryPreviewCanvas,
+            boundaryProcedureSummary: this.elements.boundaryProcedureSummary,
+            boundaryStatus: this.elements.boundaryStatus,
+          },
+          getProjects: () => this.projects,
+          getCurrentProjectId: () => this.currentProjectId,
+          getCurrentRecordId: () => this.currentRecordId,
+          computeTraversePointsForRecord: (projectId, recordId) =>
+            this.computeTraversePointsForRecord(projectId, recordId),
+          fitCanvasToDisplaySize: (canvas) => this.fitCanvasToDisplaySize(canvas),
+          escapeHtml: (text) => this.escapeHtml(text),
+          saveProjects: () => this.saveProjects(),
+          loadRecord: (id) => this.loadRecord(id),
         }),
         pointsSection: new PointsAppController({
           id: "pointsSection",

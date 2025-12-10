@@ -367,6 +367,23 @@ class AppControllerBase {
       generatePointsFromTraverseButton: document.getElementById(
         "generatePointsFromTraverseButton"
       ),
+      boundaryRecordSelect: document.getElementById("boundaryRecordSelect"),
+      boundaryGenerateStandard: document.getElementById(
+        "boundaryGenerateStandard"
+      ),
+      boundaryStandardOffset: document.getElementById("boundaryStandardOffset"),
+      boundaryStepList: document.getElementById("boundaryStepList"),
+      boundaryStepType: document.getElementById("boundaryStepType"),
+      boundaryStepDistance: document.getElementById("boundaryStepDistance"),
+      boundaryStepDirection: document.getElementById("boundaryStepDirection"),
+      boundarySegmentOffsets: document.getElementById("boundarySegmentOffsets"),
+      boundaryStepLabel: document.getElementById("boundaryStepLabel"),
+      boundaryAddStepButton: document.getElementById("boundaryAddStepButton"),
+      boundaryPreviewCanvas: document.getElementById("boundaryPreviewCanvas"),
+      boundaryProcedureSummary: document.getElementById(
+        "boundaryProcedureSummary"
+      ),
+      boundaryStatus: document.getElementById("boundaryStatus"),
       startFromDropdownContainer: document.getElementById(
         "startFromDropdownContainer"
       ),
@@ -396,6 +413,7 @@ class AppControllerBase {
       springboardGrid: document.querySelector(".springboard-grid"),
       navigationSection: document.getElementById("navigationSection"),
       traverseSection: document.getElementById("traverseSection"),
+      boundarySection: document.getElementById("boundarySection"),
       pointsSection: document.getElementById("pointsSection"),
       settingsSection: document.getElementById("settingsSection"),
       evidenceSection: document.getElementById("evidenceSection"),
