@@ -45,6 +45,32 @@ export default class ResearchDocumentService {
     this.saveDocuments();
   }
 
+  updateEntry(entry) {
+    if (!entry?.projectId || !entry?.id) {
+      throw new Error("projectId and id are required to update research document");
+    }
+
+    if (!this.docsByProject[entry.projectId]) {
+      this.docsByProject[entry.projectId] = [];
+    }
+
+    const normalizedEntry =
+      entry instanceof ResearchDocument
+        ? entry
+        : ResearchDocument.fromObject(entry);
+    const idx = this.docsByProject[entry.projectId].findIndex(
+      (doc) => doc.id === normalizedEntry.id
+    );
+
+    if (idx >= 0) {
+      this.docsByProject[entry.projectId][idx] = normalizedEntry;
+    } else {
+      this.docsByProject[entry.projectId].push(normalizedEntry);
+    }
+
+    this.saveDocuments();
+  }
+
   setDocumentsForProject(projectId, entries = []) {
     this.docsByProject[projectId] = entries.map((doc) =>
       doc instanceof ResearchDocument ? doc : ResearchDocument.fromObject(doc)

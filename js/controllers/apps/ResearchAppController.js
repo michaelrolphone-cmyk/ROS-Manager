@@ -9,11 +9,14 @@ export default class ResearchAppController extends MiniAppController {
     this.getProjectEvidence = options.getProjectEvidence || (() => []);
     this.getResearchDocuments = options.getResearchDocuments || (() => []);
     this.addResearchDocument = options.addResearchDocument || (() => {});
+    this.updateResearchDocument = options.updateResearchDocument || (() => {});
     this.buildExportMetadata = options.buildExportMetadata || (() => ({}));
     this.getExportStatusLabel = options.getExportStatusLabel || (() => ({}));
     this.downloadText = options.downloadText || (() => {});
     this.getProjectName = options.getProjectName || (() => "Project");
     this.onResearchListUpdated = options.onResearchListUpdated || (() => {});
+
+    this.editingResearchId = null;
 
     this.bindEvents();
   }
@@ -33,6 +36,9 @@ export default class ResearchAppController extends MiniAppController {
     this.elements.exportResearchButton?.addEventListener("click", () =>
       this.exportResearchPacket()
     );
+    this.elements.researchList?.addEventListener("click", (evt) =>
+      this.handleResearchListClick(evt)
+    );
 
     [
       this.elements.researchDocumentType,
@@ -46,6 +52,15 @@ export default class ResearchAppController extends MiniAppController {
       this.elements.researchClassification,
       this.elements.researchDateReviewed,
       this.elements.researchReviewer,
+      this.elements.researchAliquots,
+      this.elements.researchSource,
+      this.elements.researchNotes,
+      this.elements.researchCornerNotes,
+      this.elements.researchTraverseLinks,
+      this.elements.researchStakeoutLinks,
+      this.elements.researchCornerIds,
+      this.elements.researchStatus,
+      this.elements.researchEvidenceSelect,
     ].forEach((el) => {
       el?.addEventListener("input", () => this.updateResearchSaveState());
       if (el?.tagName === "SELECT") {
@@ -88,46 +103,12 @@ export default class ResearchAppController extends MiniAppController {
       });
   }
 
-  updateResearchSaveState() {
-    if (!this.elements.saveResearchButton) return;
-    const required = [
-      this.elements.researchDocumentType,
-      this.elements.researchJurisdiction,
-      this.elements.researchInstrument,
-      this.elements.researchBookPage,
-      this.elements.researchTownship,
-      this.elements.researchRange,
-      this.elements.researchSections,
-      this.elements.researchClassification,
-      this.elements.researchDateReviewed,
-      this.elements.researchReviewer,
-    ];
-    const canSave =
-      !!this.getCurrentProjectId() &&
-      required.every((el) => el && el.value.trim().length > 0);
-    this.elements.saveResearchButton.disabled = !canSave;
-
-    if (this.elements.researchFormStatus) {
-      if (!this.getCurrentProjectId()) {
-        this.elements.researchFormStatus.textContent =
-          "Select or create a project to save research entries.";
-      } else if (!canSave) {
-        this.elements.researchFormStatus.textContent =
-          "Fill in the required research details (type, jurisdiction, instrument, book/page, township, range, sections, classification, date, reviewer).";
-      } else {
-        this.elements.researchFormStatus.textContent = "";
-      }
-    }
-  }
-
-  saveResearchDocument() {
-    if (!this.getCurrentProjectId()) return;
+  getResearchFormValues() {
     const selectedEvidence = Array.from(
       this.elements.researchEvidenceSelect?.selectedOptions || []
     ).map((opt) => ({ id: opt.value, label: opt.dataset.label || opt.textContent }));
 
-    const doc = new ResearchDocument({
-      projectId: this.getCurrentProjectId(),
+    return {
       type: this.elements.researchDocumentType?.value.trim() || "",
       jurisdiction: this.elements.researchJurisdiction?.value.trim() || "",
       instrumentNumber: this.elements.researchInstrument?.value.trim() || "",
@@ -148,15 +129,107 @@ export default class ResearchAppController extends MiniAppController {
       traverseLinks: this.elements.researchTraverseLinks?.value.trim() || "",
       stakeoutLinks: this.elements.researchStakeoutLinks?.value.trim() || "",
       cornerIds: this.elements.researchCornerIds?.value.trim() || "",
+    };
+  }
+
+  hasResearchContent(values = {}) {
+    if (values.linkedEvidence?.length) return true;
+    return Object.entries(values).some(([key, val]) => {
+      if (key === "status") return false;
+      if (Array.isArray(val)) return val.length > 0;
+      return typeof val === "string" ? val.trim().length > 0 : !!val;
+    });
+  }
+
+  getRequiredResearchFields() {
+    return [
+      { key: "type", label: "Document type" },
+      { key: "jurisdiction", label: "Jurisdiction" },
+      { key: "instrumentNumber", label: "Instrument #" },
+      { key: "bookPage", label: "Book/Page" },
+      { key: "township", label: "Township" },
+      { key: "range", label: "Range" },
+      { key: "sections", label: "Section(s)" },
+      { key: "classification", label: "Classification" },
+      { key: "dateReviewed", label: "Date reviewed" },
+      { key: "reviewer", label: "Reviewer" },
+    ];
+  }
+
+  getMissingResearchFields(values = {}) {
+    return this.getRequiredResearchFields()
+      .filter(({ key }) => !values[key]?.toString().trim())
+      .map(({ label }) => label);
+  }
+
+  updateResearchSaveState() {
+    if (!this.elements.saveResearchButton) return;
+    const projectId = this.getCurrentProjectId();
+    const values = this.getResearchFormValues();
+    const hasContent = this.hasResearchContent(values);
+    const missingFields = this.getMissingResearchFields(values);
+    const canSave = !!projectId && hasContent;
+
+    this.elements.saveResearchButton.disabled = !canSave;
+    this.elements.saveResearchButton.textContent = this.editingResearchId
+      ? "Update Research Entry"
+      : "Save Research Entry";
+
+    if (this.elements.researchFormStatus) {
+      if (!projectId) {
+        this.elements.researchFormStatus.textContent =
+          "Select or create a project to save research entries.";
+      } else if (!hasContent) {
+        this.elements.researchFormStatus.textContent =
+          "Add any detail or linked evidence to save a draft research entry. QC will flag missing fields until they are filled.";
+      } else if (missingFields.length) {
+        this.elements.researchFormStatus.textContent =
+          `QC: Missing ${missingFields.length} recommended fields (${missingFields.join(", ")}). Entry will remain Draft until completed.`;
+      } else {
+        this.elements.researchFormStatus.textContent =
+          "QC: All recommended fields captured. Update the status when finalized.";
+      }
+    }
+  }
+
+  saveResearchDocument() {
+    const projectId = this.getCurrentProjectId();
+    if (!projectId) return;
+
+    const values = this.getResearchFormValues();
+    if (!this.hasResearchContent(values)) {
+      this.updateResearchSaveState();
+      return;
+    }
+
+    const missingFields = this.getMissingResearchFields(values);
+    const timestamp = new Date().toISOString();
+    const existingDocs = this.getResearchDocuments(projectId) || [];
+    const existing = existingDocs.find((doc) => doc.id === this.editingResearchId);
+
+    const doc = new ResearchDocument({
+      projectId,
+      ...(existing
+        ? { id: existing.id, createdAt: existing.createdAt }
+        : {}),
+      ...values,
+      status: missingFields.length ? "Draft" : values.status || "Draft",
+      updatedAt: timestamp,
     });
 
-    this.addResearchDocument(doc);
+    if (existing) {
+      this.updateResearchDocument(doc);
+    } else {
+      this.addResearchDocument(doc);
+    }
+
     this.resetResearchForm();
     this.renderResearchList();
 
     if (this.elements.researchFormStatus) {
-      this.elements.researchFormStatus.textContent =
-        "Research entry saved.";
+      this.elements.researchFormStatus.textContent = missingFields.length
+        ? `Saved as Draft with QC reminders for: ${missingFields.join(", ")}.`
+        : "Research entry saved.";
     }
   }
 
@@ -184,6 +257,9 @@ export default class ResearchAppController extends MiniAppController {
     ].forEach((el) => {
       if (el) el.value = "";
     });
+    if (this.elements.researchStatus) {
+      this.elements.researchStatus.value = "Draft";
+    }
     if (this.elements.researchEvidenceSelect) {
       Array.from(this.elements.researchEvidenceSelect.options).forEach((opt) => {
         opt.selected = false;
@@ -191,8 +267,9 @@ export default class ResearchAppController extends MiniAppController {
     }
     if (this.elements.researchFormStatus)
       this.elements.researchFormStatus.textContent = "";
+    this.editingResearchId = null;
     if (this.elements.saveResearchButton)
-      this.elements.saveResearchButton.textContent = "Save Research";
+      this.elements.saveResearchButton.textContent = "Save Research Entry";
     this.updateResearchSaveState();
   }
 
@@ -220,9 +297,15 @@ export default class ResearchAppController extends MiniAppController {
       acc[status] = (acc[status] || 0) + 1;
       return acc;
     }, {});
+    const partialCount = docs.filter(
+      (doc) => this.getMissingResearchFields(doc).length
+    ).length;
     const summaryParts = Object.entries(statusCounts).map(
       ([status, count]) => `${count} ${status}`
     );
+    if (partialCount) {
+      summaryParts.push(`${partialCount} draft QC reminders`);
+    }
     this.elements.researchSummary.textContent =
       `${total} document${total === 1 ? "" : "s"} — ${summaryParts.join(", ")}`;
 
@@ -234,7 +317,11 @@ export default class ResearchAppController extends MiniAppController {
         card.className = "card";
         const statusChip = document.createElement("span");
         statusChip.className = "status-chip";
-        statusChip.textContent = doc.status || "Draft";
+        const status = doc.status || "Draft";
+        statusChip.textContent = status;
+        statusChip.setAttribute("aria-label", status);
+        const statusClass = this.getStatusClass(status);
+        if (statusClass) statusChip.classList.add(statusClass);
         statusChip.style.marginBottom = "6px";
         const title = document.createElement("strong");
         title.textContent = doc.type || "Document";
@@ -258,6 +345,18 @@ export default class ResearchAppController extends MiniAppController {
           trsText.textContent = `TRS: ${trs}`;
           card.appendChild(trsText);
         }
+        const qcMissing = this.getMissingResearchFields(doc);
+        const qcChip = document.createElement("span");
+        qcChip.className = "status-chip";
+        if (qcMissing.length) {
+          qcChip.classList.add("draft");
+          qcChip.textContent = `QC: Missing ${qcMissing.length}`;
+          qcChip.title = `Add: ${qcMissing.join(", ")}`;
+        } else {
+          qcChip.classList.add("ready");
+          qcChip.textContent = "QC: Complete";
+        }
+        card.appendChild(qcChip);
         const review = document.createElement("div");
         review.textContent =
           `Reviewed ${doc.dateReviewed || ""} by ${doc.reviewer || ""} (${doc.classification || ""})`;
@@ -293,6 +392,12 @@ export default class ResearchAppController extends MiniAppController {
           notes.style.marginTop = "6px";
           card.appendChild(notes);
         }
+        if (qcMissing.length) {
+          const qcNote = document.createElement("div");
+          qcNote.className = "subtitle";
+          qcNote.textContent = `QC draft: ${qcMissing.join(", ")}`;
+          card.appendChild(qcNote);
+        }
         if (doc.linkedEvidence?.length) {
           const list = document.createElement("ul");
           list.className = "ties-list";
@@ -305,10 +410,86 @@ export default class ResearchAppController extends MiniAppController {
           heading.textContent = "Linked evidence";
           card.append(heading, list);
         }
+        const actions = document.createElement("div");
+        actions.className = "qc-item-actions";
+        const editButton = document.createElement("button");
+        editButton.type = "button";
+        editButton.textContent = "Edit";
+        editButton.dataset.action = "edit-research";
+        editButton.dataset.id = doc.id;
+        actions.appendChild(editButton);
+        card.appendChild(actions);
         container.appendChild(card);
       });
 
     this.onResearchListUpdated();
+  }
+
+  getStatusClass(status = "") {
+    const normalized = status.toLowerCase();
+    if (normalized === "draft") return "draft";
+    if (normalized === "in progress") return "in-progress";
+    if (normalized === "ready for review") return "ready";
+    if (normalized === "final") return "final";
+    return "";
+  }
+
+  handleResearchListClick(evt) {
+    const button = evt.target.closest("[data-action='edit-research']");
+    if (!button) return;
+    this.startEditingResearch(button.dataset.id);
+  }
+
+  startEditingResearch(docId) {
+    const projectId = this.getCurrentProjectId();
+    if (!projectId) return;
+    const docs = this.getResearchDocuments(projectId) || [];
+    const doc = docs.find((entry) => entry.id === docId);
+    if (!doc) return;
+
+    this.editingResearchId = docId;
+    this.populateFormFromDocument(doc);
+    if (this.elements.researchFormStatus)
+      this.elements.researchFormStatus.textContent =
+        "Editing saved research entry.";
+    this.updateResearchSaveState();
+  }
+
+  populateFormFromDocument(doc) {
+    const fieldMap = [
+      ["researchDocumentType", "type"],
+      ["researchJurisdiction", "jurisdiction"],
+      ["researchInstrument", "instrumentNumber"],
+      ["researchBookPage", "bookPage"],
+      ["researchDocumentNumber", "documentNumber"],
+      ["researchTownship", "township"],
+      ["researchRange", "range"],
+      ["researchSections", "sections"],
+      ["researchAliquots", "aliquots"],
+      ["researchSource", "source"],
+      ["researchDateReviewed", "dateReviewed"],
+      ["researchReviewer", "reviewer"],
+      ["researchStatus", "status"],
+      ["researchClassification", "classification"],
+      ["researchNotes", "notes"],
+      ["researchCornerNotes", "cornerNotes"],
+      ["researchTraverseLinks", "traverseLinks"],
+      ["researchStakeoutLinks", "stakeoutLinks"],
+      ["researchCornerIds", "cornerIds"],
+    ];
+
+    fieldMap.forEach(([elementKey, docKey]) => {
+      const el = this.elements[elementKey];
+      if (el && docKey in doc) {
+        el.value = doc[docKey] || "";
+      }
+    });
+
+    if (this.elements.researchEvidenceSelect) {
+      Array.from(this.elements.researchEvidenceSelect.options).forEach((opt) => {
+        opt.selected = doc.linkedEvidence?.some((ev) => ev.id === opt.value);
+      });
+    }
   }
 
   exportResearchPacket() {
