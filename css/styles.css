@@ -738,6 +738,12 @@ body {
         font-weight: 600;
       }
 
+      .research-form-status {
+        margin-top: 6px;
+        color: #0f172a;
+        font-weight: 600;
+      }
+
       .form-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;

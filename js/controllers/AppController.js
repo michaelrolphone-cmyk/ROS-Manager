@@ -718,6 +718,7 @@ class AppControllerBase {
       researchStakeoutLinks: document.getElementById("researchStakeoutLinks"),
       researchCornerIds: document.getElementById("researchCornerIds"),
       researchEvidenceSelect: document.getElementById("researchEvidenceSelect"),
+      researchFormStatus: document.getElementById("researchFormStatus"),
       saveResearchButton: document.getElementById("saveResearchButton"),
       resetResearchButton: document.getElementById("resetResearchButton"),
       exportResearchButton: document.getElementById("exportResearchButton"),
