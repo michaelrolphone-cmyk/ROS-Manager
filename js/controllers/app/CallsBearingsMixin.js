@@ -217,7 +217,7 @@ const CallsBearingsMixin = (Base) =>
 
     const updateCallInputVisibility = () => {
       const isCurve = !!curveDirectionSelect.value;
-      bearingTd.style.display = isCurve ? "none" : "";
+      geometryTd.style.display = isCurve ? "none" : "";
       distanceRow.style.display = isCurve ? "none" : "";
       curveFields.forEach((field) => {
         field.style.display = isCurve ? "" : "none";
