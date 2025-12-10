@@ -16,6 +16,7 @@ export default class SurveyRecord {
     startFromRecordId = null,
     closurePointNumber = "",
     expectedToClose = true,
+    boundaryProcedure = null,
     createdAt = null,
     updatedAt = null,
     version = 1,
@@ -39,6 +40,10 @@ export default class SurveyRecord {
         : TraverseInstruction.fromObject(call)
     );
     this.startFromRecordId = startFromRecordId;
+    this.boundaryProcedure =
+      boundaryProcedure && typeof boundaryProcedure === "object"
+        ? boundaryProcedure
+        : { steps: [] };
     this.createdAt = createdAt || stamp;
     this.updatedAt = updatedAt || this.createdAt;
     this.version = version ?? 1;
@@ -52,6 +57,7 @@ export default class SurveyRecord {
       ),
       closurePointNumber: obj.closurePointNumber,
       expectedToClose: obj.expectedToClose !== false,
+      boundaryProcedure: obj.boundaryProcedure || { steps: [] },
     });
   }
 
@@ -70,6 +76,7 @@ export default class SurveyRecord {
       startFromRecordId: this.startFromRecordId,
       closurePointNumber: this.closurePointNumber,
       expectedToClose: this.expectedToClose,
+      boundaryProcedure: this.boundaryProcedure,
       id: this.id,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,

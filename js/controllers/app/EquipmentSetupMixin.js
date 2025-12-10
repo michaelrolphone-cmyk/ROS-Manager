@@ -607,6 +607,7 @@ const EquipmentSetupMixin = (Base) =>
       this.currentRecordId = null;
       this.elements.editor.style.display = "none";
       this.appControllers?.traverseSection?.renderRecords();
+      this.appControllers?.boundarySection?.renderRecordOptions?.();
       this.updateProjectList();
     }
   };

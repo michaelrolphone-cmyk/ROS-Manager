@@ -359,6 +359,13 @@
               <span class="app-title">Traversals</span>
               <span class="app-hint">Build traverse paths and commands</span>
             </button>
+            <button class="app-tile" data-target="boundarySection">
+              <span class="app-icon">📐</span>
+              <span class="app-title">Boundary Lab</span>
+              <span class="app-hint">
+                Offset, extend, and trim controlling boundaries
+              </span>
+            </button>
             <button class="app-tile" data-target="pointsSection">
               <span class="app-icon">📍</span>
               <span class="app-title">Point Files</span>
@@ -702,6 +709,122 @@
                 ></textarea>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div id="boundarySection" class="tool-section">
+          <div class="card">
+            <div class="card-header">
+              <h3 style="margin: 0">Boundary Procedure Lab</h3>
+              <span class="mini-note" id="boundaryStatus"></span>
+            </div>
+            <p class="subtitle" style="margin-top: 0">
+              Start from section or center lines, offset them to build your lot
+              boundary, then extend/trim intersections to resolve rounding
+              glitches.
+            </p>
+            <div class="form-grid">
+              <div>
+                <label for="boundaryRecordSelect">Source traverse</label>
+                <select id="boundaryRecordSelect"></select>
+                <p class="mini-note">
+                  Defaults to the active record of survey. Switch records if you
+                  want to prototype a different controlling line workup.
+                </p>
+              </div>
+              <div>
+                <label for="boundaryStandardOffset">Standard offset (ft)</label>
+                <div class="inline-inputs">
+                  <input
+                    type="number"
+                    id="boundaryStandardOffset"
+                    placeholder="25"
+                    step="0.01"
+                  />
+                  <button type="button" id="boundaryGenerateStandard">
+                    Generate standard procedure
+                  </button>
+                </div>
+                <p class="mini-note">
+                  Creates left/right offsets, then trims/extends to intersect.
+                  Adjust later for variable offsets or alternate sequencing.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 style="margin: 0">Procedure steps</h3>
+              <span class="mini-note">
+                Reorder, edit, or delete steps to match your workflow.
+              </span>
+            </div>
+            <div class="form-grid">
+              <div>
+                <label for="boundaryStepType">Step type</label>
+                <select id="boundaryStepType">
+                  <option value="offset">Offset from controlling lines</option>
+                  <option value="extend">Extend to intersections</option>
+                  <option value="trim">Trim back to intersections</option>
+                </select>
+              </div>
+              <div>
+                <label for="boundaryStepDistance">Offset distance (ft)</label>
+                <input
+                  type="number"
+                  id="boundaryStepDistance"
+                  placeholder="25"
+                  step="0.01"
+                />
+              </div>
+              <div>
+                <label for="boundaryStepDirection">Offset direction</label>
+                <select id="boundaryStepDirection">
+                  <option value="left">Left</option>
+                  <option value="right">Right</option>
+                </select>
+              </div>
+              <div>
+                <label for="boundarySegmentOffsets">Call-specific offsets</label>
+                <input
+                  type="text"
+                  id="boundarySegmentOffsets"
+                  placeholder="e.g., 25, 25, 22 to vary per call"
+                />
+                <p class="mini-note">
+                  Optional. Distances are applied in order across traverse calls
+                  so a single procedure can mix frontage, lot, and buffer
+                  offsets.
+                </p>
+              </div>
+              <div>
+                <label for="boundaryStepLabel">Notes</label>
+                <input
+                  type="text"
+                  id="boundaryStepLabel"
+                  placeholder="Describe what this step does"
+                />
+              </div>
+              <div style="display: flex; align-items: flex-end">
+                <button type="button" id="boundaryAddStepButton">
+                  + Add step
+                </button>
+              </div>
+            </div>
+
+            <div id="boundaryStepList" class="procedure-step-list"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 style="margin: 0">Preview &amp; intersections</h3>
+              <span class="mini-note">
+                Base controlling line is dashed; adjusted boundary is solid.
+              </span>
+            </div>
+            <canvas id="boundaryPreviewCanvas"></canvas>
+            <div id="boundaryProcedureSummary" class="mini-note"></div>
           </div>
         </div>
 
