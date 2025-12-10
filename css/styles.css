@@ -1040,17 +1040,17 @@ body {
       }
       .calls-table th:nth-child(1),
       .calls-table td:nth-child(1) {
-        width: 45px;
+        /*width: 45px;*/
         text-align: center;
         white-space: nowrap;
       }
       .calls-table th:nth-child(2),
       .calls-table td:nth-child(2) {
-        width: 40%;
+        /*width: 40%;*/
       }
       .calls-table th:nth-child(3),
       .calls-table td:nth-child(3) {
-        width: 60%;
+        /*width: 60%;*/
       }
       .calls-table input.bearing,
       .calls-table input.distance {
