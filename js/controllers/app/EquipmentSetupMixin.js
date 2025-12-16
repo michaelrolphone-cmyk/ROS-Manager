@@ -598,6 +598,7 @@ const EquipmentSetupMixin = (Base) =>
       record.calls = this.serializeCallsFromContainer(this.elements.callsTableBody);
 
       this.saveProjects();
+      this.appControllers?.legalDescriptionSection?.generateDescription?.();
     }
 
     deleteCurrentRecord() {
@@ -608,6 +609,8 @@ const EquipmentSetupMixin = (Base) =>
       this.elements.editor.style.display = "none";
       this.appControllers?.traverseSection?.renderRecords();
       this.appControllers?.boundarySection?.renderRecordOptions?.();
+      this.appControllers?.legalDescriptionSection?.renderTraverseOptions?.();
+      this.appControllers?.legalDescriptionSection?.generateDescription?.();
       this.updateProjectList();
     }
   };

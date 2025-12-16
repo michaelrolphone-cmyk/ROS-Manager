@@ -2429,3 +2429,32 @@ body {
   color: #b45309;
   margin-top: 6px;
 }
+
+.legal-description-output {
+  width: 100%;
+  min-height: 220px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo,
+    Courier, monospace;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.legal-parse-preview {
+  border: 1px dashed #d0d7de;
+  padding: 12px;
+  border-radius: 10px;
+  background: #f7f9fb;
+  white-space: pre-line;
+}
+
+.legal-controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+}
