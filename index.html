@@ -366,6 +366,13 @@
                 Offset, extend, and trim controlling boundaries
               </span>
             </button>
+            <button class="app-tile" data-target="legalDescriptionSection">
+              <span class="app-icon">📄</span>
+              <span class="app-title">Legal Descriptions</span>
+              <span class="app-hint">
+                Turn traverse calls into narrative text
+              </span>
+            </button>
             <button class="app-tile" data-target="pointsSection">
               <span class="app-icon">📍</span>
               <span class="app-title">Point Files</span>
@@ -825,6 +832,113 @@
             </div>
             <canvas id="boundaryPreviewCanvas"></canvas>
             <div id="boundaryProcedureSummary" class="mini-note"></div>
+          </div>
+        </div>
+
+        <div id="legalDescriptionSection" class="tool-section">
+          <div class="card">
+            <div class="card-header">
+              <h3 style="margin: 0">Legal Description Builder</h3>
+              <span class="mini-note" id="legalDescriptionStatus"></span>
+            </div>
+            <p class="subtitle" style="margin-top: 0">
+              Draft bearings-and-distance narratives directly from traverse calls.
+            </p>
+            <div class="form-grid">
+              <div>
+                <label for="legalTraverseSelect">Source traverse</label>
+                <select id="legalTraverseSelect"></select>
+                <p class="mini-note">
+                  Defaults to the active record; switch to describe a different traverse.
+                </p>
+              </div>
+              <div>
+                <label for="legalPreambleInput">Preamble / caption</label>
+                <textarea
+                  id="legalPreambleInput"
+                  rows="3"
+                  placeholder="Beginning at the northwest corner of Lot 2..."
+                ></textarea>
+                <p class="mini-note">
+                  Optional intro for the call set. Leave blank to auto-generate one.
+                </p>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div>
+                <label class="checkbox-inline" for="legalIncludeBasis">
+                  <input type="checkbox" id="legalIncludeBasis" checked />
+                  Include basis of bearing
+                </label>
+                <label class="checkbox-inline" for="legalIncludeClosure">
+                  <input type="checkbox" id="legalIncludeClosure" checked />
+                  Include closure note
+                </label>
+              </div>
+              <div class="legal-controls">
+                <button type="button" id="legalGenerateButton">
+                  Generate description
+                </button>
+                <button type="button" id="legalCopyButton" class="secondary">
+                  Copy to clipboard
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 style="margin-top: 0">Import from narrative</h3>
+            <p class="subtitle" style="margin-top: 0">
+              Paste a bearings-and-distance description to sketch a traverse and check
+              closure against the current project.
+            </p>
+            <p class="mini-note" style="margin-top: -6px">
+              Separate inclusions and exclusions with blank lines or clause headers; phrases
+              like "except" or "save and except" are treated as subtractive closures.
+            </p>
+            <div class="form-grid">
+              <div>
+                <label for="legalDescriptionImport">Legal description text</label>
+                <textarea
+                  id="legalDescriptionImport"
+                  rows="6"
+                  placeholder="Beginning at... thence N 32-15-00 E 125.00 feet..."
+                ></textarea>
+              </div>
+              <div>
+                <label for="legalImportRecordName">Traverse name</label>
+                <input
+                  type="text"
+                  id="legalImportRecordName"
+                  placeholder="Imported description"
+                />
+                <p class="mini-note">
+                  Saved in the active project as a new traverse record.
+                </p>
+                <div class="legal-controls" style="margin-top: 10px">
+                  <button type="button" id="legalBuildTraverseButton">
+                    Build traverse from text
+                  </button>
+                </div>
+                <div class="status-chip" id="legalClosureChip">
+                  No traverse parsed
+                </div>
+              </div>
+            </div>
+            <div id="legalParsedTraversePreview" class="legal-parse-preview mini-note"></div>
+          </div>
+
+          <div class="card">
+            <h3 style="margin-top: 0">Draft output</h3>
+            <textarea
+              id="legalDescriptionOutput"
+              class="legal-description-output"
+              rows="12"
+              readonly
+            ></textarea>
+            <p class="mini-note">
+              Calls, curves, and offsets are summarized in order. Branches appear indented.
+            </p>
           </div>
         </div>
 

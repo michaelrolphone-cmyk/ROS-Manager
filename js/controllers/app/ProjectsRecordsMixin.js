@@ -1,5 +1,6 @@
 import Project from "../../models/Project.js";
 import SurveyRecord from "../../models/SurveyRecord.js";
+import TraverseInstruction from "../../models/TraverseInstruction.js";
 import Point from "../../models/Point.js";
 import ChainEvidenceAppController from "../apps/ChainEvidenceAppController.js";
 import EquipmentAppController from "../apps/EquipmentAppController.js";
@@ -17,6 +18,7 @@ import TraverseAppController from "../apps/TraverseAppController.js";
 import VicinityMapAppController from "../apps/VicinityMapAppController.js";
 import StakeoutAppController from "../apps/StakeoutAppController.js";
 import BoundaryLabAppController from "../apps/BoundaryLabAppController.js";
+import LegalDescriptionAppController from "../apps/LegalDescriptionAppController.js";
 import {
   buildMapboxStaticUrl,
   getMakiIconUrl,
@@ -49,6 +51,7 @@ const ProjectsRecordsMixin = (Base) =>
         this.appControllers?.stakeoutSection?.resetForm?.();
         this.appControllers?.stakeoutSection?.renderStakeoutList?.();
         this.pointController.renderPointsTable();
+        this.appControllers?.legalDescriptionSection?.renderTraverseOptions?.();
         this.refreshEvidenceUI();
         this.populateLocalizationSelectors();
         this.navigationController?.onProjectChanged();
@@ -102,6 +105,9 @@ const ProjectsRecordsMixin = (Base) =>
       this.populateQcSettings(this.projects[id]);
       this.renderQualityDashboard();
       this.appControllers?.boundarySection?.renderRecordOptions?.();
+      this.appControllers?.legalDescriptionSection?.renderTraverseOptions?.(
+        this.currentRecordId
+      );
 
       if (this.currentRecordId) {
         this.loadRecord(this.currentRecordId);
@@ -1057,7 +1063,42 @@ const ProjectsRecordsMixin = (Base) =>
       this.loadRecord(id);
       this.appControllers?.traverseSection?.renderRecords();
       this.appControllers?.boundarySection?.renderRecordOptions?.();
+      this.appControllers?.legalDescriptionSection?.renderTraverseOptions?.(id);
       this.updateProjectList();
+    }
+
+    createRecordFromCalls(calls = [], options = {}) {
+      if (!this.currentProjectId || !this.projects[this.currentProjectId]) {
+        alert("Select a project first");
+        return null;
+      }
+
+      const name = (options.name || "Imported traverse").trim();
+      if (!name) {
+        alert("Provide a traverse name");
+        return null;
+      }
+
+      const id = Date.now().toString();
+      const callObjects = (calls || []).map((call) =>
+        call instanceof TraverseInstruction ? call : TraverseInstruction.fromObject(call)
+      );
+      const newRecord = new SurveyRecord({
+        id,
+        name,
+        calls: callObjects,
+        startFromRecordId: null,
+        expectedToClose: options.expectedToClose !== false,
+      });
+
+      this.projects[this.currentProjectId].records[id] = newRecord;
+      this.saveProjects();
+      this.loadRecord(id);
+      this.appControllers?.traverseSection?.renderRecords();
+      this.appControllers?.boundarySection?.renderRecordOptions?.();
+      this.appControllers?.legalDescriptionSection?.renderTraverseOptions?.(id);
+      this.updateProjectList();
+      return newRecord;
     }
 
     loadRecord(id) {
@@ -1093,6 +1134,8 @@ const ProjectsRecordsMixin = (Base) =>
       this.populatePointGenerationOptions();
       this.renderClosureSummary(record.id);
       this.appControllers?.boundarySection?.renderProcedure?.();
+      this.appControllers?.legalDescriptionSection?.renderTraverseOptions?.(id);
+      this.appControllers?.legalDescriptionSection?.selectRecord?.(id);
     }
 
     generatePointFileFromRecord() {
@@ -1667,6 +1710,31 @@ const ProjectsRecordsMixin = (Base) =>
           escapeHtml: (text) => this.escapeHtml(text),
           saveProjects: () => this.saveProjects(),
           loadRecord: (id) => this.loadRecord(id),
+        }),
+        legalDescriptionSection: new LegalDescriptionAppController({
+          id: "legalDescriptionSection",
+          section: this.elements.legalDescriptionSection,
+          elements: {
+            traverseSelect: this.elements.legalTraverseSelect,
+            preambleInput: this.elements.legalPreambleInput,
+            includeBasis: this.elements.legalIncludeBasis,
+            includeClosure: this.elements.legalIncludeClosure,
+            generateButton: this.elements.legalGenerateButton,
+            copyButton: this.elements.legalCopyButton,
+            importInput: this.elements.legalDescriptionImport,
+            importButton: this.elements.legalBuildTraverseButton,
+            importName: this.elements.legalImportRecordName,
+            importPreview: this.elements.legalParsedTraversePreview,
+            closureChip: this.elements.legalClosureChip,
+            output: this.elements.legalDescriptionOutput,
+            status: this.elements.legalDescriptionStatus,
+          },
+          getProjects: () => this.projects,
+          getCurrentProjectId: () => this.currentProjectId,
+          getCurrentRecordId: () => this.currentRecordId,
+          createRecordFromCalls: (calls, options) =>
+            this.createRecordFromCalls(calls, options),
+          formatRatio: (misclosure, length) => this.formatRatio(misclosure, length),
         }),
         pointsSection: new PointsAppController({
           id: "pointsSection",

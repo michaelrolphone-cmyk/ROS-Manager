@@ -414,6 +414,9 @@ class AppControllerBase {
       navigationSection: document.getElementById("navigationSection"),
       traverseSection: document.getElementById("traverseSection"),
       boundarySection: document.getElementById("boundarySection"),
+      legalDescriptionSection: document.getElementById(
+        "legalDescriptionSection"
+      ),
       pointsSection: document.getElementById("pointsSection"),
       settingsSection: document.getElementById("settingsSection"),
       evidenceSection: document.getElementById("evidenceSection"),
@@ -516,6 +519,23 @@ class AppControllerBase {
       chainEvidenceList: document.getElementById("chainEvidenceList"),
       chainEvidenceSummary: document.getElementById("chainEvidenceSummary"),
       chainExportAll: document.getElementById("chainExportAll"),
+      legalTraverseSelect: document.getElementById("legalTraverseSelect"),
+      legalPreambleInput: document.getElementById("legalPreambleInput"),
+      legalIncludeBasis: document.getElementById("legalIncludeBasis"),
+      legalIncludeClosure: document.getElementById("legalIncludeClosure"),
+      legalGenerateButton: document.getElementById("legalGenerateButton"),
+      legalCopyButton: document.getElementById("legalCopyButton"),
+      legalDescriptionImport: document.getElementById("legalDescriptionImport"),
+      legalBuildTraverseButton: document.getElementById(
+        "legalBuildTraverseButton"
+      ),
+      legalImportRecordName: document.getElementById("legalImportRecordName"),
+      legalParsedTraversePreview: document.getElementById(
+        "legalParsedTraversePreview"
+      ),
+      legalClosureChip: document.getElementById("legalClosureChip"),
+      legalDescriptionOutput: document.getElementById("legalDescriptionOutput"),
+      legalDescriptionStatus: document.getElementById("legalDescriptionStatus"),
       equipmentSetupAt: document.getElementById("equipmentSetupAt"),
       equipmentTearDownAt: document.getElementById("equipmentTearDownAt"),
       equipmentBaseHeight: document.getElementById("equipmentBaseHeight"),
