@@ -9,6 +9,8 @@ export default class LegalDescriptionAppController extends MiniAppController {
     this.getCurrentRecordId = options.getCurrentRecordId;
     this.createRecordFromCalls = options.createRecordFromCalls;
     this.formatRatio = options.formatRatio;
+    this.clauseBoundaryRegex =
+      /(including|also including|together with|parcel|lot|block|except|excluding|less|save and except|reserving)/i;
 
     this.elements.generateButton?.addEventListener("click", () =>
       this.generateDescription()
@@ -276,31 +278,41 @@ export default class LegalDescriptionAppController extends MiniAppController {
   }
 
   parseDescriptionToTraverse(text = "") {
-    const lines = text
-      .split(/\n+/)
-      .map((line) => line.trim())
-      .filter(Boolean);
-    const calls = [];
+    const clauses = this.splitIntoClauses(text);
     const notes = [];
+    const flattenedCalls = [];
 
-    lines.forEach((line) => {
-      const bearingMatch = line.match(
-        /([NS]\s*[0-9]{1,3}(?:[^0-9]+[0-9]{1,2}){0,2}\s*[EW])/i
-      );
-      const distanceMatch = line.match(/(\d+(?:\.\d+)?)\s*(feet|ft|')/i);
-      const bearing = bearingMatch ? bearingMatch[1].trim() : "";
-      const distance = distanceMatch ? parseFloat(distanceMatch[1]) : null;
+    const parsedClauses = clauses.map((clause, idx) => {
+      const parsedCalls = [];
+      const clauseNotes = [];
+      const labeledClause = {
+        ...clause,
+        label: this.extractClauseLabel(clause.text, idx),
+      };
 
-      if (!bearing && distance === null) {
-        notes.push(`Skipped: ${line}`);
-        return;
-      }
+      clause.lines.forEach((line) => {
+        const segments = this.splitLineSegments(line);
+        segments.forEach((segment) => {
+          const call = this.parseLineToCall(segment);
+          if (call) {
+            parsedCalls.push(call);
+            flattenedCalls.push({ ...call, clauseType: clause.type });
+          } else {
+            clauseNotes.push(`Skipped: ${segment}`);
+          }
+        });
+      });
 
-      calls.push({ bearing, distance: distance ?? "" });
+      const closure = this.computeClosure(parsedCalls);
+      return { ...labeledClause, calls: parsedCalls, closure, notes: clauseNotes };
     });
 
-    const closure = this.computeClosure(calls);
-    return { calls, closure, notes };
+    parsedClauses.forEach((clause) => {
+      if (clause.notes?.length) notes.push(...clause.notes);
+    });
+
+    const netClosure = this.computeCompositeClosure(parsedClauses);
+    return { calls: flattenedCalls, closure: netClosure, notes, clauses: parsedClauses };
   }
 
   computeClosure(calls = []) {
@@ -323,7 +335,105 @@ export default class LegalDescriptionAppController extends MiniAppController {
       typeof this.formatRatio === "function"
         ? this.formatRatio(misclosure, total)
         : null;
-    return { misclosure, total, closes, ratio };
+    return { misclosure, total, closes, ratio, deltaX: x, deltaY: y };
+  }
+
+  computeCompositeClosure(clauses = []) {
+    let x = 0;
+    let y = 0;
+    let total = 0;
+    clauses.forEach((clause) => {
+      const sign = clause.type === "exclude" ? -1 : 1;
+      const deltaX = clause.closure?.deltaX || 0;
+      const deltaY = clause.closure?.deltaY || 0;
+      const distance = clause.closure?.total || 0;
+      x += sign * deltaX;
+      y += sign * deltaY;
+      total += distance;
+    });
+
+    const misclosure = Math.hypot(x, y);
+    const closes = misclosure <= 0.01 && total > 0;
+    const ratio =
+      typeof this.formatRatio === "function"
+        ? this.formatRatio(misclosure, total)
+        : null;
+    return { misclosure, total, closes, ratio, deltaX: x, deltaY: y };
+  }
+
+  splitIntoClauses(text = "") {
+    const lines = (text || "")
+      .split(/\n+/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    if (!lines.length) return [];
+
+    const clauses = [];
+    let current = { lines: [], text: "", type: "include" };
+
+    lines.forEach((line, idx) => {
+      const isBoundary = idx > 0 && this.clauseBoundaryRegex.test(line);
+      if (isBoundary && current.lines.length) {
+        current.text = current.lines.join(" ");
+        current.type = this.detectClauseType(current.text, clauses.length);
+        clauses.push(current);
+        current = { lines: [line], text: "", type: "include" };
+      } else {
+        current.lines.push(line);
+      }
+    });
+
+    if (current.lines.length) {
+      current.text = current.lines.join(" ");
+      current.type = this.detectClauseType(current.text, clauses.length);
+      clauses.push(current);
+    }
+
+    return clauses;
+  }
+
+  detectClauseType(text = "", clauseIndex = 0) {
+    const lower = text.toLowerCase();
+    if (/\b(except|excluding|less|save and except|reserving)\b/.test(lower)) {
+      return "exclude";
+    }
+    if (/\b(include|including|together with|also including)\b/.test(lower)) {
+      return "include";
+    }
+    // Assume the first clause is the primary inclusion, with later clauses defaulting to additive
+    if (clauseIndex === 0) return "include";
+    if (/\b(parcel|lot|block)\b/.test(lower)) return "include";
+    return "include";
+  }
+
+  extractClauseLabel(text = "", clauseIndex = 0) {
+    const parcelMatch = text.match(/parcel\s+([a-z0-9]+)/i);
+    if (parcelMatch) return `Parcel ${parcelMatch[1].toUpperCase()}`;
+    const lotBlockMatch = text.match(/lot\s+([a-z0-9]+)\s*(?:,?\s*block\s+([a-z0-9]+))?/i);
+    if (lotBlockMatch) {
+      const lot = lotBlockMatch[1].toUpperCase();
+      const block = lotBlockMatch[2]?.toUpperCase();
+      return block ? `Lot ${lot}, Block ${block}` : `Lot ${lot}`;
+    }
+    return clauseIndex === 0 ? "Primary tract" : `Clause ${clauseIndex + 1}`;
+  }
+
+  splitLineSegments(line = "") {
+    return line
+      .split(/(?:;|\.)+/)
+      .map((segment) => segment.trim())
+      .filter(Boolean);
+  }
+
+  parseLineToCall(line = "") {
+    const bearingMatch = line.match(
+      /([NS]\s*[0-9]{1,3}(?:[^0-9]+[0-9]{1,2}){0,2}\s*[EW])/i
+    );
+    const distanceMatch = line.match(/(\d+(?:\.\d+)?)\s*(feet|ft|')/i);
+    const bearing = bearingMatch ? bearingMatch[1].trim() : "";
+    const distance = distanceMatch ? parseFloat(distanceMatch[1]) : null;
+    if (!bearing && distance === null) return null;
+    return { bearing, distance: distance ?? "" };
   }
 
   renderClosureChip(closure) {
@@ -337,8 +447,8 @@ export default class LegalDescriptionAppController extends MiniAppController {
     }
     chip.classList.add(closes ? "qc-pass" : "qc-warning");
     chip.textContent = closes
-      ? "Closes (misclosure < 0.01 ft)"
-      : `Open: misclosure ${this.formatDistance(misclosure)} ft${
+      ? "Net closure: closes (misclosure < 0.01 ft)"
+      : `Net open: misclosure ${this.formatDistance(misclosure)} ft${
           ratio ? ` · Ratio ${ratio}` : ""
         }`;
   }
@@ -352,14 +462,39 @@ export default class LegalDescriptionAppController extends MiniAppController {
       return;
     }
 
-    const lines = parsed.calls.map((call, idx) => {
-      const label = idx === 0 ? "Beginning" : "Thence";
-      const parts = [];
-      if (call.bearing) parts.push(call.bearing);
-      if (call.distance)
-        parts.push(`${this.formatDistance(call.distance)} feet`);
-      return `${label}: ${parts.join(", ")}`;
+    const lines = [];
+
+    (parsed.clauses || []).forEach((clause, idx) => {
+      const badge = clause.type === "exclude" ? "Exclusion" : "Inclusion";
+      const header = `${clause.label} (${badge})`;
+      lines.push(header);
+
+      const closureSummary = this.describeClosureSummary(
+        clause.closure,
+        clause.type === "exclude"
+      );
+      if (closureSummary) lines.push(`  ${closureSummary}`);
+
+      clause.calls.forEach((call, callIdx) => {
+        const label = callIdx === 0 ? "Beginning" : "Thence";
+        const parts = [];
+        if (call.bearing) parts.push(call.bearing);
+        if (call.distance)
+          parts.push(`${this.formatDistance(call.distance)} feet`);
+        lines.push(`  ${label}: ${parts.join(", ")}`);
+      });
+
+      if (clause.notes?.length) {
+        clause.notes.forEach((note) => lines.push(`  Note: ${note}`));
+      }
+      lines.push("");
     });
+
+    if (parsed.closure) {
+      const netSummary = this.describeClosureSummary(parsed.closure, false, true);
+      if (netSummary) lines.push(`Net: ${netSummary}`);
+    }
+
     if (parsed.notes.length) {
       lines.push("", "Notes:", ...parsed.notes.map((note) => `- ${note}`));
     }
@@ -386,11 +521,23 @@ export default class LegalDescriptionAppController extends MiniAppController {
       });
       if (record) {
         const closureNote = parsed.closure?.closes
-          ? " (computed as closed)"
-          : " (open traverse)";
+          ? " (net closure computed as closed)"
+          : " (net closure open)";
         this.setStatus(`Created traverse "${record.name}"${closureNote}`);
       }
     }
+  }
+
+  describeClosureSummary(closure, isExclusion = false, isNet = false) {
+    if (!closure) return "";
+    const magnitude = this.formatDistance(closure.misclosure);
+    const role = isNet ? "layered" : isExclusion ? "subtractive" : "additive";
+    const ratioText =
+      closure.total > 0 && closure.ratio ? ` · Ratio ${closure.ratio}` : "";
+    const closesText = closure.closes
+      ? `Closes (${role})`
+      : `Open (${role})`;
+    return `${closesText}: misclosure ${magnitude} ft${ratioText}`;
   }
 
   formatDistance(value) {
