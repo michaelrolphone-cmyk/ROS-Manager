@@ -120,6 +120,7 @@ const ExportImportMixin = (Base) =>
       projectId
     );
     const qcSummary = this.buildQualityControlSummaryData(projectId);
+    const qcResults = qcSummary?.results;
 
     const evidenceDraft = (evidence || []).some(
       (ev) => (ev.status || "").toLowerCase() !== "final"
@@ -127,8 +128,27 @@ const ExportImportMixin = (Base) =>
     const researchDraft = (research || []).some(
       (doc) => (doc.status || "").toLowerCase() !== "final"
     );
+    const evidenceReady =
+      (qcResults?.evidenceSummary?.readyCount || 0) > 0 &&
+      qcResults.evidenceSummary.readyCount ===
+        qcResults.evidenceSummary.total;
+    const researchReady =
+      (qcResults?.researchSummary?.readyCount || 0) > 0 &&
+      qcResults.researchSummary.readyCount === qcResults.researchSummary.total;
+    const unresolvedConflicts = (qcResults?.research || []).some(
+      (doc) =>
+        (doc.classification || "").toLowerCase() === "conflicting" &&
+        !doc.resolution
+    );
 
-    if (qcSummary?.results?.overallClass === "qc-pass" && !evidenceDraft && !researchDraft)
+    if (
+      qcResults?.overallClass === "qc-pass" &&
+      evidenceReady &&
+      researchReady &&
+      !evidenceDraft &&
+      !researchDraft &&
+      !unresolvedConflicts
+    )
       return "Final";
     if (qcSummary) return "Ready for Review";
     return "Draft";

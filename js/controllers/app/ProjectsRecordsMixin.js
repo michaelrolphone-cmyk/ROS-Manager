@@ -530,6 +530,15 @@ const ProjectsRecordsMixin = (Base) =>
         if (!ev.cornerType) missing.push("corner type");
         if (!ev.cornerStatus) missing.push("corner status");
         if (!ev.condition) missing.push("condition");
+        const hasTies = Array.isArray(ev.ties) && ev.ties.length > 0;
+        if (!hasTies) missing.push("ties");
+        if (hasTies) {
+          ev.ties.forEach((tie, idx) => {
+            if (!tie?.distance || !tie?.bearing || !tie?.description) {
+              missing.push(`tie ${idx + 1}`);
+            }
+          });
+        }
         const statusLabel = ev.status || "Draft";
         const isDraft = (statusLabel || "").toLowerCase().includes("draft");
         const isComplete = !isDraft && missing.length === 0;
@@ -555,6 +564,9 @@ const ProjectsRecordsMixin = (Base) =>
 
       const researchQuality = (researchDocs || []).map((doc) => {
         const missing = this.getMissingResearchFields(doc);
+        const isConflicting =
+          (doc.classification || "").toLowerCase() === "conflicting";
+        if (isConflicting && !doc.resolution) missing.push("conflict resolution");
         const statusLabel = doc.status || "Draft";
         const isDraft = (statusLabel || "").toLowerCase().includes("draft");
         const isComplete = missing.length === 0 && !isDraft;
@@ -568,6 +580,7 @@ const ProjectsRecordsMixin = (Base) =>
           dateReviewed: doc.dateReviewed || "",
           jurisdiction: doc.jurisdiction || "",
           classification: doc.classification || "",
+          resolution: doc.resolution || "",
         };
       });
 

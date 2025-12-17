@@ -18,6 +18,7 @@ export default class ResearchDocument {
     classification = "",
     notes = "",
     cornerNotes = "",
+    resolution = "",
     linkedEvidence = [],
     traverseLinks = "",
     stakeoutLinks = "",
@@ -43,6 +44,7 @@ export default class ResearchDocument {
     this.classification = classification;
     this.notes = notes;
     this.cornerNotes = cornerNotes;
+    this.resolution = resolution;
     this.linkedEvidence = Array.isArray(linkedEvidence)
       ? linkedEvidence
       : [];
@@ -77,6 +79,7 @@ export default class ResearchDocument {
       classification: this.classification,
       notes: this.notes,
       cornerNotes: this.cornerNotes,
+      resolution: this.resolution,
       linkedEvidence: this.linkedEvidence,
       traverseLinks: this.traverseLinks,
       stakeoutLinks: this.stakeoutLinks,
