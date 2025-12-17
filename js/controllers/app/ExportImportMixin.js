@@ -1,3 +1,5 @@
+import Project from "../../models/Project.js";
+
 const ExportImportMixin = (Base) =>
   class extends Base {
   /* ===================== Export / Import ===================== */
@@ -7,6 +9,18 @@ const ExportImportMixin = (Base) =>
       return {
         title: "Final — Professional Declaration Signed",
         note: "Ready for recordation with QC checks satisfied.",
+      };
+    }
+    if (normalized.includes("qc fail")) {
+      return {
+        title: "QC Failed — Blocked",
+        note: "Resolve traverse or level QC failures before finalizing.",
+      };
+    }
+    if (normalized.includes("block")) {
+      return {
+        title: "Blocked — Missing Requirements",
+        note: "Outstanding inputs must be resolved before filing.",
       };
     }
     if (normalized.includes("ready")) {
@@ -113,25 +127,69 @@ const ExportImportMixin = (Base) =>
     this.markProjectsExported(Object.keys(this.projects || {}));
   }
 
+  computeSmartPackGate(projectId = this.currentProjectId) {
+    if (!projectId || !this.projects?.[projectId]) {
+      return { status: "Draft", blockers: ["No project loaded"], qcResults: null };
+    }
+
+    const qcResults = this.computeQualityResults(projectId);
+    const blockers = [];
+
+    if (qcResults?.overallClass === "") {
+      blockers.push("QC not evaluated");
+    }
+    if (qcResults?.overallClass === "qc-fail") {
+      blockers.push("QC failed");
+    }
+
+    const evidenceSummary = qcResults?.evidenceSummary || { total: 0 };
+    if ((evidenceSummary.total || 0) === 0) {
+      blockers.push("Evidence missing");
+    }
+    (qcResults?.evidence || []).forEach((ev) => {
+      if (ev.isComplete) return;
+      const reasons = ev.missing?.length ? ev.missing.join(", ") : "incomplete";
+      blockers.push(
+        `Evidence incomplete (${ev.title || ev.id || "evidence"}): ${reasons}`
+      );
+      if ((ev.status || "").toLowerCase().includes("draft")) {
+        blockers.push(`Evidence draft (${ev.title || ev.id || "evidence"})`);
+      }
+    });
+
+    const researchSummary = qcResults?.researchSummary || { total: 0 };
+    if ((researchSummary.total || 0) === 0) {
+      blockers.push("Research missing");
+    }
+    (qcResults?.research || []).forEach((doc) => {
+      if (doc.isComplete) return;
+      const reasons = doc.missing?.length ? doc.missing.join(", ") : "incomplete";
+      blockers.push(
+        `Research incomplete (${doc.title || doc.id || "document"}): ${reasons}`
+      );
+      if ((doc.status || "").toLowerCase().includes("draft")) {
+        blockers.push(`Research draft (${doc.title || doc.id || "document"})`);
+      }
+      const isConflicting = (doc.classification || "").toLowerCase() === "conflicting";
+      if (isConflicting && !doc.resolution) {
+        blockers.push(`Research conflict unresolved (${doc.title || doc.id})`);
+      }
+    });
+
+    const hasQcFail = blockers.some((b) => b.toLowerCase().includes("qc failed"));
+    const status = hasQcFail
+      ? "QC Failed"
+      : blockers.length > 0
+      ? "Blocked"
+      : qcResults?.overallClass === "qc-pass"
+      ? "Final"
+      : "Ready for Review";
+
+    return { status, blockers, qcResults };
+  }
+
   computeSmartPackStatus(projectId = this.currentProjectId) {
-    if (!projectId || !this.projects?.[projectId]) return "Draft";
-    const evidence = this.cornerEvidenceService.getProjectEvidence(projectId);
-    const research = this.researchDocumentService.getProjectDocuments(
-      projectId
-    );
-    const qcSummary = this.buildQualityControlSummaryData(projectId);
-
-    const evidenceDraft = (evidence || []).some(
-      (ev) => (ev.status || "").toLowerCase() !== "final"
-    );
-    const researchDraft = (research || []).some(
-      (doc) => (doc.status || "").toLowerCase() !== "final"
-    );
-
-    if (qcSummary?.results?.overallClass === "qc-pass" && !evidenceDraft && !researchDraft)
-      return "Final";
-    if (qcSummary) return "Ready for Review";
-    return "Draft";
+    return this.computeSmartPackGate(projectId).status;
   }
 
   getProjectBasisOfBearing(project) {
@@ -589,37 +647,7 @@ const ExportImportMixin = (Base) =>
     reader.onload = (e) => {
       try {
         const data = JSON.parse(e.target.result);
-        if (!data.projects || typeof data.projects !== "object") {
-          throw new Error("Invalid import file");
-        }
-        Object.entries(data.projects).forEach(([id, proj]) => {
-          this.projects[id] = Project.fromObject(proj);
-        });
-        const evidenceMap =
-          data.evidence && typeof data.evidence === "object"
-            ? data.evidence
-            : {};
-        this.cornerEvidenceService.replaceAllEvidence(evidenceMap);
-        const researchMap =
-          data.research && typeof data.research === "object"
-            ? data.research
-            : {};
-        this.researchDocumentService.replaceAllDocuments(researchMap);
-        if (data.globalSettings) {
-          this.globalSettings = this.normalizeGlobalSettings(
-            data.globalSettings
-          );
-          this.ensureGlobalSettingsMetadata();
-          this.globalSettingsService.save(this.globalSettings);
-          this.renderGlobalSettings();
-          this.scheduleSync();
-        }
-        this.saveProjects();
-        this.updateProjectList();
-        const importedIds = Object.keys(data.projects);
-        if (importedIds.length > 0) {
-          this.loadProject(importedIds[0]);
-        }
+        this.applyImportPayload(data, { includeGlobalSettings: true });
         this.renderGlobalSettings();
         alert("App data import successful!");
       } catch (err) {
@@ -636,34 +664,48 @@ const ExportImportMixin = (Base) =>
     reader.onload = (e) => {
       try {
         const data = JSON.parse(e.target.result);
-        if (!data.projects || typeof data.projects !== "object") {
-          throw new Error("Invalid import file");
-        }
-        Object.entries(data.projects).forEach(([id, proj]) => {
-          this.projects[id] = Project.fromObject(proj);
-        });
-        const evidenceMap =
-          data.evidence && typeof data.evidence === "object"
-            ? data.evidence
-            : {};
-        this.cornerEvidenceService.replaceAllEvidence(evidenceMap);
-        const researchMap =
-          data.research && typeof data.research === "object"
-            ? data.research
-            : {};
-        this.researchDocumentService.replaceAllDocuments(researchMap);
-        this.saveProjects();
-        this.updateProjectList();
-        if (Object.keys(data.projects).length > 0) {
-          const firstId = Object.keys(data.projects)[0];
-          this.loadProject(firstId);
-        }
+        this.applyImportPayload(data);
         alert("Import successful!");
       } catch (err) {
         alert("Import failed: " + err.message);
       }
     };
     reader.readAsText(file);
+  }
+
+  applyImportPayload(data = {}, { includeGlobalSettings = false } = {}) {
+    if (!data.projects || typeof data.projects !== "object") {
+      throw new Error("Invalid import file");
+    }
+
+    Object.entries(data.projects).forEach(([id, proj]) => {
+      this.projects[id] = Project.fromObject(proj);
+    });
+
+    const evidenceMap =
+      data.evidence && typeof data.evidence === "object" ? data.evidence : {};
+    this.cornerEvidenceService.replaceAllEvidence(evidenceMap);
+
+    const researchMap =
+      data.research && typeof data.research === "object" ? data.research : {};
+    this.researchDocumentService.replaceAllDocuments(researchMap);
+
+    if (includeGlobalSettings && data.globalSettings) {
+      this.globalSettings = this.normalizeGlobalSettings(data.globalSettings);
+      this.ensureGlobalSettingsMetadata();
+      this.globalSettingsService.save(this.globalSettings);
+      this.renderGlobalSettings?.();
+      this.scheduleSync?.();
+    }
+
+    this.saveProjects();
+    this.updateProjectList?.();
+    const importedIds = Object.keys(data.projects);
+    if (importedIds.length > 0) {
+      this.loadProject?.(importedIds[0]);
+    }
+
+    return importedIds;
   }
 
   getCurrentProject() {

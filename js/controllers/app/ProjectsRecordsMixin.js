@@ -367,6 +367,30 @@ const ProjectsRecordsMixin = (Base) =>
         .map(({ label }) => label);
     }
 
+    parseBearingDegrees(bearing) {
+      if (bearing === 0) return 0;
+      if (Number.isFinite(bearing)) return this.normalizeAzimuth(bearing);
+      if (!bearing) return null;
+      if (typeof bearing === "string") {
+        const numeric = parseFloat(bearing.replace(/[^\d.\-]+/g, ""));
+        if (Number.isFinite(numeric)) return this.normalizeAzimuth(numeric);
+
+        const match = bearing
+          .trim()
+          .match(/([NS])\s*(\d+(?:\.\d+)?)\s*[^\d]*([EW])/i);
+        if (match) {
+          const degrees = parseFloat(match[2]);
+          if (!Number.isFinite(degrees)) return null;
+          const start = match[1].toUpperCase();
+          const end = match[3].toUpperCase();
+          const baseAz = start === "N" ? 0 : 180;
+          const signed = end === "E" ? degrees : -degrees;
+          return this.normalizeAzimuth(baseAz + signed);
+        }
+      }
+      return null;
+    }
+
     computeQualityResults(projectId = this.currentProjectId) {
       const project = projectId ? this.projects[projectId] : null;
 
@@ -530,6 +554,18 @@ const ProjectsRecordsMixin = (Base) =>
         if (!ev.cornerType) missing.push("corner type");
         if (!ev.cornerStatus) missing.push("corner status");
         if (!ev.condition) missing.push("condition");
+        const hasTies = Array.isArray(ev.ties) && ev.ties.length > 0;
+        if (!hasTies) missing.push("ties");
+        if (hasTies) {
+          ev.ties.forEach((tie, idx) => {
+            const distance = Number.parseFloat(tie?.distance);
+            const bearing = this.parseBearingDegrees(tie?.bearing);
+            if (!Number.isFinite(distance)) missing.push(`tie ${idx + 1} distance`);
+            if (!Number.isFinite(bearing)) missing.push(`tie ${idx + 1} bearing`);
+            if (!tie?.type) missing.push(`tie ${idx + 1} type`);
+            if (!tie?.description) missing.push(`tie ${idx + 1} description`);
+          });
+        }
         const statusLabel = ev.status || "Draft";
         const isDraft = (statusLabel || "").toLowerCase().includes("draft");
         const isComplete = !isDraft && missing.length === 0;
@@ -555,6 +591,15 @@ const ProjectsRecordsMixin = (Base) =>
 
       const researchQuality = (researchDocs || []).map((doc) => {
         const missing = this.getMissingResearchFields(doc);
+        const isConflicting =
+          (doc.classification || "").toLowerCase() === "conflicting";
+        if (isConflicting) {
+          if (!doc.resolution) missing.push("conflict resolution");
+          if (!doc.resolutionBy) missing.push("conflict resolved by");
+          if (!doc.resolutionDate) missing.push("conflict resolution date");
+          if (!Array.isArray(doc.resolutionDocIds) || doc.resolutionDocIds.length === 0)
+            missing.push("controlling doc references");
+        }
         const statusLabel = doc.status || "Draft";
         const isDraft = (statusLabel || "").toLowerCase().includes("draft");
         const isComplete = missing.length === 0 && !isDraft;
@@ -568,6 +613,7 @@ const ProjectsRecordsMixin = (Base) =>
           dateReviewed: doc.dateReviewed || "",
           jurisdiction: doc.jurisdiction || "",
           classification: doc.classification || "",
+          resolution: doc.resolution || "",
         };
       });
 
