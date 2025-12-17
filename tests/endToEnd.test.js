@@ -61,6 +61,8 @@ class EndToEndHarness extends ProjectsRecordsMixin(ExportImportMixin(class {})) 
       levelMisclosurePerDistance: 0.02,
     };
     this.globalSettings = { backupSettings: { rollingBackupsEnabled: true } };
+    this.pointController = { renderPointsTable() {} };
+    this.navigationController = { onProjectChanged() {} };
   }
 
   getCurrentProject() {
@@ -121,6 +123,32 @@ class EndToEndHarness extends ProjectsRecordsMixin(ExportImportMixin(class {})) 
 
   updateSpringboardHero() {}
 
+  updateProjectList() {}
+
+  drawProjectOverview() {}
+
+  hideProjectForm() {}
+
+  refreshEvidenceUI() {}
+
+  refreshResearchUI() {}
+
+  resetEquipmentForm() {}
+
+  refreshEquipmentUI() {}
+
+  populateLocalizationSelectors() {}
+
+  populatePointGenerationOptions() {}
+
+  populateProjectDetailsForm() {}
+
+  renderAuditTrail() {}
+
+  renderQualityDashboard() {}
+
+  handleSpringboardScroll() {}
+
   normalizeAzimuth(azimuth = 0) {
     const normalized = ((azimuth % 360) + 360) % 360;
     return normalized;
@@ -147,11 +175,38 @@ class EndToEndHarness extends ProjectsRecordsMixin(ExportImportMixin(class {})) 
         : 360 - normalized;
     return { quadrant, formatted: `${bearingDegrees.toFixed(2)}°` };
   }
+
+  recordAuditEvent(type, metadata = {}) {
+    const project = this.projects[this.currentProjectId];
+    if (!project) return;
+    project.auditTrail = project.auditTrail || [];
+    project.auditTrail.push({
+      type,
+      timestamp: new Date().toISOString(),
+      ...metadata,
+    });
+  }
 }
 
 describe("End-to-end workflow from project creation to Smart Pack", () => {
   let harness;
   let storage;
+
+  const expectCloseTo = (actual, expected, tolerance = 1e-6) => {
+    assert.ok(Math.abs(actual - expected) < tolerance, `${actual} not within ${tolerance} of ${expected}`);
+  };
+
+  const expectGate = (projectId, expectedStatus, reasons = []) => {
+    const gate = harness.computeSmartPackGate(projectId);
+    assert.equal(gate.status, expectedStatus);
+    reasons.forEach((reason) => {
+      assert.ok(
+        gate.blockers.some((blocker) => blocker.toLowerCase().includes(reason.toLowerCase())),
+        `Missing blocker containing "${reason}"`
+      );
+    });
+    return gate;
+  };
 
   beforeEach(() => {
     storage = new MemoryStorage();
@@ -170,7 +225,7 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
     });
   });
 
-  it("requires complete Smart Pack inputs, exercises QC tolerances, and round-trips exports", async () => {
+  it("enforces Smart Pack gates, validates QC geometry, and round-trips export/import", async () => {
     const traverseId = "trv-1";
     const failingTraverse = {
       polylines: [
@@ -178,8 +233,8 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
           { x: 0, y: 0, pointNumber: 1 },
           { x: 100, y: 0, pointNumber: 2 },
           { x: 100, y: 100, pointNumber: 3 },
-          { x: -1, y: -0.02, pointNumber: 4 },
-          { x: 5, y: -5, pointNumber: 5 },
+          { x: -1, y: -0.2, pointNumber: 4 },
+          { x: 0.5, y: -0.2, pointNumber: 5 },
         ],
       ],
     };
@@ -189,8 +244,8 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
           { x: 0, y: 0, pointNumber: 1 },
           { x: 100, y: 0, pointNumber: 2 },
           { x: 100, y: 100, pointNumber: 3 },
-          { x: -1, y: -0.02, pointNumber: 4 },
-          { x: 0.05, y: -0.02, pointNumber: 5 },
+          { x: -0.05, y: 0.01, pointNumber: 4 },
+          { x: 0.05, y: 0.01, pointNumber: 5 },
         ],
       ],
     };
@@ -214,7 +269,7 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
           id: traverseId,
           name: "TRV-NW-Sec12-Test",
           status: "Final",
-          basis: "Solar observation", // ensures basis of bearing propagates
+          basis: "Solar observation",
           closurePointNumber: 1,
         }),
       },
@@ -226,19 +281,29 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
     harness.saveProjects();
 
     let qcResults = harness.computeQualityResults(project.id);
-    assert.equal(qcResults.traverses[0].status, "fail");
-    assert.ok(
-      qcResults.traverses[0].misclosureRatio > project.qcSettings.traverseLinearTolerance
+    const failingTraverseResult = qcResults.traverses[0];
+    expectCloseTo(failingTraverseResult.linearMisclosure, Math.hypot(0.5, -0.2));
+    expectCloseTo(
+      failingTraverseResult.misclosureRatio,
+      Math.hypot(0.5, -0.2) /
+        (100 + 100 + Math.hypot(-101, -100.2) + 1.5)
     );
-    assert.equal(harness.computeSmartPackStatus(project.id), "Ready for Review");
+    assert.equal(failingTraverseResult.closurePointNumber, 1);
+    assert.equal(failingTraverseResult.misclosureDirection, "SE-68.20°");
+    expectGate(project.id, "QC Failed", ["QC failed", "Evidence missing", "Research missing"]);
 
     harness.setTraverseGeometry(traverseId, passingTraverse);
     qcResults = harness.computeQualityResults(project.id);
-    assert.equal(qcResults.traverses[0].status, "pass");
-    assert.ok(
-      qcResults.traverses[0].misclosureRatio < project.qcSettings.traverseLinearTolerance
+    const passingTraverseResult = qcResults.traverses[0];
+    expectCloseTo(passingTraverseResult.linearMisclosure, Math.hypot(0.05, 0.01));
+    expectCloseTo(
+      passingTraverseResult.misclosureRatio,
+      Math.hypot(0.05, 0.01) /
+        (100 + 100 + Math.hypot(-100.05, -99.99) + 0.1)
     );
-    assert.equal(harness.computeSmartPackStatus(project.id), "Ready for Review");
+    assert.equal(passingTraverseResult.closurePointNumber, 1);
+    assert.equal(passingTraverseResult.misclosureDirection, "NE-78.69°");
+    expectGate(project.id, "Blocked", ["Evidence missing", "Research missing"]);
 
     const controllingDoc = new ResearchDocument({
       id: "doc-glo",
@@ -260,12 +325,13 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
       status: "Draft",
     });
     harness.researchDocumentService.addEntry(controllingDoc);
-    assert.equal(harness.computeSmartPackStatus(project.id), "Ready for Review");
+    expectGate(project.id, "Blocked", ["Research draft", "Evidence missing"]);
 
     harness.researchDocumentService.updateEntry({
       ...controllingDoc.toObject(),
       status: "Final",
     });
+    harness.recordAuditEvent("RESEARCH_FINALIZED", { docId: controllingDoc.id });
 
     const conflictingRos = new ResearchDocument({
       id: "doc-ros",
@@ -287,12 +353,16 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
       status: "Final",
     });
     harness.researchDocumentService.addEntry(conflictingRos);
-    assert.equal(harness.computeSmartPackStatus(project.id), "Ready for Review");
+    expectGate(project.id, "Blocked", ["conflict resolution", "Evidence missing"]);
 
     harness.researchDocumentService.updateEntry({
       ...conflictingRos.toObject(),
       resolution: "Accepted controlling GLO plat; ROS provides tie check only.",
+      resolutionBy: "Jane Doe",
+      resolutionDate: "2024-02-01",
+      resolutionDocIds: [controllingDoc.id],
     });
+    harness.recordAuditEvent("CONFLICT_RESOLVED", { docId: conflictingRos.id });
 
     const incompleteEvidence = new CornerEvidence({
       id: "ev-nw",
@@ -314,24 +384,28 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
       basisOfBearing: "Solar observation",
     });
     harness.cornerEvidenceService.addEntry(incompleteEvidence);
-    assert.equal(harness.computeSmartPackStatus(project.id), "Ready for Review");
+    expectGate(project.id, "Blocked", ["Evidence draft", "ties"]);
 
     harness.cornerEvidenceService.updateEntry(project.id, incompleteEvidence.id, {
       ...incompleteEvidence.toObject(),
       status: "Final",
       ties: [
         {
-          distance: "35.12",
-          bearing: "N45E",
-          description: "Fence corner",
+          type: "witness",
+          distance: 100.0,
+          bearing: "S 45°00'00\" E",
+          description: "To 10\" pine",
+          photos: ["monument_photo.jpg"],
         },
         {
-          distance: "72.55",
-          bearing: "S10W",
-          description: "Section line stone",
+          type: "accessory",
+          distance: 75.0,
+          bearing: "N10E",
+          description: "To 12\" oak",
         },
       ],
     });
+    harness.recordAuditEvent("EVIDENCE_FINALIZED", { evidenceId: incompleteEvidence.id });
 
     qcResults = harness.computeQualityResults(project.id);
     assert.equal(qcResults.researchSummary.readyCount, 2);
@@ -339,8 +413,8 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
     assert.equal(qcResults.traverses[0].status, "pass");
     assert.equal(qcResults.overallClass, "qc-pass");
 
-    const smartPackStatus = harness.computeSmartPackStatus(project.id);
-    assert.equal(smartPackStatus, "Final");
+    const smartPackGate = expectGate(project.id, "Final", []);
+    assert.equal(harness.computeSmartPackStatus(project.id), "Final");
 
     const bundle = harness.buildSmartPackBundle(project.id);
     assert.equal(bundle.project.name, project.name);
@@ -354,6 +428,18 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
     assert.ok(harness.lastDownload.payload.qcSummaries[project.id]);
     assert.ok(harness.projects[project.id].lastExportedAt);
     assert.equal(harness.lastBackup.ids[0], project.id);
+
+    harness.recordAuditEvent("SMART_PACK_FINALIZED", { status: smartPackGate.status });
+    const auditEntries = harness.projects[project.id].auditTrail || [];
+    const auditTypes = auditEntries.map((e) => e.type);
+    [
+      "RESEARCH_FINALIZED",
+      "CONFLICT_RESOLVED",
+      "EVIDENCE_FINALIZED",
+      "SMART_PACK_FINALIZED",
+    ].forEach((required) => {
+      assert.ok(auditTypes.includes(required));
+    });
 
     const snapshot = await harness.auditTrailService.createSnapshot(
       { project: project.toObject(), research: bundle.research },
@@ -373,14 +459,8 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
       researchDocumentService: new ResearchDocumentService("e2e-research"),
       auditTrailService: new AuditTrailService(),
     });
-    importHarness.projects[project.id] = Project.fromObject(bundle.project);
+    importHarness.applyImportPayload(harness.lastDownload.payload);
     importHarness.currentProjectId = project.id;
-    importHarness.cornerEvidenceService.replaceAllEvidence({
-      [project.id]: bundle.evidence.map((ev) => CornerEvidence.fromObject(ev)),
-    });
-    importHarness.researchDocumentService.replaceAllDocuments({
-      [project.id]: bundle.research.map((doc) => ResearchDocument.fromObject(doc)),
-    });
     importHarness.setTraverseGeometry(traverseId, passingTraverse);
 
     const restoredResults = importHarness.computeQualityResults(project.id);
@@ -393,6 +473,15 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
       restoredResults.researchSummary.readyCount,
       qcResults.researchSummary.readyCount
     );
-    assert.equal(importHarness.computeSmartPackStatus(project.id), "Final");
+    const importedGate = importHarness.computeSmartPackGate(project.id);
+    assert.equal(importedGate.status, "Final");
+    assert.deepEqual(importedGate.blockers, []);
+
+    const importedEvidence = importHarness.cornerEvidenceService.getProjectEvidence(
+      project.id
+    );
+    assert.equal(importedEvidence[0].ties.length, 2);
+    assert.equal(importedEvidence[0].ties[0].type, "witness");
+    assert.ok(Array.isArray(importHarness.projects[project.id].auditTrail));
   });
 });

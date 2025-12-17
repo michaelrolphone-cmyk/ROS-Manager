@@ -3,6 +3,7 @@ export default class EvidenceTie {
     id = null,
     distance = "",
     bearing = "",
+    type = "",
     description = "",
     photos = [],
     createdAt = null,
@@ -13,6 +14,7 @@ export default class EvidenceTie {
     this.id = id || `tie-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     this.distance = distance;
     this.bearing = bearing;
+    this.type = type;
     this.description = description;
     this.photos = photos;
     this.createdAt = createdAt || stamp;
@@ -24,6 +26,7 @@ export default class EvidenceTie {
     return new EvidenceTie({
       distance: obj.distance || "",
       bearing: obj.bearing || "",
+      type: obj.type || "",
       description: obj.description || "",
       photos: obj.photos || [],
       createdAt: obj.createdAt,
@@ -37,6 +40,7 @@ export default class EvidenceTie {
     return {
       distance: this.distance,
       bearing: this.bearing,
+      type: this.type,
       description: this.description,
       photos: this.photos || [],
       createdAt: this.createdAt,
