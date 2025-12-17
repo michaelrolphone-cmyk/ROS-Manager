@@ -54,6 +54,11 @@ class EndToEndHarness extends ProjectsRecordsMixin(ExportImportMixin(class {})) 
     this.elements = {};
     this.projects = {};
     this.currentProjectId = null;
+    this.defaultQcSettings = {
+      traverseAngularTolerance: 0.25,
+      traverseLinearTolerance: 0.0002,
+      levelMisclosurePerDistance: 0.02,
+    };
     this.globalSettings = { backupSettings: { rollingBackupsEnabled: true } };
   }
 
