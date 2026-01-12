@@ -788,8 +788,13 @@ const ExportImportMixin = (Base) =>
     }
 
     const latest = project.auditTrail
+      .filter((entry) => entry?.bundle && entry?.hash)
       .slice()
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+    if (!latest) {
+      this.setAuditStatus("No audit snapshots to download yet.");
+      return;
+    }
     const payload = {
       bundle: latest.bundle,
       hash: latest.hash,
