@@ -1155,7 +1155,11 @@ const ProjectsRecordsMixin = (Base) =>
     loadRecord(id) {
       this.currentRecordId = id;
       const record = this.projects[this.currentProjectId].records[id];
-      this.elements.currentRecordName.textContent = record.name;
+      const recordName = record.name || "Untitled record";
+      this.elements.currentRecordName.textContent = recordName;
+      if (this.elements.recordNameEdit) {
+        this.elements.recordNameEdit.value = record.name || "";
+      }
       if (this.elements.recordStatus) {
         this.elements.recordStatus.value = record.status || "Draft";
       }
@@ -1187,6 +1191,60 @@ const ProjectsRecordsMixin = (Base) =>
       this.appControllers?.boundarySection?.renderProcedure?.();
       this.appControllers?.legalDescriptionSection?.renderTraverseOptions?.(id);
       this.appControllers?.legalDescriptionSection?.selectRecord?.(id);
+    }
+
+    renameCurrentRecord(name = "") {
+      if (!this.currentProjectId || !this.currentRecordId) return;
+      const project = this.projects[this.currentProjectId];
+      if (!project?.records?.[this.currentRecordId]) return;
+
+      const trimmed = String(name || "").trim();
+      const record = project.records[this.currentRecordId];
+      if (!trimmed) {
+        alert("Enter a record name");
+        if (this.elements.recordNameEdit) {
+          this.elements.recordNameEdit.value = record.name || "";
+        }
+        return;
+      }
+
+      if (record.name === trimmed) {
+        if (this.elements.recordNameEdit) {
+          this.elements.recordNameEdit.value = trimmed;
+        }
+        this.elements.currentRecordName.textContent = trimmed;
+        return;
+      }
+
+      record.name = trimmed;
+      if (this.elements.recordNameEdit) {
+        this.elements.recordNameEdit.value = trimmed;
+      }
+      this.elements.currentRecordName.textContent = trimmed;
+
+      const evidenceService = this.cornerEvidenceService;
+      if (evidenceService) {
+        const entries = evidenceService.getProjectEvidence(this.currentProjectId);
+        entries.forEach((entry) => {
+          if (entry.recordId === this.currentRecordId) {
+            evidenceService.updateEntry(this.currentProjectId, entry.id, {
+              recordName: trimmed,
+            });
+          }
+        });
+      }
+
+      this.saveProjects();
+      this.appControllers?.traverseSection?.renderRecords();
+      this.appControllers?.boundarySection?.renderRecordOptions?.();
+      this.appControllers?.legalDescriptionSection?.renderTraverseOptions?.(
+        this.currentRecordId
+      );
+      this.appControllers?.legalDescriptionSection?.generateDescription?.();
+      this.appControllers?.stakeoutSection?.renderTraverseOptions?.();
+      this.populateLocalizationSelectors?.();
+      this.populatePointGenerationOptions?.();
+      this.refreshEvidenceUI?.(this.currentRecordId);
     }
 
     generatePointFileFromRecord() {

@@ -388,6 +388,7 @@ class AppControllerBase {
       recordList: document.getElementById("recordList"),
       editor: document.getElementById("editor"),
       currentRecordName: document.getElementById("currentRecordName"),
+      recordNameEdit: document.getElementById("recordNameEdit"),
       recordStatus: document.getElementById("recordStatus"),
       startPtNum: document.getElementById("startPtNum"),
       northing: document.getElementById("northing"),
@@ -991,6 +992,18 @@ class AppControllerBase {
         e.preventDefault();
         this.createRecord();
       }
+    });
+
+    this.elements.recordNameEdit?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        this.renameCurrentRecord(e.target.value);
+        e.target.blur?.();
+      }
+    });
+
+    this.elements.recordNameEdit?.addEventListener("blur", (e) => {
+      this.renameCurrentRecord(e.target.value);
     });
 
     this.elements.projectNameInput?.addEventListener("keydown", (e) => {
