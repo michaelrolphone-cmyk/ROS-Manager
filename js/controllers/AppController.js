@@ -79,6 +79,8 @@ class AppControllerBase {
     this.syncPending = null;
     this.syncInProgress = false;
     this.syncQueued = false;
+    this.pendingSaveRefresh = false;
+    this.pendingSaveRefreshHandler = null;
     this.userActivityState = {
       active: false,
       idleDelay: 1800,
@@ -236,6 +238,56 @@ class AppControllerBase {
     const result = await handler();
     this.restoreFocusState(focusState);
     return result;
+  }
+
+  isEditingInputElement(target = document.activeElement) {
+    if (!target || typeof target !== "object") return false;
+    if (target.isContentEditable) return true;
+    const tagName = target.tagName ? target.tagName.toUpperCase() : "";
+    return ["INPUT", "TEXTAREA", "SELECT"].includes(tagName);
+  }
+
+  refreshSaveDependentViews() {
+    this.populateLocalizationSelectors();
+    this.navigationController?.renderTargetOptions();
+    this.renderReferencePointOptions();
+    this.renderQualityDashboard();
+  }
+
+  clearDeferredSaveRefresh() {
+    if (this.pendingSaveRefreshHandler && document?.removeEventListener) {
+      document.removeEventListener(
+        "focusout",
+        this.pendingSaveRefreshHandler,
+        true
+      );
+    }
+    this.pendingSaveRefreshHandler = null;
+    this.pendingSaveRefresh = false;
+  }
+
+  scheduleSaveDependentRefresh() {
+    if (!document?.addEventListener) {
+      this.refreshSaveDependentViews();
+      return;
+    }
+
+    if (!this.isEditingInputElement()) {
+      this.clearDeferredSaveRefresh();
+      this.refreshSaveDependentViews();
+      return;
+    }
+
+    if (this.pendingSaveRefresh) return;
+    this.pendingSaveRefresh = true;
+
+    this.pendingSaveRefreshHandler = () => {
+      if (this.isEditingInputElement()) return;
+      this.clearDeferredSaveRefresh();
+      this.refreshSaveDependentViews();
+    };
+
+    document.addEventListener("focusout", this.pendingSaveRefreshHandler, true);
   }
 
   cacheDom() {
@@ -1376,10 +1428,7 @@ class AppControllerBase {
       );
     }
     this.cornerEvidenceService.saveEvidence();
-    this.populateLocalizationSelectors();
-    this.navigationController?.renderTargetOptions();
-    this.renderReferencePointOptions();
-    this.renderQualityDashboard();
+    this.scheduleSaveDependentRefresh();
     if (!skipSync) {
       this.scheduleSync();
     }
