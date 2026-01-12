@@ -452,6 +452,16 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
     harness.cornerEvidenceService.updateEntry(project.id, incompleteEvidence.id, {
       ...incompleteEvidence.toObject(),
       status: "Final",
+      photo: "data:image/png;base64,monument",
+      photoAnnotations: [
+        { type: "arrow", x1: 0.1, y1: 0.2, x2: 0.4, y2: 0.5 },
+        { type: "text", x: 0.3, y: 0.25, text: "Found brass cap" },
+      ],
+      photoMetadata: {
+        capturedAt: "2024-03-01T12:00:00Z",
+        trs: "T5N R2E Sec 12 NW",
+        pointLabel: "101",
+      },
       ties: [
         {
           type: "witness",
@@ -469,6 +479,20 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
       ],
     });
     harness.recordAuditEvent("EVIDENCE_FINALIZED", { evidenceId: incompleteEvidence.id });
+
+    const updatedDocs = harness.researchDocumentService.getProjectDocuments(
+      project.id
+    );
+    const updatedControlling = updatedDocs.find((doc) => doc.id === controllingDoc.id);
+    const updatedConflicting = updatedDocs.find((doc) => doc.id === conflictingRos.id);
+    harness.researchDocumentService.updateEntry({
+      ...updatedControlling.toObject(),
+      linkedEvidence: [incompleteEvidence.id],
+    });
+    harness.researchDocumentService.updateEntry({
+      ...updatedConflicting.toObject(),
+      linkedEvidence: [incompleteEvidence.id],
+    });
 
     qcResults = harness.computeQualityResults(project.id);
     assert.equal(qcResults.researchSummary.readyCount, 2);
@@ -500,9 +524,29 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
     assert.equal(bundle.research.length, 2);
     assert.equal(bundle.evidence.length, 1);
     assert.equal(bundle.evidence[0].ties.length, 2);
+    assert.equal(bundle.evidence[0].photo, "data:image/png;base64,monument");
+    assert.equal(bundle.evidence[0].photoAnnotations.length, 2);
+    assert.equal(bundle.evidence[0].photoMetadata.trs, "T5N R2E Sec 12 NW");
     assert.equal(bundle.traverses[0].status, "pass");
     assert.equal(bundle.stakeoutEntries.length, 1);
     assert.equal(bundle.stakeoutEntries[0].evidenceId, incompleteEvidence.id);
+    const linkedDocs = harness.researchDocumentService
+      .getProjectDocuments(project.id)
+      .filter((doc) => doc.linkedEvidence?.includes(incompleteEvidence.id));
+    assert.equal(linkedDocs.length, 2);
+
+    harness.exportSmartPackHtml();
+    assert.ok(harness.lastHtmlDownload.filename.endsWith("-smart-pack.html"));
+    assert.ok(harness.lastHtmlDownload.payload.includes("Document Generation Smart Pack"));
+    assert.ok(harness.lastHtmlDownload.payload.includes("Final — Professional Declaration Signed"));
+    assert.ok(harness.lastHtmlDownload.payload.includes("annotated-photo"));
+    assert.ok(harness.lastHtmlDownload.payload.includes("Found brass cap"));
+
+    harness.exportSmartPackJson();
+    assert.ok(harness.lastDownload.filename.endsWith("-smart-pack.json"));
+    assert.equal(harness.lastDownload.payload.type, "CarlsonDocumentSmartPack");
+    assert.equal(harness.lastDownload.payload.status, "Final");
+    assert.equal(harness.lastDownload.payload.project.id, project.id);
 
     harness.exportCurrentProject();
     const projectExportPayload = harness.lastDownload.payload;
@@ -541,6 +585,12 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
     assert.equal(auditVerified, true);
     assert.equal(harness.auditStatus, "Audit snapshot captured and hashed.");
 
+    harness.downloadLatestAudit();
+    assert.ok(harness.lastDownload.filename.includes("-audit-"));
+    assert.ok(harness.lastDownload.payload.bundle);
+    assert.ok(harness.lastDownload.payload.hash);
+    assert.equal(harness.auditStatus, "Downloaded latest audit bundle.");
+
     const snapshot = await harness.auditTrailService.createSnapshot(
       { project: project.toObject(), research: bundle.research },
       { deviceId: "dev-1", user: "Jane" }
@@ -566,6 +616,7 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
       researchDocumentService: new ResearchDocumentService("e2e-research"),
       auditTrailService: new AuditTrailService(),
     });
+    assert.deepEqual(importHarness.projects, {});
     importHarness.applyImportPayload(allDataPayload, { includeGlobalSettings: true });
     importHarness.currentProjectId = project.id;
     importHarness.setTraverseGeometry(traverseId, passingTraverse);
@@ -641,6 +692,27 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
     harness.currentProjectId = project.id;
     harness.cornerEvidenceService.addEntry(evidence);
 
+    const controllingDoc = new ResearchDocument({
+      id: "doc-cpf-1",
+      projectId: project.id,
+      type: "GLO plat",
+      jurisdiction: "Federal",
+      instrumentNumber: "Vol 1 Page 1",
+      bookPage: "Book 1/Page 1",
+      documentNumber: "GLO-CPF-001",
+      township: "T5N",
+      range: "R2E",
+      sections: "12",
+      aliquots: "NW",
+      source: "local",
+      dateReviewed: "2024-01-01",
+      reviewer: "Jane Doe",
+      classification: "Controlling",
+      status: "Final",
+      linkedEvidence: [evidence.id],
+    });
+    harness.researchDocumentService.addEntry(controllingDoc);
+
     harness.exportCornerFiling(evidence);
     assert.deepEqual(harness.cpfValidation, [
       "monumentType",
@@ -674,6 +746,19 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
     const updatedEvidence = harness.cornerEvidenceService
       .getProjectEvidence(project.id)
       .find((entry) => entry.id === evidence.id);
+
+    const draftEvidence = {
+      ...updatedEvidence.toObject(),
+      status: "Draft",
+    };
+    harness.exportCornerFiling(draftEvidence);
+    assert.ok(harness.lastHtmlDownload.filename.endsWith("-cpf.html"));
+    assert.ok(
+      harness.lastHtmlDownload.payload.includes("PRELIMINARY — NOT FOR RECORDATION")
+    );
+    assert.ok(harness.lastHtmlDownload.payload.includes("GLO plat"));
+    assert.ok(harness.lastHtmlDownload.payload.includes("Controlling"));
+
     harness.exportCornerFiling(updatedEvidence);
     assert.ok(harness.lastHtmlDownload.filename.endsWith("-cpf.html"));
     assert.ok(
