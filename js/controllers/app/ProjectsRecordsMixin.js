@@ -447,6 +447,8 @@ const ProjectsRecordsMixin = (Base) =>
           const dx = end.x - closureTarget.x;
           const dy = end.y - closureTarget.y;
           linearMisclosure = Math.hypot(dx, dy);
+          const isClosed =
+            Number.isFinite(linearMisclosure) && linearMisclosure <= 1e-6;
 
           const startAz =
             (Math.atan2(mainLine[1].x - start.x, mainLine[1].y - start.y) *
@@ -461,6 +463,9 @@ const ProjectsRecordsMixin = (Base) =>
           angularMisclosure = Math.abs(
             this.normalizeAngleDiff(endAz - startAz)
           );
+          if (isClosed) {
+            angularMisclosure = 0;
+          }
 
           ratio = totalLength > 0 ? linearMisclosure / totalLength : Number.POSITIVE_INFINITY;
           const angularPass = Number.isFinite(qcSettings.traverseAngularTolerance)
