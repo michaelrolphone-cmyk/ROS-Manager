@@ -6,11 +6,13 @@ import CornerEvidenceService from "../js/services/CornerEvidenceService.js";
 import ResearchDocumentService from "../js/services/ResearchDocumentService.js";
 import AuditTrailService from "../js/services/AuditTrailService.js";
 import ExportImportMixin from "../js/controllers/app/ExportImportMixin.js";
+import EquipmentSetupMixin from "../js/controllers/app/EquipmentSetupMixin.js";
 import ProjectsRecordsMixin from "../js/controllers/app/ProjectsRecordsMixin.js";
 import Project from "../js/models/Project.js";
 import CornerEvidence from "../js/models/CornerEvidence.js";
 import ResearchDocument from "../js/models/ResearchDocument.js";
 import SurveyRecord from "../js/models/SurveyRecord.js";
+import StakeoutEntry from "../js/models/StakeoutEntry.js";
 
 class MemoryStorage {
   constructor() {
@@ -34,7 +36,9 @@ class MemoryStorage {
   }
 }
 
-class EndToEndHarness extends ProjectsRecordsMixin(ExportImportMixin(class {})) {
+class EndToEndHarness extends ProjectsRecordsMixin(
+  EquipmentSetupMixin(ExportImportMixin(class {}))
+) {
   constructor({
     projectRepository,
     cornerEvidenceService,
@@ -63,6 +67,7 @@ class EndToEndHarness extends ProjectsRecordsMixin(ExportImportMixin(class {})) 
     this.globalSettings = { backupSettings: { rollingBackupsEnabled: true } };
     this.pointController = { renderPointsTable() {} };
     this.navigationController = { onProjectChanged() {} };
+    this.globalSettingsService = { save() {} };
   }
 
   getCurrentProject() {
@@ -121,6 +126,10 @@ class EndToEndHarness extends ProjectsRecordsMixin(ExportImportMixin(class {})) 
     this.lastDownload = { payload, filename };
   }
 
+  downloadHtml(payload, filename) {
+    this.lastHtmlDownload = { payload, filename };
+  }
+
   updateSpringboardHero() {}
 
   updateProjectList() {}
@@ -135,6 +144,8 @@ class EndToEndHarness extends ProjectsRecordsMixin(ExportImportMixin(class {})) 
 
   resetEquipmentForm() {}
 
+  switchTab() {}
+
   refreshEquipmentUI() {}
 
   populateLocalizationSelectors() {}
@@ -146,6 +157,41 @@ class EndToEndHarness extends ProjectsRecordsMixin(ExportImportMixin(class {})) 
   renderAuditTrail() {}
 
   renderQualityDashboard() {}
+
+  setAuditStatus(message = "") {
+    this.auditStatus = message;
+  }
+
+  normalizeGlobalSettings(settings = {}) {
+    return settings;
+  }
+
+  ensureGlobalSettingsMetadata() {}
+
+  renderGlobalSettings() {}
+
+  scheduleSync() {}
+
+  escapeHtml(value = "") {
+    return String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  }
+
+  clearCpfValidationState() {
+    this.cpfValidation = [];
+  }
+
+  renderCpfValidationCallout(missingKeys = []) {
+    this.cpfValidation = [...missingKeys];
+  }
+
+  highlightMissingCpfFields(missingKeys = []) {
+    this.cpfMissingHighlights = [...missingKeys];
+  }
 
   handleSpringboardScroll() {}
 
@@ -174,6 +220,23 @@ class EndToEndHarness extends ProjectsRecordsMixin(ExportImportMixin(class {})) 
         ? normalized - 180
         : 360 - normalized;
     return { quadrant, formatted: `${bearingDegrees.toFixed(2)}°` };
+  }
+
+  formatTrsString(trs = {}) {
+    const township = trs.township || "";
+    const range = trs.range || "";
+    const section = trs.section || "";
+    const breakdown = trs.sectionBreakdown || "";
+    return [township, range, section, breakdown].filter(Boolean).join(" ");
+  }
+
+  buildEvidenceTrs(entry = {}) {
+    const main = this.formatTrsString(entry);
+    if (!main) return "";
+    const associated = (entry.associatedTrs || [])
+      .map((trs) => this.formatTrsString(trs))
+      .filter(Boolean);
+    return [main, ...associated].join(" · ");
   }
 
   recordAuditEvent(type, metadata = {}) {
@@ -413,6 +476,22 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
     assert.equal(qcResults.traverses[0].status, "pass");
     assert.equal(qcResults.overallClass, "qc-pass");
 
+    const stakeoutEntry = new StakeoutEntry({
+      id: "stakeout-1",
+      occurredAt: "2024-03-15T10:30:00Z",
+      monumentType: "5/8\" rebar with plastic cap",
+      monumentMaterial: "Plastic",
+      witnessMarks: "Fence and old road align with GLO calls.",
+      digNotes: "Monument found at expected depth, minor disturbed soil.",
+      crewMembers: ["Jane Doe", "Field Tech"],
+      equipmentUsed: ["GNSS Rover 1"],
+      traverseId,
+      evidenceId: incompleteEvidence.id,
+      controlPoints: "CP-1",
+    });
+    project.stakeoutEntries = [stakeoutEntry];
+    harness.recordAuditEvent("STAKEOUT_ADDED", { stakeoutId: stakeoutEntry.id });
+
     const smartPackGate = expectGate(project.id, "Final", []);
     assert.equal(harness.computeSmartPackStatus(project.id), "Final");
 
@@ -422,12 +501,23 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
     assert.equal(bundle.evidence.length, 1);
     assert.equal(bundle.evidence[0].ties.length, 2);
     assert.equal(bundle.traverses[0].status, "pass");
+    assert.equal(bundle.stakeoutEntries.length, 1);
+    assert.equal(bundle.stakeoutEntries[0].evidenceId, incompleteEvidence.id);
 
     harness.exportCurrentProject();
+    const projectExportPayload = harness.lastDownload.payload;
     assert.ok(harness.lastDownload.payload.projects[project.id]);
     assert.ok(harness.lastDownload.payload.qcSummaries[project.id]);
     assert.ok(harness.projects[project.id].lastExportedAt);
     assert.equal(harness.lastBackup.ids[0], project.id);
+
+    harness.exportAllData();
+    const allDataPayload = harness.lastDownload.payload;
+    assert.ok(harness.lastDownload.payload.projects[project.id]);
+    assert.equal(
+      harness.lastDownload.payload.projects[project.id].stakeoutEntries.length,
+      1
+    );
 
     harness.recordAuditEvent("SMART_PACK_FINALIZED", { status: smartPackGate.status });
     const auditEntries = harness.projects[project.id].auditTrail || [];
@@ -441,6 +531,16 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
       assert.ok(auditTypes.includes(required));
     });
 
+    await harness.createAuditSnapshot();
+    const auditTrail = harness.projects[project.id].auditTrail || [];
+    const latestSnapshot = auditTrail[auditTrail.length - 1];
+    const auditVerified = await harness.auditTrailService.verifySnapshot(
+      latestSnapshot.bundle,
+      latestSnapshot.hash
+    );
+    assert.equal(auditVerified, true);
+    assert.equal(harness.auditStatus, "Audit snapshot captured and hashed.");
+
     const snapshot = await harness.auditTrailService.createSnapshot(
       { project: project.toObject(), research: bundle.research },
       { deviceId: "dev-1", user: "Jane" }
@@ -450,6 +550,13 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
       snapshot.hash
     );
     assert.equal(verified, true);
+    const tampered = JSON.parse(JSON.stringify(snapshot.bundle));
+    tampered.project.name = "Tampered Project";
+    const tamperedVerified = await harness.auditTrailService.verifySnapshot(
+      tampered,
+      snapshot.hash
+    );
+    assert.equal(tamperedVerified, false);
 
     const importStorage = new MemoryStorage();
     globalThis.localStorage = importStorage;
@@ -459,7 +566,7 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
       researchDocumentService: new ResearchDocumentService("e2e-research"),
       auditTrailService: new AuditTrailService(),
     });
-    importHarness.applyImportPayload(harness.lastDownload.payload);
+    importHarness.applyImportPayload(allDataPayload, { includeGlobalSettings: true });
     importHarness.currentProjectId = project.id;
     importHarness.setTraverseGeometry(traverseId, passingTraverse);
 
@@ -483,5 +590,102 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
     assert.equal(importedEvidence[0].ties.length, 2);
     assert.equal(importedEvidence[0].ties[0].type, "witness");
     assert.ok(Array.isArray(importHarness.projects[project.id].auditTrail));
+    assert.equal(importHarness.projects[project.id].stakeoutEntries.length, 1);
+    assert.ok(importHarness.globalSettings);
+    assert.ok(projectExportPayload.projects[project.id]);
+  });
+
+  it("validates CP&F requirements and exports finalized CP&F HTML", () => {
+    const project = new Project({
+      id: "TEST-CPF-01",
+      name: "CP&F Validation Project",
+      county: "Ada County",
+      records: {
+        trv1: new SurveyRecord({
+          id: "trv1",
+          name: "TRV-CPF-01",
+          status: "Final",
+          basis: "Solar observation",
+        }),
+      },
+    });
+    const evidence = new CornerEvidence({
+      id: "ev-cpf-1",
+      projectId: project.id,
+      recordId: "trv1",
+      pointLabel: "101",
+      township: "T5N",
+      range: "R2E",
+      section: "12",
+      sectionBreakdown: "NW",
+      type: "Monument",
+      cornerType: "Section corner",
+      cornerStatus: "Original monument found",
+      condition: "Good",
+      status: "Draft",
+      surveyorName: "Jane Doe",
+      surveyorLicense: "PLS 12345",
+      surveyorFirm: "Test Survey LLC",
+      notes: "Found brass cap on 5/8\" rebar.",
+      ties: [
+        {
+          type: "witness",
+          distance: 100.0,
+          bearing: "S 45°00'00\" E",
+          description: "To 10\" pine",
+        },
+      ],
+    });
+
+    harness.projects[project.id] = project;
+    harness.currentProjectId = project.id;
+    harness.cornerEvidenceService.addEntry(evidence);
+
+    harness.exportCornerFiling(evidence);
+    assert.deepEqual(harness.cpfValidation, [
+      "monumentType",
+      "monumentMaterial",
+      "monumentSize",
+      "basisOfBearing",
+      "surveyDates",
+      "surveyorCounty",
+      "recordingInfo",
+    ]);
+    assert.equal(harness.lastHtmlDownload, undefined);
+
+    const completedEvidence = {
+      ...evidence.toObject(),
+      status: "Final",
+      monumentType: "Brass cap",
+      monumentMaterial: "Brass",
+      monumentSize: "2\"",
+      basisOfBearing: "Solar observation",
+      surveyDates: "2024-05-01",
+      surveyCounty: "Ada",
+      recordingInfo: "Inst 123",
+    };
+
+    harness.cornerEvidenceService.updateEntry(
+      project.id,
+      evidence.id,
+      completedEvidence
+    );
+
+    const updatedEvidence = harness.cornerEvidenceService
+      .getProjectEvidence(project.id)
+      .find((entry) => entry.id === evidence.id);
+    harness.exportCornerFiling(updatedEvidence);
+    assert.ok(harness.lastHtmlDownload.filename.endsWith("-cpf.html"));
+    assert.ok(
+      harness.lastHtmlDownload.payload.includes(
+        "Final — Professional Declaration Signed"
+      )
+    );
+    assert.equal(
+      harness.lastHtmlDownload.payload.includes(
+        "PRELIMINARY — NOT FOR RECORDATION"
+      ),
+      false
+    );
   });
 });
