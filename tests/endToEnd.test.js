@@ -773,4 +773,21 @@ describe("End-to-end workflow from project creation to Smart Pack", () => {
       false
     );
   });
+
+  it("downloads the latest audit snapshot when newer audit events exist", async () => {
+    const project = new Project({
+      id: "AUDIT-01",
+      name: "Audit Project",
+    });
+    harness.projects[project.id] = project;
+    harness.currentProjectId = project.id;
+
+    await harness.createAuditSnapshot();
+    harness.recordAuditEvent("POST_SNAPSHOT_EVENT", { note: "later event" });
+
+    harness.downloadLatestAudit();
+    assert.ok(harness.lastDownload.payload.bundle);
+    assert.ok(harness.lastDownload.payload.hash);
+    assert.equal(harness.auditStatus, "Downloaded latest audit bundle.");
+  });
 });
