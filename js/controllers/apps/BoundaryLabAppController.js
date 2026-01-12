@@ -20,6 +20,9 @@ const lineIntersection = (p1, p2, p3, p4) => {
   return { x, y };
 };
 
+const pointsEqual = (a, b, epsilon = 1e-6) =>
+  Math.abs(a.x - b.x) <= epsilon && Math.abs(a.y - b.y) <= epsilon;
+
 const offsetSegment = (start, end, distance) => {
   const dx = end.x - start.x;
   const dy = end.y - start.y;
@@ -444,6 +447,25 @@ export default class BoundaryLabAppController extends MiniAppController {
       segments.push(
         offsetSegment(polyline[i], polyline[i + 1], segmentDistance * directionSign)
       );
+    }
+
+    const isClosed =
+      polyline.length > 2 &&
+      pointsEqual(polyline[0], polyline[polyline.length - 1]);
+
+    if (isClosed) {
+      const joins = segments.map((segment, idx) => {
+        const next = segments[(idx + 1) % segments.length];
+        return (
+          lineIntersection(
+            segment.start,
+            segment.end,
+            next.start,
+            next.end
+          ) || segment.end
+        );
+      });
+      return [...joins, { ...joins[0] }];
     }
 
     const result = [];
