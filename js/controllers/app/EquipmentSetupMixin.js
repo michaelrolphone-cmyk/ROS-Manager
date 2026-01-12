@@ -488,7 +488,7 @@ const EquipmentSetupMixin = (Base) =>
           element: "evidenceSurveyorLicense",
         },
         { key: "surveyorFirm", label: "Surveyor firm", prop: "surveyorFirm", element: "evidenceSurveyorFirm" },
-        { key: "surveyorDates", label: "Survey dates", prop: "surveyorDates", element: "evidenceSurveyDates" },
+        { key: "surveyDates", label: "Survey dates", prop: "surveyDates", element: "evidenceSurveyDates" },
         { key: "surveyorCounty", label: "County", prop: "surveyCounty", element: "evidenceSurveyCounty" },
         { key: "recordingInfo", label: "Recording info", prop: "recordingInfo", element: "evidenceRecordingInfo" },
       ];

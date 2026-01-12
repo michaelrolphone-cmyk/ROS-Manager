@@ -258,7 +258,7 @@ describe("CP&F validation", () => {
       surveyorName: "Alex Fielding",
       surveyorLicense: "PLS12345",
       surveyorFirm: "Fielding Survey",
-      surveyorDates: "2024-05-01",
+      surveyDates: "2024-05-01",
       surveyCounty: "Ada",
       recordingInfo: "Inst 123",
     });
