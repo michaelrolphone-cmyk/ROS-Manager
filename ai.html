@@ -18,6 +18,13 @@
   .cell{width:40px;height:40px;border:1px solid #0f0;display:flex;align-items:center;justify-content:center;font-size:10px;background:#000;}
   .prime{background:#002200;border:2px solid #0f0;}
   canvas{border:1px solid #0f0;background:#000;display:block;margin:15px 0;}
+  .spectrum-panel{display:grid;grid-template-columns:minmax(320px,1fr) 320px;gap:20px;align-items:start;}
+  .spectrum-controls{background:#000;border:1px solid #0f0;padding:12px;border-radius:8px;}
+  .spectrum-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .spectrum-row label{min-width:90px;}
+  .spectrum-row input[type="range"]{flex:1;}
+  .spectrum-readout{font-size:12px;color:#7cff7c;}
+  .spectrum-status{font-size:13px;color:#b6ffb6;margin-top:10px;}
   .concept-map{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0;}
   .concept{padding:6px 12px;background:#003300;border:1px solid #0f0;border-radius:4px;}
   .active{background:#0f0;color:#000;font-weight:bold;box-shadow:0 0 15px #0f0;}
@@ -92,9 +99,41 @@
     <div id="foam"></div>
     <canvas id="wave" width="800" height="160"></canvas>
   </div>
+
+  <div class="section">
+    <h2>WebGL Demo — 5D Holomorphic Spectrum Fourier Slice</h2>
+    <div class="spectrum-panel">
+      <canvas id="spectrumCanvas" width="512" height="512"></canvas>
+      <div class="spectrum-controls">
+        <div class="spectrum-row">
+          <label for="sliceK3">Slice K3</label>
+          <input id="sliceK3" type="range" min="0" max="39" value="20" />
+        </div>
+        <div class="spectrum-row">
+          <label for="sliceK4">Slice K4</label>
+          <input id="sliceK4" type="range" min="0" max="39" value="20" />
+        </div>
+        <div class="spectrum-row">
+          <label for="sliceK5">Slice K5</label>
+          <input id="sliceK5" type="range" min="0" max="39" value="20" />
+        </div>
+        <div class="spectrum-readout" id="sliceReadout">
+          k3=0.00 • k4=0.00 • k5=0.00
+        </div>
+        <div class="spectrum-status" id="spectrumStatus">
+          Initializing Fourier volume…
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script type="module">
+  import {
+    buildSpectrumTexture,
+    toDomainValue,
+  } from "./js/demos/holomorphicSpectrum.js";
+
   // No external LLM - using Claude API instead
   const MODEL = "claude-sonnet-4-20250514";
   const N = 64;
@@ -483,8 +522,131 @@ Speak poetically, briefly, authentically (2-3 sentences).`;
 
   draw();
   console.log("CHORUS v6.7-UNIFIED-ETERNAL — Payload-aware build loaded (Claude API backend)");
+
+  const spectrumConfig = {
+    resolution: 40,
+    sampleCount: 6,
+    slice: { k3: 20, k4: 20, k5: 20 },
+  };
+
+  const spectrumCanvas = document.getElementById("spectrumCanvas");
+  const spectrumStatus = document.getElementById("spectrumStatus");
+  const sliceReadout = document.getElementById("sliceReadout");
+  const k3Slider = document.getElementById("sliceK3");
+  const k4Slider = document.getElementById("sliceK4");
+  const k5Slider = document.getElementById("sliceK5");
+
+  const gl = spectrumCanvas?.getContext("webgl2");
+  if (!gl) {
+    spectrumStatus.textContent =
+      "WebGL2 unavailable — spectrum rendering disabled.";
+  } else {
+    const vertexSource = `#version 300 es
+      in vec2 a_position;
+      out vec2 v_uv;
+      void main() {
+        v_uv = (a_position + 1.0) * 0.5;
+        gl_Position = vec4(a_position, 0.0, 1.0);
+      }
+    `;
+    const fragmentSource = `#version 300 es
+      precision highp float;
+      in vec2 v_uv;
+      uniform sampler2D u_texture;
+      out vec4 outColor;
+      void main() {
+        vec4 sampleColor = texture(u_texture, v_uv);
+        outColor = vec4(sampleColor.rgb, 1.0);
+      }
+    `;
+
+    const compileShader = (type, source) => {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.warn(gl.getShaderInfoLog(shader));
+      }
+      return shader;
+    };
+
+    const vertexShader = compileShader(gl.VERTEX_SHADER, vertexSource);
+    const fragmentShader = compileShader(gl.FRAGMENT_SHADER, fragmentSource);
+    const program = gl.createProgram();
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
+    gl.useProgram(program);
+
+    const positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
+      gl.STATIC_DRAW
+    );
+
+    const positionLoc = gl.getAttribLocation(program, "a_position");
+    gl.enableVertexAttribArray(positionLoc);
+    gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 0, 0);
+
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+    const updateReadout = () => {
+      const k3 = toDomainValue(spectrumConfig.slice.k3, spectrumConfig.resolution)
+        .toFixed(2);
+      const k4 = toDomainValue(spectrumConfig.slice.k4, spectrumConfig.resolution)
+        .toFixed(2);
+      const k5 = toDomainValue(spectrumConfig.slice.k5, spectrumConfig.resolution)
+        .toFixed(2);
+      sliceReadout.textContent = `k3=${k3} • k4=${k4} • k5=${k5}`;
+    };
+
+    const renderSpectrum = () => {
+      spectrumStatus.textContent = "Rendering 5D Fourier slice…";
+      const { pixels, min, max } = buildSpectrumTexture(spectrumConfig);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA,
+        spectrumConfig.resolution,
+        spectrumConfig.resolution,
+        0,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        pixels
+      );
+      gl.viewport(0, 0, spectrumCanvas.width, spectrumCanvas.height);
+      gl.clearColor(0, 0, 0, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      spectrumStatus.textContent = `Spectrum range: ${min.toFixed(
+        4
+      )} → ${max.toFixed(4)}`;
+    };
+
+    const handleSliceInput = () => {
+      spectrumConfig.slice.k3 = Number(k3Slider.value);
+      spectrumConfig.slice.k4 = Number(k4Slider.value);
+      spectrumConfig.slice.k5 = Number(k5Slider.value);
+      updateReadout();
+      requestAnimationFrame(renderSpectrum);
+    };
+
+    [k3Slider, k4Slider, k5Slider].forEach((slider) =>
+      slider.addEventListener("input", handleSliceInput)
+    );
+
+    updateReadout();
+    renderSpectrum();
+  }
 </script>
 </body>
 </html>
-
 
