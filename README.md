@@ -22,6 +22,25 @@ An offline, browser-based workspace that keeps traverse drafting, monument evide
 - **Import/Export**
    - Export the current project or all projects to JSON and import them later; filenames include sanitized project names where appropriate.【F:index.html†L833-L910】
 
+## Developer API & CLI
+### Survey index library API
+The survey index generation rules are now extracted into `js/services/SurveyIndexService.js` so they can be reused by controllers and tests.
+
+- `buildSurveyIndexNumber(project)` – returns the full index string from project TRS and plat fields.
+- `normalizeTrsComponent(value, padLength = 2)` – extracts digits from township/range/section values.
+- `normalizeBookOrPage(value)` – extracts book/page digits.
+- `aliquotToCode(value)` – maps aliquot quadrants (`NE`, `SE`, `SW`, `NW`) to numeric codes.
+- `buildAliquotCodes(aliquots)` – builds the 3-digit aliquot code segment.
+
+### CLI commands
+- `npm start` – runs the local Node server (`server.js`) on `http://localhost:3000`.
+- `npm test` – runs the Node test suite with `node --test`.
+
+### Server API endpoints
+- `GET /api/health` – basic status check.
+- `GET /api/projects` – returns all stored projects and evidence.
+- `POST /api/sync` – accepts `{ projects, evidence }`, merges by version/timestamp metadata, and returns reconciled data.
+
 ## Optional Sync + Static Server
 The app now ships with a lightweight Node-based server that can both host the static app files and reconcile offline work when a network connection is available.
 
