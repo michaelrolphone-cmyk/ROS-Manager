@@ -41,6 +41,10 @@ The survey index generation rules are now extracted into `js/services/SurveyInde
 - `GET /api/projects` – returns all stored projects and evidence.
 - `POST /api/sync` – accepts `{ projects, evidence }`, merges by version/timestamp metadata, and returns reconciled data.
 
+### Local storage resilience
+- Rolling backups now auto-trim the oldest backup snapshots when browser storage quota is reached, preventing hard crashes during auto-save cycles.
+- If storage remains full even after trimming, backup writes fail gracefully and the app continues running.
+
 ## Optional Sync + Static Server
 The app now ships with a lightweight Node-based server that can both host the static app files and reconcile offline work when a network connection is available.
 

@@ -6,6 +6,7 @@ import GlobalSettingsService from "../js/services/GlobalSettingsService.js";
 import VersioningService from "../js/services/VersioningService.js";
 import CornerEvidenceService from "../js/services/CornerEvidenceService.js";
 import SyncService from "../js/services/SyncService.js";
+import RollingBackupService from "../js/services/RollingBackupService.js";
 import {
   buildMapboxStaticUrl,
   getMapboxToken,
@@ -278,6 +279,56 @@ describe("GlobalSettingsService", () => {
     assert.equal(Object.keys(hydrated.liveLocations).length, 50);
     assert.ok(!hydrated.liveLocations.stale);
     assert.ok(hydrated.liveLocations["dev-0"]);
+  });
+});
+
+describe("RollingBackupService", () => {
+  beforeEach(() => {
+    globalThis.localStorage = new MemoryStorage();
+  });
+
+  it("drops oldest backups when storage quota is exceeded", () => {
+    const limit = 260;
+    const backingStorage = new MemoryStorage();
+    const guardedStorage = {
+      getItem: (key) => backingStorage.getItem(key),
+      removeItem: (key) => backingStorage.removeItem(key),
+      clear: () => backingStorage.clear(),
+      setItem: (key, value) => {
+        if (String(value).length > limit) {
+          throw new Error("QuotaExceededError");
+        }
+        backingStorage.setItem(key, value);
+      },
+    };
+
+    globalThis.localStorage = guardedStorage;
+    const service = new RollingBackupService("rolling-backup-test");
+    const payload = { heavy: "x".repeat(90) };
+
+    assert.equal(service.addBackup(["p1"], "1.json", payload, 3), true);
+    assert.equal(service.addBackup(["p1"], "2.json", payload, 3), true);
+
+    const backups = service.getBackups("p1");
+    assert.equal(backups.length, 1);
+    assert.equal(backups[0].filename, "2.json");
+  });
+
+  it("returns false instead of throwing when nothing can fit in storage", () => {
+    globalThis.localStorage = {
+      getItem: () => null,
+      setItem: () => {
+        throw new Error("QuotaExceededError");
+      },
+      removeItem: () => {},
+      clear: () => {},
+    };
+
+    const service = new RollingBackupService("rolling-backup-test");
+    const saved = service.addBackup(["p1"], "file.json", { heavy: "x" }, 1);
+
+    assert.equal(saved, false);
+    assert.deepEqual(service.getBackups("p1"), []);
   });
 });
 
