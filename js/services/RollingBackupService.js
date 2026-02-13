@@ -17,7 +17,31 @@ export default class RollingBackupService {
   }
 
   save() {
-    localStorage.setItem(this.storageKey, JSON.stringify(this.backups));
+    const orderedBackups = this.#flattenBackupsByAge();
+
+    while (true) {
+      try {
+        localStorage.setItem(this.storageKey, JSON.stringify(this.backups));
+        return true;
+      } catch (err) {
+        if (!orderedBackups.length) {
+          console.warn("Failed to persist rolling backups", err);
+          return false;
+        }
+
+        const oldest = orderedBackups.shift();
+        const projectBackups = this.backups[oldest.projectId];
+        if (!Array.isArray(projectBackups)) continue;
+
+        this.backups[oldest.projectId] = projectBackups.filter(
+          (backup) => backup.id !== oldest.id,
+        );
+
+        if (!this.backups[oldest.projectId].length) {
+          delete this.backups[oldest.projectId];
+        }
+      }
+    }
   }
 
   addBackup(projectIds = [], filename, payload, maxCopies = 3) {
@@ -39,7 +63,7 @@ export default class RollingBackupService {
       }
     });
 
-    this.save();
+    return this.save();
   }
 
   getBackups(projectId) {
@@ -50,6 +74,24 @@ export default class RollingBackupService {
   clearProject(projectId) {
     if (!projectId) return;
     delete this.backups[projectId];
-    this.save();
+    return this.save();
+  }
+
+  #flattenBackupsByAge() {
+    const flattened = [];
+
+    Object.entries(this.backups).forEach(([projectId, records]) => {
+      (records || []).forEach((record, index) => {
+        flattened.push({
+          projectId,
+          id: record.id,
+          timestamp: Date.parse(record.timestamp) || 0,
+          order: index,
+        });
+      });
+    });
+
+    flattened.sort((a, b) => a.timestamp - b.timestamp || b.order - a.order);
+    return flattened;
   }
 }
