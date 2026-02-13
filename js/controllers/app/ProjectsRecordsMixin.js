@@ -24,6 +24,13 @@ import {
   getMakiIconUrl,
   getMapboxToken,
 } from "../../services/MapboxService.js";
+import {
+  buildAliquotCodes as buildSurveyAliquotCodes,
+  buildSurveyIndexNumber,
+  aliquotToCode as mapAliquotToCode,
+  normalizeBookOrPage as normalizeSurveyBookOrPage,
+  normalizeTrsComponent as normalizeSurveyTrsComponent,
+} from "../../services/SurveyIndexService.js";
 
 const ProjectsRecordsMixin = (Base) =>
   class extends Base {
@@ -193,41 +200,23 @@ const ProjectsRecordsMixin = (Base) =>
     }
 
     normalizeTrsComponent(value = "", padLength = 2) {
-      const digits = (value.match(/\d+/g) || []).join("");
-      if (!digits) return "";
-      return padLength > 0 ? digits.padStart(padLength, "0") : digits;
+      return normalizeSurveyTrsComponent(value, padLength);
     }
 
     normalizeBookOrPage(value = "") {
-      const digits = (value.match(/\d+/g) || []).join("");
-      return digits;
+      return normalizeSurveyBookOrPage(value);
     }
 
     aliquotToCode(value = "") {
-      const map = { NE: "1", SE: "2", SW: "3", NW: "4" };
-      return map[value.toUpperCase?.() || ""] || "0";
+      return mapAliquotToCode(value);
     }
 
     buildAliquotCodes(aliquots = []) {
-      const codes = aliquots.slice(0, 3).map((a) => this.aliquotToCode(a));
-      while (codes.length < 3) codes.push("0");
-      return codes.join("");
+      return buildSurveyAliquotCodes(aliquots);
     }
 
     buildProjectIndexNumber(project) {
-      if (!project) return "";
-      const township =
-        this.normalizeTrsComponent(project.townships?.[0], 0) || "0";
-      const range = this.normalizeTrsComponent(project.ranges?.[0], 0) || "0";
-      const section = this.normalizeTrsComponent(project.sections?.[0]) || "00";
-      const quadrant = this.aliquotToCode(project.sectionQuadrant) || "0";
-      const aliquotCodes = this.buildAliquotCodes(project.aliquots) || "000";
-      const book = this.normalizeBookOrPage(project.platBook) || "0";
-      const pageStart = this.normalizeBookOrPage(project.platPageStart) || "0";
-      const pageEnd = this.normalizeBookOrPage(project.platPageEnd) || "";
-
-      const base = `${township}${range}${quadrant}-${section}-${aliquotCodes}-${book}-${pageStart}`;
-      return pageEnd ? `${base}-${pageEnd || "0"}` : base;
+      return buildSurveyIndexNumber(project);
     }
 
     setProjectDetailsEditing(isEditing) {
