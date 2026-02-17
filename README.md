@@ -12,6 +12,10 @@ An offline, browser-based workspace that keeps traverse drafting, monument evide
 2. **Create or load a project** – Use **Create Project** or the project dropdown to start a project. Projects save automatically. Use **Import** to restore a `.json` export.
 3. **Move between tools** – The springboard tiles open Traverse Builder, Points, Leveling, Evidence, Equipment, Navigation, and Settings while staying on the same dataset.
 4. **Back up or clear data** – Export the current project, all projects, or the entire app dataset. Delete projects, records, or point files if you need to start fresh.
+5. **Explore the WebGL demo** – Open `ai.html` directly or via the static server to view the 5D holomorphic spectrum Fourier slice visualizer.
+
+## WebGL Holomorphic Spectrum Demo
+The `ai.html` page includes a WebGL2 demo that renders a 5D holomorphic spectrum via a 5D Fourier transform slice. Use the K3/K4/K5 sliders to explore spectral slices rendered on the GPU.
 
 ## Tool Overview
 
@@ -56,6 +60,7 @@ The app now ships with a lightweight Node-based server that can both host the st
 2. **Endpoints**
    - `GET /api/health` – basic status check.
    - `GET /api/projects` – returns all stored projects and evidence.
+   - `GET /api/stream` – Server-Sent Events stream of synced dataset updates.
    - `POST /api/sync` – accepts a payload of `{ projects, evidence }`, merges by per-record `version`, `createdAt`, and `updatedAt` fields, and returns the reconciled dataset.
 3. **Conflict handling**
    - Every project entity (project, record, call, points, evidence, and equipment logs) now carries `createdAt`, `updatedAt`, and `version` metadata.
@@ -63,6 +68,19 @@ The app now ships with a lightweight Node-based server that can both host the st
    - Non-conflicting edits from different users are merged automatically by item ID.
 
 The browser UI will automatically attempt to sync when it detects an online connection, but it continues to work fully offline.
+
+## CLI & API Reference
+### CLI Commands
+```bash
+node server.js
+npm test
+```
+
+### API Endpoints
+- `GET /api/health`
+- `GET /api/projects`
+- `GET /api/stream`
+- `POST /api/sync`
 
 ### Traverse Builder
 - **Traverse authoring**
